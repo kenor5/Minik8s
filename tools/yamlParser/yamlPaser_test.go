@@ -1,7 +1,7 @@
 package yamlParser
 
 import (
-	"example.com/minik8s/entity"
+	"minik8s/entity"
 	"fmt"
 	"testing"
 )
