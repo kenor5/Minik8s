@@ -2,7 +2,10 @@ module example.com/minik8s
 
 go 1.20
 
-require github.com/docker/docker v23.0.3+incompatible
+require (
+	github.com/docker/docker v23.0.3+incompatible
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect

@@ -1,14 +1,15 @@
 package yamlParser
 
 import (
+	"example.com/minik8s/entity"
 	"fmt"
-	"minik8s/entity"
 	"testing"
 )
 
 var yamlPath = "../../test/pod1.yaml"
 
 func TestParser(t *testing.T) {
+
 	pod := &entity.Pod{}
 	b, _ := parseYaml(pod, yamlPath)
 
