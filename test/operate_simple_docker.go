@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"example.com/minik8s/pkg/docker"
+	"minik8s/pkg/docker"
 )
 
 /**

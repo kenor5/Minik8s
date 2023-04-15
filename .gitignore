@@ -22,3 +22,5 @@
 .vscode
 .idea
 /vendor/*
+go.mod
+go.sum
