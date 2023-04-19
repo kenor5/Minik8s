@@ -7,3 +7,7 @@ const (
 	Failed  string = "Failed"
 	Unknown string = "Unknown"
 )
+
+const (
+	PauseImage = "registry.aliyuncs.com/google_containers/pause:3.6"
+)

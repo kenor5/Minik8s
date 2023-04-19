@@ -73,6 +73,9 @@ type Quantity struct {
 
 type ContainerPort struct {
 	ContainerPort string `json:"containerPort" yaml:"containerPort"`
+	HostPort      string `json:"hostPort,omitempty" yaml:"hostPort,omitempty"`
+	Protocol      string `json:"Protocol,omitempty" yaml:"protocol,omitempty"`
+	HostIP        string `json:"HostIP,omitempty" yaml:"hostIP,omitempty"`
 }
 
 type VolumeMount struct {
