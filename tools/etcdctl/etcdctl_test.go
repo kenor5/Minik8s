@@ -20,7 +20,7 @@ func TestGet(t *testing.T) {
 		return
 	}
 	defer cli.Close()
-	res, err := Get(cli, "key")
+	res, _ := Get(cli, "key")
 	fmt.Println(res)
 }
 

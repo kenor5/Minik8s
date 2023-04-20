@@ -17,7 +17,10 @@ func Put(cli *clientv3.Client, k string, v string) error {
 		return errors.New("client is null")
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, err1 := context.WithTimeout(context.Background(), 5*time.Second)
+	if err1 != nil {
+		return errors.New("context open err")
+	}
 	_, err := cli.Put(ctx, k, v)
 
 	if err != nil {
@@ -31,7 +34,10 @@ func Get(client *clientv3.Client, k string) (*clientv3.GetResponse, error) {
 		return nil, errors.New("client is null")
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, err1 := context.WithTimeout(context.Background(), 5*time.Second)
+	if err1 != nil {
+		return nil,errors.New("context open err")
+	}
 	ret, err := client.Get(ctx, k)
 
 	if err != nil {
@@ -45,7 +51,10 @@ func GetWithPrefix(client *clientv3.Client, k string) (*clientv3.GetResponse, er
 		return nil, errors.New("client is null")
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, err1 := context.WithTimeout(context.Background(), 5*time.Second)
+	if err1 != nil {
+		return nil,errors.New("context open err")
+	}
 	ret, err := client.Get(ctx, k, clientv3.WithPrefix())
 
 	if err != nil {
@@ -59,11 +68,15 @@ func Delete(client *clientv3.Client, k string) error {
 		return errors.New("client is null")
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	_, err := client.Delete(ctx, k)
-
+	ctx, err := context.WithTimeout(context.Background(), 5*time.Second)
 	if err != nil {
-		return errors.New("etcd get error")
+		return errors.New("context open err")
+	}
+
+	_, err1 := client.Delete(ctx, k)
+
+	if err1 != nil {
+		return errors.New("etcd delete error")
 	}
 	return nil
 }
