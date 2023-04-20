@@ -22,7 +22,7 @@ func fileExists(path string) (bool, error) {
 /*
 输入： v：需要parse的struct， filename： yaml文件路径
 */
-func parseYaml(v interface{}, filename string) (bool, error) {
+func ParseYaml(v interface{}, filename string) (bool, error) {
 	b, _ := fileExists(filename)
 	if !b {
 		return false, errors.New("file not exist")
