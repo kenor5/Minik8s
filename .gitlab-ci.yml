@@ -1,0 +1,32 @@
+stages:
+  - dockertest
+  # - test
+
+# cache:
+#   key: ${CI_BUILD_REF_NAME}
+#   paths:
+#     - bin/
+
+dockertest:
+  stage: dockertest
+  only:
+    - master
+  script:
+    - go init minik8s
+    - go mod init minik8s
+    - go mod tidy
+    - go mod vendor
+    - cd test
+    - go run operate_simple_docker.go
+
+  tags:
+    - minik8stest
+
+# test:
+#   stage: test
+#   only:
+#     - main
+#   script:
+#     - ./bin/hello
+#   tags:
+#     - test
