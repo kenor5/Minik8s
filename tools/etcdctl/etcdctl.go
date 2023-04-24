@@ -3,7 +3,9 @@ package etcdctl
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/coreos/etcd/clientv3"
+	"os/exec"
 	"time"
 )
 
@@ -36,7 +38,7 @@ func Get(client *clientv3.Client, k string) (*clientv3.GetResponse, error) {
 
 	ctx, err1 := context.WithTimeout(context.Background(), 5*time.Second)
 	if err1 != nil {
-		return nil,errors.New("context open err")
+		return nil, errors.New("context open err")
 	}
 	ret, err := client.Get(ctx, k)
 
@@ -53,7 +55,7 @@ func GetWithPrefix(client *clientv3.Client, k string) (*clientv3.GetResponse, er
 
 	ctx, err1 := context.WithTimeout(context.Background(), 5*time.Second)
 	if err1 != nil {
-		return nil,errors.New("context open err")
+		return nil, errors.New("context open err")
 	}
 	ret, err := client.Get(ctx, k, clientv3.WithPrefix())
 
@@ -87,4 +89,29 @@ func Watch(client *clientv3.Client, k string) (clientv3.WatchChan, error) {
 	}
 
 	return client.Watch(context.Background(), k), nil
+}
+
+func Start(dirPath string) (*clientv3.Client, error) {
+	cmd := exec.Command("./etcd")
+	cmd.Dir = dirPath
+	err := cmd.Start()
+	if err != nil {
+		fmt.Println("etcd already running")
+	} else {
+		fmt.Println("started etcd")
+	}
+
+	cli, err := clientv3.New(
+		clientv3.Config{
+			Endpoints:   []string{"localhost:2379"},
+			DialTimeout: 5 * time.Second,
+		})
+
+	if err != nil {
+		fmt.Println("etcd connect error")
+		return nil, err
+	}
+
+	return cli, nil
+
 }
