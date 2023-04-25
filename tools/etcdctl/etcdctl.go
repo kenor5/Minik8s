@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/coreos/etcd/clientv3"
 	"os/exec"
 	"time"
+
+	"github.com/coreos/etcd/clientv3"
 )
 
 /*
