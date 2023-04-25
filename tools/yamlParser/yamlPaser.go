@@ -8,7 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func fileExists(path string) (bool, error) {
+func FileExists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
@@ -23,12 +23,12 @@ func fileExists(path string) (bool, error) {
 输入： v：需要parse的struct， filename： yaml文件路径
 */
 func ParseYaml(v interface{}, filename string) (bool, error) {
-	b, _ := fileExists(filename)
+	b, _ := FileExists(filename)
 	if !b {
 		return false, errors.New("file not exist")
 	}
 
-	file, err := os.Open(filename)
+	file, _ := os.Open(filename)
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
@@ -49,10 +49,14 @@ func ParseYaml(v interface{}, filename string) (bool, error) {
 	if err != nil {
 		return false, errors.New("read file error")
 	}
-
 	err = yaml.Unmarshal(buffer, v)
 	if err != nil {
 		return false, errors.New("unmarshal yaml error")
 	}
 	return true, nil
+}
+
+func ParseByte(v interface{}, data []byte) error {
+	err := yaml.Unmarshal(data, v)
+	return err
 }

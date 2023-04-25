@@ -14,7 +14,7 @@ import (
 * 3. stop the container
 * 4. remove the container
  */
-func main_1() {
+func main() {
 	containerName := "container1"
 	image := "nginx:latest"
 	id := docker.CreateContainer(containerName, image)
