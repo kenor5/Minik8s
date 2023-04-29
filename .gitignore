@@ -27,3 +27,6 @@ go.mod
 go.sum
 
 *.log
+default.etcd/*
+test/operate_simple_docker
+tools/etctctl/default.etcd/*
