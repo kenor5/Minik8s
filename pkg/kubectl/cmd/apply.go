@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"minik8s/entity"
 	"minik8s/pkg/kubectl/utils"
-	"minik8s/tools/log"
+	// "minik8s/tools/log"
 	"minik8s/tools/yamlParser"
 	"strings"
 	"time"
@@ -31,7 +31,7 @@ func init() {
 	applyCmd.Flags().StringVarP(&filename, "filename", "f", "", "yaml name")
 	err := applyCmd.MarkFlagRequired("filename")
 	if err != nil {
-		log.LOG("required filename")
+		fmt.Println("required filename")
 		return
 	}
 }
@@ -44,13 +44,12 @@ func doApply(cmd *cobra.Command, args []string) {
 
 	b, err := yamlParser.FileExists(filename)
 	if !b || err != nil {
-		log.LOG("file does not exist")
+		fmt.Println("file does not exist")
 		return
 	}
 
 	// 把路径按照 ‘/’ 拆分开，获取没有 .yaml 后缀的文件名
 	arr := strings.Split(filename, "/")
-	fmt.Println(arr)
 	for i := 0; i < len(arr)-1; i++ {
 		dirname = dirname + arr[i] + "/"
 	}
@@ -60,12 +59,10 @@ func doApply(cmd *cobra.Command, args []string) {
 	
 
 	filenameWithoutExtention = strings.Split(arr[len(arr)-1], ".")[0]
-	fmt.Println(filenameWithoutExtention)
 
 	obj, err := utils.GetField(dirname, filenameWithoutExtention, "kind")
-	fmt.Println(obj)
 	if err != nil {
-		log.LOG("file has no such field")
+		fmt.Println("file has no such field")
 	}
 
 	fmt.Println(dirname, filenameWithoutExtention)
@@ -77,7 +74,7 @@ func doApply(cmd *cobra.Command, args []string) {
 		pod := &entity.Pod{}
 		_, err := yamlParser.ParseYaml(pod, filename)
 		if err != nil {
-			log.LOG("parse pod failed")
+			fmt.Println("parse pod failed")
 			return
 		}
 		fmt.Println(pod)
@@ -108,7 +105,7 @@ func doApply(cmd *cobra.Command, args []string) {
 		deploy := &entity.Deployment{}
 		_, err := yamlParser.ParseYaml(deploy, filename)
 		if err != nil {
-			log.LOG("parse deploy failed")
+			fmt.Println("parse deploy failed")
 			return
 		}
 
@@ -120,7 +117,7 @@ func doApply(cmd *cobra.Command, args []string) {
 	case "Node":
 	case "node":
 	default:
-		log.LOG("there is no object named ")
+		fmt.Println("there is no object named ")
 
 	}
 }

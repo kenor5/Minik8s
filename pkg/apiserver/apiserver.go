@@ -14,8 +14,28 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
+/**
+** ApiServer作为客户端给Kubelet发请求
+**/
+func kubeletCreatePod(c pb.KubeletApiServerServiceClient, in *pb.ApplyPodRequest) error{
+	ctx := context.Background()
+
+	// 调用服务端 SimpleRPC 并获取响应
+	reply, err := c.CreatePod(ctx,in)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println(reply.Status)
+
+	return err
+}
+
+/******************
+*******************
+*******************/
 type server struct {
 	// 继承 protoc-gen-go-grpc 生成的服务端代码
 	pb.UnimplementedApiServerKubeletServiceServer
@@ -45,6 +65,20 @@ func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Stat
 	fmt.Println("put etcd", in.Data)
 	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
 
+	// 发送消息给Kubelet
+    kubelet_url := "127.0.0.1" + configs.KubeletGrpcPort
+	dial, err := grpc.Dial(kubelet_url, grpc.WithTransportCredentials(insecure.NewCredentials())) 
+	if err != nil {
+		log.Fatal(err)
+		return &pb.StatusResponse{Status: -1}, err
+	}
+	defer dial.Close()
+    conn := pb.NewKubeletApiServerServiceClient(dial)
+    err = kubeletCreatePod(conn, in)
+	if err != nil {
+		log.Fatal(err)
+		return &pb.StatusResponse{Status: -1}, err
+	}
 	
 	log.Println(in)
 	return &pb.StatusResponse{Status: 0}, nil
