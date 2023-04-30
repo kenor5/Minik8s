@@ -2,9 +2,10 @@ package etcdctl
 
 import (
 	"fmt"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"testing"
 	"time"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 // 测试时候，先把本机上的etcd运行起来
@@ -52,7 +53,7 @@ func TestStart(t *testing.T) {
 		fmt.Println("get error")
 	}
 
-	fmt.Println(get)
+	fmt.Println(get.Kvs)
 	defer func(start *clientv3.Client) {
 		err := start.Close()
 		if err != nil {

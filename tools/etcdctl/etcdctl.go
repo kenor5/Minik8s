@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"minik8s/tools/pathgetter"
-
+	"os"
+	"strings"
 	"os/exec"
 	"time"
-
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -37,7 +36,7 @@ func Get(client *clientv3.Client, k string) (*clientv3.GetResponse, error) {
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	
+
 	ret, err := client.Get(ctx, k)
 	cancel()
 	if err != nil {
@@ -51,7 +50,7 @@ func GetWithPrefix(client *clientv3.Client, k string) (*clientv3.GetResponse, er
 		return nil, errors.New("client is null")
 	}
 
-	ctx, cancel:= context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	ret, err := client.Get(ctx, k, clientv3.WithPrefix())
 	cancel()
 	if err != nil {
@@ -85,10 +84,14 @@ func Watch(client *clientv3.Client, k string) (clientv3.WatchChan, error) {
 }
 
 func Start(dirPath string) (*clientv3.Client, error) {
-	fmt.Println(pathgetter.GetCurrentAbPath())
-	cmd := exec.Command("./etcd_start.sh")
+	// 获取到的是调用这个函数的文件路径，进行以下处理
+	calledPath, err := os.Getwd()
+	rootPath := calledPath[:strings.Index(calledPath, "minik8s")]
+	fmt.Println("start etcd with", rootPath+"minik8s/tools/etcdctl/etcd_start.sh")
+	
+	cmd := exec.Command(rootPath + "minik8s/tools/etcdctl/etcd_start.sh")
 	cmd.Dir = dirPath
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		fmt.Println(err)
 	} else {
