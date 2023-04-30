@@ -9,7 +9,7 @@ import (
 
 var yamlPath = "./pod2.yaml"
 
-func main_1() {
+func main() {
 	// parse yaml
 	newPod := &entity.Pod{}
 	yamlParser.ParseYaml(newPod, yamlPath)
