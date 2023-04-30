@@ -7,7 +7,8 @@ option go_package = "minik8s/pkg/proto";
 
 import "share.proto";
 
+
 service ApiServerKubectlService {
     rpc SayHello(share.HelloRequest) returns (share.HelloResponse);
-    
+    rpc ApplyPod(share.ApplyPodRequest) returns (share.StatusResponse);
 }

@@ -1,13 +1,17 @@
 package cmd
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"minik8s/entity"
 	"minik8s/pkg/kubectl/utils"
-	"minik8s/tools/log"
+	// "minik8s/tools/log"
 	"minik8s/tools/yamlParser"
 	"strings"
+	"time"
 
+	pb "minik8s/pkg/proto"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +31,7 @@ func init() {
 	applyCmd.Flags().StringVarP(&filename, "filename", "f", "", "yaml name")
 	err := applyCmd.MarkFlagRequired("filename")
 	if err != nil {
-		log.LOG("required filename")
+		fmt.Println("required filename")
 		return
 	}
 }
@@ -40,24 +44,25 @@ func doApply(cmd *cobra.Command, args []string) {
 
 	b, err := yamlParser.FileExists(filename)
 	if !b || err != nil {
-		log.LOG("file does not exist")
+		fmt.Println("file does not exist")
 		return
 	}
 
+	// 把路径按照 ‘/’ 拆分开，获取没有 .yaml 后缀的文件名
 	arr := strings.Split(filename, "/")
-	fmt.Println(arr)
 	for i := 0; i < len(arr)-1; i++ {
 		dirname = dirname + arr[i] + "/"
 	}
 	if len(dirname) == 0 {
 		dirname = "."
 	}
+	
 
 	filenameWithoutExtention = strings.Split(arr[len(arr)-1], ".")[0]
 
 	obj, err := utils.GetField(dirname, filenameWithoutExtention, "kind")
 	if err != nil {
-		log.LOG("file has no such field")
+		fmt.Println("file has no such field")
 	}
 
 	fmt.Println(dirname, filenameWithoutExtention)
@@ -65,35 +70,54 @@ func doApply(cmd *cobra.Command, args []string) {
 	switch obj {
 	case "Pod":
 	case "pod":
+		// 先 parse yaml 文件
 		pod := &entity.Pod{}
 		_, err := yamlParser.ParseYaml(pod, filename)
 		if err != nil {
-			log.LOG("parse pod failed")
+			fmt.Println("parse pod failed")
 			return
 		}
 		fmt.Println(pod)
-		//url := "http://localhost:8080/pod"
-		//err = http.ApplyToServer(url, pod)
-		//if err != nil {
-		//	return
-		//}
+
+		// 通过 rpc 连接 apiserver
+		cli := NewClient()
+		if cli == nil {
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// 把 pod 序列化成 string 传给 apiserver
+		podByte, err := json.Marshal(pod)
+		if err != nil {
+			fmt.Println("parse pod error")
+			return
+		}
+
+		res, err := cli.ApplyPod(ctx, &pb.ApplyPodRequest{
+			Data: podByte,
+		})
+
+		fmt.Println("Create Pod, responce ", res)
 
 	case "Deployment":
 	case "deployment":
 		deploy := &entity.Deployment{}
 		_, err := yamlParser.ParseYaml(deploy, filename)
 		if err != nil {
-			log.LOG("parse deploy failed")
+			fmt.Println("parse deploy failed")
 			return
 		}
 
+		// TODO
+
 	case "Service":
 	case "service":
-
+		// TODO
 	case "Node":
 	case "node":
 	default:
-		log.LOG("there is no object named ")
+		fmt.Println("there is no object named ")
 
 	}
 }

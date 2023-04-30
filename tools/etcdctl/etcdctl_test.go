@@ -40,7 +40,7 @@ func TestPut(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
-	start, err := Start("tools/etcdctl")
+	start, err := Start(".")
 	if err != nil {
 		fmt.Println("start error")
 		return

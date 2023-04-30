@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"os/exec"
 	"time"
-
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -14,6 +15,14 @@ import (
 	reference to:
 	https://www.tizi365.com/archives/574.html
 */
+
+func NewClient() (*clientv3.Client, error) {
+	return clientv3.New(
+		clientv3.Config{
+			Endpoints:   []string{"127.0.0.1:2379"},
+			DialTimeout: 5 * time.Second,
+		})
+}
 
 func Put(cli *clientv3.Client, k string, v string) error {
 	if cli == nil {
@@ -83,9 +92,14 @@ func Watch(client *clientv3.Client, k string) (clientv3.WatchChan, error) {
 }
 
 func Start(dirPath string) (*clientv3.Client, error) {
-	cmd := exec.Command("./etcd_start.sh")
+	// 获取到的是调用这个函数的文件路径，进行以下处理
+	calledPath, err := os.Getwd()
+	rootPath := calledPath[:strings.Index(calledPath, "minik8s")]
+	fmt.Println("start etcd with", rootPath+"minik8s/tools/etcdctl/etcd_start.sh")
+	
+	cmd := exec.Command(rootPath + "minik8s/tools/etcdctl/etcd_start.sh")
 	cmd.Dir = dirPath
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		fmt.Println(err)
 	} else {

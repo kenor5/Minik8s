@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	ApiServerKubectlService_SayHello_FullMethodName = "/apiserver_for_kubectl.ApiServerKubectlService/SayHello"
+	ApiServerKubectlService_ApplyPod_FullMethodName = "/apiserver_for_kubectl.ApiServerKubectlService/ApplyPod"
 )
 
 // ApiServerKubectlServiceClient is the client API for ApiServerKubectlService service.
@@ -29,6 +30,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ApiServerKubectlServiceClient interface {
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
+	ApplyPod(ctx context.Context, in *ApplyPodRequest, opts ...grpc.CallOption) (*StatusResponse, error)
 }
 
 type apiServerKubectlServiceClient struct {
@@ -48,11 +50,21 @@ func (c *apiServerKubectlServiceClient) SayHello(ctx context.Context, in *HelloR
 	return out, nil
 }
 
+func (c *apiServerKubectlServiceClient) ApplyPod(ctx context.Context, in *ApplyPodRequest, opts ...grpc.CallOption) (*StatusResponse, error) {
+	out := new(StatusResponse)
+	err := c.cc.Invoke(ctx, ApiServerKubectlService_ApplyPod_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ApiServerKubectlServiceServer is the server API for ApiServerKubectlService service.
 // All implementations must embed UnimplementedApiServerKubectlServiceServer
 // for forward compatibility
 type ApiServerKubectlServiceServer interface {
 	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
+	ApplyPod(context.Context, *ApplyPodRequest) (*StatusResponse, error)
 	mustEmbedUnimplementedApiServerKubectlServiceServer()
 }
 
@@ -62,6 +74,9 @@ type UnimplementedApiServerKubectlServiceServer struct {
 
 func (UnimplementedApiServerKubectlServiceServer) SayHello(context.Context, *HelloRequest) (*HelloResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
+}
+func (UnimplementedApiServerKubectlServiceServer) ApplyPod(context.Context, *ApplyPodRequest) (*StatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApplyPod not implemented")
 }
 func (UnimplementedApiServerKubectlServiceServer) mustEmbedUnimplementedApiServerKubectlServiceServer() {
 }
@@ -95,6 +110,24 @@ func _ApiServerKubectlService_SayHello_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ApiServerKubectlService_ApplyPod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApplyPodRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServerKubectlServiceServer).ApplyPod(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ApiServerKubectlService_ApplyPod_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServerKubectlServiceServer).ApplyPod(ctx, req.(*ApplyPodRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ApiServerKubectlService_ServiceDesc is the grpc.ServiceDesc for ApiServerKubectlService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -105,6 +138,10 @@ var ApiServerKubectlService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SayHello",
 			Handler:    _ApiServerKubectlService_SayHello_Handler,
+		},
+		{
+			MethodName: "ApplyPod",
+			Handler:    _ApiServerKubectlService_ApplyPod_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -1,3 +1,5 @@
+kind: 
+  pod
 metadata:
   name: pod
   namespace: default

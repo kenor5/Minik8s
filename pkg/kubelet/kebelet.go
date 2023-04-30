@@ -2,13 +2,17 @@ package kubelet
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"minik8s/configs"
+	"minik8s/entity"
+	podFunc "minik8s/pkg/pod"
 	pb "minik8s/pkg/proto"
+	"net"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-    "minik8s/pkg/pod"
 )
 
 /**
@@ -40,9 +44,9 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 	return &pb.HelloResponse{Reply: "Hello " + in.Name}, nil
 }
 
-func (s *server) CreatePod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.StatusResponse, err) {
+func (s *server) CreatePod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.StatusResponse, error) {
 	log.Println("[Kubelet] Api Server call Create Pod...")
-    log.println(in)
+    log.Println(in)
     
 	pod := &entity.Pod{}
 	err := json.Unmarshal(in.Data, pod)
@@ -50,8 +54,7 @@ func (s *server) CreatePod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Sta
 		fmt.Println("pod unmarshel err") 
 		return &pb.StatusResponse{Status: -1}, err
 	}
-
-    err = RunPodSandBox(pod);
+    err = podFunc.RunPodSandBox(pod);
 	if err != nil {
 		fmt.Println("create pod err") 
 		return &pb.StatusResponse{Status: -1}, err		
@@ -86,7 +89,7 @@ func Run() {
 /**
 *    Kubelet启动自己的服务端，接受来自ApiServer的消息
 **/
-	listen, err := net.Listen("tcp", configs.kubeletGrpcPort)
+	listen, err := net.Listen("tcp", configs.KubeletGrpcPort)
 	if (err != nil) {
 		fmt.Println(err);
 	}

@@ -4,7 +4,12 @@ import (
 	"fmt"
 	"os"
 
+	"minik8s/configs"
+	pb "minik8s/pkg/proto"
+
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 
@@ -36,4 +41,14 @@ func Execute() {
 	  fmt.Fprintln(os.Stderr, err)
 	  os.Exit(1)
 	}
+}
+
+
+func NewClient() pb.ApiServerKubectlServiceClient {
+	conn, err := grpc.Dial(configs.ApiServerUrl+configs.GrpcPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		fmt.Println("err when connect to apiserver")
+		return nil
+	}
+	return pb.NewApiServerKubectlServiceClient(conn)
 }
