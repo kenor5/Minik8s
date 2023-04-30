@@ -2,9 +2,11 @@ package apiserver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"minik8s/configs"
+	"minik8s/entity"
 	"minik8s/tools/etcdctl"
 	"net"
 
@@ -25,6 +27,26 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 
 	log.Println(in)
 	return &pb.HelloResponse{Reply: "Hello " + in.Name}, nil
+}
+
+func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.StatusResponse, error) {
+
+	pod := &entity.Pod{}
+	err := json.Unmarshal(in.Data, pod)
+	if err != nil {
+		fmt.Println("pod unmarshel err") 
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		fmt.Println("etcd client connetc error")
+	}
+	fmt.Println("put etcd", in.Data)
+	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
+
+	log.Println(in)
+	return &pb.StatusResponse{Status: 0}, nil
 }
 
 /*
@@ -61,7 +83,7 @@ func Run() {
 	pb.RegisterApiServerKubectlServiceServer(svr, &server{})
 	log.Println("Apiserver For Kubectl gRpc Server starts running...")
 
-	// 启动 gRPC 服务器
+	// 启动 gRPC 服务器  
 	err = svr.Serve(listen)
 	if err != nil {
 		log.Fatal(err)

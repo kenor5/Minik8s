@@ -16,6 +16,14 @@ import (
 	https://www.tizi365.com/archives/574.html
 */
 
+func NewClient() (*clientv3.Client, error) {
+	return clientv3.New(
+		clientv3.Config{
+			Endpoints:   []string{"127.0.0.1:2379"},
+			DialTimeout: 5 * time.Second,
+		})
+}
+
 func Put(cli *clientv3.Client, k string, v string) error {
 	if cli == nil {
 		return errors.New("client is null")
