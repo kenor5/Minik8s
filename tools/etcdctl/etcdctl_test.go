@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 // 测试时候，先把本机上的etcd运行起来

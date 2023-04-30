@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 /*
@@ -35,7 +35,7 @@ func Get(client *clientv3.Client, k string) (*clientv3.GetResponse, error) {
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	
+
 	ret, err := client.Get(ctx, k)
 	cancel()
 	if err != nil {
@@ -49,7 +49,7 @@ func GetWithPrefix(client *clientv3.Client, k string) (*clientv3.GetResponse, er
 		return nil, errors.New("client is null")
 	}
 
-	ctx, cancel:= context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	ret, err := client.Get(ctx, k, clientv3.WithPrefix())
 	cancel()
 	if err != nil {
