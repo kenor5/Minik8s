@@ -8,7 +8,7 @@ import (
 	"minik8s/tools/etcdctl"
 	"net"
 
-	pb "minik8s/proto"
+	pb "minik8s/pkg/proto"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
@@ -33,7 +33,9 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 */
 
 func Run() {
-	// 开启etcd
+/**
+**   开启etcd
+**/
 	cli, err := etcdctl.Start(configs.EtcdStartPath)
 	if err != nil {
 		return
@@ -52,7 +54,9 @@ func Run() {
 		return
 	}
 
-	// 创建gRPC服务器
+/**
+**   创建gRPC服务器,接受来自Kubectl和ApiServer的请求
+**/
 	svr := grpc.NewServer()
 	// 将实现的接口注册进 gRPC 服务器
 	pb.RegisterApiServerKubeletServiceServer(svr, &server{})

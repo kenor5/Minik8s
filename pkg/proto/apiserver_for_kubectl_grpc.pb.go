@@ -4,7 +4,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.21.9
-// source: proto/apiserver_for_kubectl.proto
+// source: apiserver_for_kubectl.proto
 
 package proto
 
@@ -108,5 +108,5 @@ var ApiServerKubectlService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/apiserver_for_kubectl.proto",
+	Metadata: "apiserver_for_kubectl.proto",
 }

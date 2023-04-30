@@ -12,3 +12,10 @@ message HelloResponse {
     string reply = 1;
 }
 
+message ApplyPodRequest {
+    bytes data = 1;
+}
+
+message StatusResponse {
+    int32 status = 1;
+}
