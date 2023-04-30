@@ -2,7 +2,7 @@ package etcdctl
 
 import (
 	"fmt"
-	"github.com/coreos/etcd/clientv3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"testing"
 	"time"
 )
@@ -39,7 +39,7 @@ func TestPut(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
-	start, err := Start("/home/os/minik8s/minik8s/tools/etcdctl")
+	start, err := Start(".")
 	if err != nil {
 		fmt.Println("start error")
 		return

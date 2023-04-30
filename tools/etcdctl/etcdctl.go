@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/coreos/etcd/clientv3"
+	
 	"os/exec"
 	"time"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 /*
@@ -82,6 +84,7 @@ func Watch(client *clientv3.Client, k string) (clientv3.WatchChan, error) {
 }
 
 func Start(dirPath string) (*clientv3.Client, error) {
+	fmt.Println(pathgetter.GetCurrentAbPath())
 	cmd := exec.Command("./etcd_start.sh")
 	cmd.Dir = dirPath
 	err := cmd.Run()
