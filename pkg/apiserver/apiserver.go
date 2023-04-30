@@ -17,6 +17,7 @@ import (
 type server struct {
 	// 继承 protoc-gen-go-grpc 生成的服务端代码
 	pb.UnimplementedApiServerKubeletServiceServer
+	pb.UnimplementedApiServerKubectlServiceServer
 }
 
 func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloResponse, error) {
@@ -56,6 +57,9 @@ func Run() {
 	// 将实现的接口注册进 gRPC 服务器
 	pb.RegisterApiServerKubeletServiceServer(svr, &server{})
 	log.Println("Apiserver For Kubelet gRPC Server starts running...")
+
+	pb.RegisterApiServerKubectlServiceServer(svr, &server{})
+	log.Println("Apiserver For Kubectl gRpc Server starts running...")
 
 	// 启动 gRPC 服务器
 	err = svr.Serve(listen)

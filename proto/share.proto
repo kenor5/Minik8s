@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package share;
+
+option go_package = "minik8s/pkg/proto";
+
+message HelloRequest {
+    string name = 1;
+}
+
+message HelloResponse {
+    string reply = 1;
+}
+
