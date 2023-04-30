@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	pb "minik8s/proto"
+	pb "minik8s/pkg/proto"
 	"github.com/spf13/cobra"
 )
 

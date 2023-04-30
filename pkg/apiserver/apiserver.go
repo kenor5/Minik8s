@@ -10,7 +10,7 @@ import (
 	"minik8s/tools/etcdctl"
 	"net"
 
-	pb "minik8s/proto"
+	pb "minik8s/pkg/proto"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
@@ -45,6 +45,7 @@ func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Stat
 	fmt.Println("put etcd", in.Data)
 	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
 
+	
 	log.Println(in)
 	return &pb.StatusResponse{Status: 0}, nil
 }
@@ -55,7 +56,9 @@ func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Stat
 */
 
 func Run() {
-	// 开启etcd
+/**
+**   开启etcd
+**/
 	cli, err := etcdctl.Start(configs.EtcdStartPath)
 	if err != nil {
 		return
@@ -74,7 +77,9 @@ func Run() {
 		return
 	}
 
-	// 创建gRPC服务器
+/**
+**   创建gRPC服务器,接受来自Kubectl和ApiServer的请求
+**/
 	svr := grpc.NewServer()
 	// 将实现的接口注册进 gRPC 服务器
 	pb.RegisterApiServerKubeletServiceServer(svr, &server{})

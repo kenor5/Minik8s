@@ -6,5 +6,5 @@ const (
 	ApiServerUrl = "127.0.0.1"
 
 	GrpcPort = ":5678"
-	ApiServerPort = ":5679"
+	KubeletGrpcPort = ":5679"
 )

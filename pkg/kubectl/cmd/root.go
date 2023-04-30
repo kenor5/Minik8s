@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"minik8s/configs"
-	pb "minik8s/proto"
+	pb "minik8s/pkg/proto"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
