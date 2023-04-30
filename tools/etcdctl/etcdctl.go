@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	
+	"minik8s/tools/pathgetter"
+
 	"os/exec"
 	"time"
 
