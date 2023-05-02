@@ -30,7 +30,7 @@ type Kubelet struct {
 	containerManager *ContainerManager.ContainerManager
 }
 
-var kubelet Kubelet
+var kubelet *Kubelet
 
 // newKubelet creates a new Kubelet object.
 func newKubelet() *Kubelet {
@@ -43,7 +43,9 @@ func newKubelet() *Kubelet {
 }
 
 func KubeletObject() *Kubelet {
-	kubelet := newKubelet()
+	if kubelet == nil {
+		kubelet = newKubelet()
+	}
 	return kubelet
 }
 
