@@ -39,6 +39,7 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 
 		config := &container.Config{
 			Image: con.Image,
+			Cmd:   con.Command,
 		}
 
 		HostConfig := &container.HostConfig{

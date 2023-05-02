@@ -1,6 +1,5 @@
 package entity
 
-
 type Container struct {
 	Name  string `json:"name" yaml:"name"`
 	Image string `json:"image" yaml:"image"`
