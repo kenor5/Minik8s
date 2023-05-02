@@ -56,6 +56,18 @@ func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Stat
 	return apiserver.ApiServerObject().ApplyPod(in)
 }
 
+func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
+
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		fmt.Println("etcd client connetc error")
+	}
+	fmt.Println("[ApiServer] Regiseter Node: put kubelet_url in etcd", in.KubeletUrl)
+	etcdctl.Put(cli, "Node/"+in.NodeName, string(in.KubeletUrl))
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
 func Run() {
 	/**
 	**   开启etcd
