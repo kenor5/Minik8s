@@ -77,6 +77,19 @@ func (s *server) DeletePod(ctx context.Context, in *pb.DeletePodRequest) (*pb.St
 	})
 }
 
+func (s *server) GetPod(ctx context.Context, in *pb.GetPodRequest) (*pb.GetPodResponse, error) {
+
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		fmt.Println("connect to etcd error")
+	}
+	out, err:= etcdctl.Get(cli, "Pod/"+string(in.Name))
+
+	return &pb.GetPodResponse{
+		Data : out.Kvs[0].Value,
+	}, nil
+}
+
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
 
