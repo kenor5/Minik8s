@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"minik8s/entity"
-	"minik8s/pkg/pod"
+	"minik8s/pkg/kubelet/pod/podfunc"
 	"minik8s/tools/yamlParser"
 )
 
@@ -15,7 +15,7 @@ func main() {
 	yamlParser.ParseYaml(newPod, yamlPath)
 	fmt.Println(newPod)
 
-	err := pod.RunPodSandBox(newPod)
+	err := podfunc.CreatePod(newPod)
 	if err != nil {
 		fmt.Printf("something wrong")
 	}

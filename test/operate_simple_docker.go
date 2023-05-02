@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"minik8s/pkg/docker"
+	"minik8s/pkg/kubelet/docker"
 )
 
 /**
@@ -14,11 +14,7 @@ import (
 * 3. stop the container
 * 4. remove the container
  */
-<<<<<<< HEAD
 func main_1() {
-=======
-func main_() {
->>>>>>> 10f16263fdf20f2c19669eb7b201a2108115bba5
 	containerName := "container1"
 	image := "nginx:latest"
 	id := docker.CreateContainer(containerName, image)
