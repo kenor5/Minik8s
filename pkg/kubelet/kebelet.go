@@ -69,7 +69,7 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 
 	// 实际停止并删除Pod中的所有容器
 	podfunc.DeletePod(containerIds)
-
+	kl.podManger.DeletePod(pod)
 	// 更新Pod的状态
 	pod.Status.Phase = entity.Succeed
 	client.UpdatePodStatus(kubelet.connToApiServer, pod)
@@ -77,17 +77,17 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 }
 
 func (kl *Kubelet) GetPods() ([]*entity.Pod, error) {
-	pm := kl.PodManger.GetPods()
+	pm := kl.podManger.GetPods()
 	return pm, nil
 }
 
 func (kl *Kubelet) AddPod(pod *entity.Pod) error {
 	//更新元数据
-	kl.PodManger.AddPod(pod)
+	kl.podManger.AddPod(pod)
 	pod.Status.Phase = entity.Running
 
 	//启动沙箱容器和pod.spec.containers中的容器
-	if err := podfunc.CreatePod(pod); err != nil {
+	if _, err := podfunc.CreatePod(pod); err != nil {
 		pod.Status.Phase = entity.Failed
 		return err
 	}
@@ -96,13 +96,8 @@ func (kl *Kubelet) AddPod(pod *entity.Pod) error {
 }
 
 func (kl *Kubelet) GetPodByName(namespace string, name string) (*entity.Pod, bool) {
-	pm, ok := kl.PodManger.GetPodByName(namespace, name)
+	pm, ok := kl.podManger.GetPodByName(namespace, name)
 	return pm, ok
-}
-
-func (kl *Kubelet) DeletePod(pod *entity.Pod) {
-	kl.PodManger.DeletePod(pod)
-
 }
 
 func (kl *Kubelet) RegisterNode() error {
