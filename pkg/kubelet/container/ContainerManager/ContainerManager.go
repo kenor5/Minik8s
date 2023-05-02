@@ -30,6 +30,6 @@ func (rm *ContainerManager) GetContainerIDsByPodName(PodName string) []string {
 }
 
 func (rm *ContainerManager) DeletePodNameToContainerIds(PodName string) error {
-
+    
 	return nil
 }
