@@ -14,6 +14,7 @@ import (
 	// "net"
 
 	"minik8s/pkg/kubelet/client"
+	"minik8s/pkg/kubelet/container/ContainerManager"
 	"minik8s/pkg/kubelet/pod/PodManager"
 
 	"google.golang.org/grpc"
@@ -24,15 +25,18 @@ import (
 ************************    Kubelet主结构    *******************************
 ***************************************************************************/
 type Kubelet struct {
-	connToApiServer pb.ApiServerKubeletServiceClient
-	PodManger       *PodManager.Manager
+	connToApiServer  pb.ApiServerKubeletServiceClient
+	podManger        *PodManager.Manager
+	containerManager *ContainerManager.ContainerManager
 }
 
 var kubelet *Kubelet
 
 // newKubelet creates a new Kubelet object.
 func newKubelet() *Kubelet {
-	newKubelet := &Kubelet{}
+	newKubelet := &Kubelet{
+		containerManager: ContainerManager.NewContainerManager(),
+	}
 	apiserver_url := "127.0.0.1" + configs.GrpcPort
 	newKubelet.connToApiServer, _ = ConnectToApiServer(apiserver_url)
 	return newKubelet
@@ -47,9 +51,29 @@ func KubeletObject() *Kubelet {
 
 func (kl *Kubelet) CreatePod(pod *entity.Pod) error {
 	// 实际创建Pod,IP等信息在这里更新进Pod.Status中
-	podfunc.CreatePod(pod)
+	ContainerIds, err := podfunc.CreatePod(pod)
+	if err != nil {
+		return err
+	}
+
+	// 维护ContainerRuntimeManager
+	kubelet.containerManager.SetContainerIDsByPodName(pod, ContainerIds)
 
 	// 更新PodStatus
+	client.UpdatePodStatus(kubelet.connToApiServer, pod)
+	return nil
+}
+
+func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
+	// 获取Pod中所有的ContainerId并且删除该映射
+	containerIds := kubelet.containerManager.GetContainerIDsByPodName(pod.Metadata.Name)
+	kubelet.containerManager.DeletePodNameToContainerIds(pod.Metadata.Name)
+
+	// 实际停止并删除Pod中的所有容器
+	podfunc.DeletePod(containerIds)
+
+	// 更新Pod的状态
+	pod.Status.Phase = entity.Succeed
 	client.UpdatePodStatus(kubelet.connToApiServer, pod)
 	return nil
 }

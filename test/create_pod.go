@@ -15,7 +15,8 @@ func main() {
 	yamlParser.ParseYaml(newPod, yamlPath)
 	fmt.Println(newPod)
 
-	err := podfunc.CreatePod(newPod)
+	ContainerIDs, err := podfunc.CreatePod(newPod)
+	fmt.Println("ContainerIDs: ", ContainerIDs)
 	if err != nil {
 		fmt.Printf("something wrong")
 	}
