@@ -5,7 +5,7 @@ package kubelet_for_apiserver;
 
 option go_package = "minik8s/pkg/proto";
 
-import "share.proto";
+import "proto/share.proto";
 
 service kubeletApiServerService {
     rpc SayHello(share.HelloRequest) returns (share.HelloResponse);
