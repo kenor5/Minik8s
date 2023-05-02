@@ -51,9 +51,10 @@ func deletePod(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
+	
+	
 	res, err := cli.DeletePod(ctx, &pb.DeletePodRequest{
-		Name: name,
+		Data: []byte(name),
 	})
 
 	if err != nil {

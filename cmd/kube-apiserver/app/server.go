@@ -57,6 +57,26 @@ func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Stat
 	return apiserver.ApiServerObject().ApplyPod(in)
 }
 
+func (s *server) DeletePod(ctx context.Context, in *pb.DeletePodRequest) (*pb.StatusResponse, error) {
+
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		fmt.Println("connect to etcd error")
+	}
+	out, err:= etcdctl.Get(cli, "Pod/"+string(in.Data))
+	// fmt.Println(out.Kvs[0].Value)
+	// pod := &entity.Pod{}
+	// err = json.Unmarshal(out.Kvs[0].Value, pod)
+	// if err != nil {
+	// 	fmt.Println("pod unmarshal error")
+	// }
+	// fmt.Println("get etcd", pod)
+
+	return apiserver.ApiServerObject().DeletePod(&pb.DeletePodRequest{
+		Data : out.Kvs[0].Value,
+	})
+}
+
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
 

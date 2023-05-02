@@ -51,6 +51,28 @@ func (s *server) CreatePod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Sta
 	return &pb.StatusResponse{Status: 0}, err
 }
 
+func (s *server) DeletePod(ctx context.Context, in *pb.DeletePodRequest) (*pb.StatusResponse, error) {
+	log.Println("[Kubelet] Api Server call delete Pod...")
+	log.Println(in)
+
+	pod := &entity.Pod{}
+	err := json.Unmarshal(in.Data, pod)
+	if err != nil {
+		fmt.Println("pod unmarshel err")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	// 调用kubelet对象实现删除 Pod的真正逻辑
+	err = kubelet.KubeletObject().DeletePod(pod)
+
+	if err != nil {
+		fmt.Println("delete pod err")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+	fmt.Println("[Kubelet] delete Pod Success")
+	return &pb.StatusResponse{Status: 0}, err
+}
+
 /*********************************************************
 **********************  Kubelet主程序   *************************
 **********************************************************/
