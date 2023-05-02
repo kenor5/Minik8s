@@ -1,16 +1,16 @@
-package pod
+package podfunc
 
 import (
 	"context"
 	"fmt"
 	"minik8s/entity"
-	"minik8s/pkg/docker"
+	"minik8s/pkg/kubelet/docker"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 )
 
-func RunPodSandBox(pod *entity.Pod) error {
+func CreatePod(pod *entity.Pod) error {
 	// Create and Start Pause Container
 	fmt.Printf("create pause container\n")
 	pauseContainerId, err := docker.CreatePauseContainer(pod)
