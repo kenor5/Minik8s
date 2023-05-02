@@ -9,4 +9,5 @@ import "share.proto";
 
 service ApiServerKubeletService {
     rpc SayHello(share.HelloRequest) returns (share.HelloResponse);
+    rpc UpdatePodStatus(share.UpdatePodStatusRequest) returns (share.StatusResponse);
 }

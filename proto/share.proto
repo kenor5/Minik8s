@@ -16,6 +16,11 @@ message ApplyPodRequest {
     bytes data = 1;
 }
 
+message UpdatePodStatusRequest {
+    string pod_name = 1;
+    bytes pod_status = 2;
+}
+
 message StatusResponse {
     int32 status = 1;
 }

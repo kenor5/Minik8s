@@ -17,9 +17,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-/**
-** ApiServer作为客户端给Kubelet发请求
-**/
+/******************************************************************
+*************** ApiServer作为客户端给Kubelet发请求  *****************
+*******************************************************************/
 func kubeletCreatePod(c pb.KubeletApiServerServiceClient, in *pb.ApplyPodRequest) error{
 	ctx := context.Background()
 
@@ -33,9 +33,9 @@ func kubeletCreatePod(c pb.KubeletApiServerServiceClient, in *pb.ApplyPodRequest
 	return err
 }
 
-/******************
-*******************
-*******************/
+/***************************************************************
+**************     API Server 作为服务端处理请求     *************
+*****************************************************************/
 type server struct {
 	// 继承 protoc-gen-go-grpc 生成的服务端代码
 	pb.UnimplementedApiServerKubeletServiceServer
@@ -84,6 +84,11 @@ func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Stat
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
+
+
+/****************************************************************
+*******************    API Server主程序   ************************
+*****************************************************************/
 /*
 	referenct to:
 	https://blog.csdn.net/qq_43580193/article/details/127577709

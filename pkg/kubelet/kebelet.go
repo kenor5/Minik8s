@@ -9,15 +9,17 @@ import (
 	"minik8s/entity"
 	podFunc "minik8s/pkg/pod"
 	pb "minik8s/pkg/proto"
+	PodManagerClient "minik8s/pkg/kubelet/pod"
+
 	"net"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-/**
-** Kubelet作为客户端给ApiServer发请求
-**/
+/*********************************************************
+*********** Kubelet作为客户端给ApiServer发请求 *************
+***********************************************************/
 func sayHello(c pb.ApiServerKubeletServiceClient) {
 	ctx := context.Background()
 
@@ -29,9 +31,9 @@ func sayHello(c pb.ApiServerKubeletServiceClient) {
 	log.Println(reply.GetReply())
 }
 
-/**
-** Kubelet作为服务端接受来自Api Server的请求
-**/
+/**************************************************************
+************ Kubelet作为服务端接受来自Api Server的请求 ***********
+****************************************************************/
 type server struct {
 	// 继承 protoc-gen-go-grpc 生成的服务端代码
     pb.UnimplementedKubeletApiServerServiceServer
@@ -60,14 +62,41 @@ func (s *server) CreatePod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Sta
 		return &pb.StatusResponse{Status: -1}, err		
 	}
 	fmt.Println("[Kubelet] Create Pod Success")
+    
 	return &pb.StatusResponse{Status: 0}, err
 }
 
+/***************************************************************
+**********************  Kubelet 主结构  ************************
+****************************************************************/
+// Kubelet defines public methods of a PodManager.
+// All methods are thread safe.
+type Kubelet interface {
+	// ConnectToServer initializes grpc client to the api server.
+	// ConnectToServer(cluster *core.ApiserverStatus) error
+	// GetPods returns the pods bound to the kubelet and their spec.
+	GetPods() []*entity.Pod
+	// GetPodByName provides the pod that matches name, as well as whether the pod was found.
+	GetPodByName(name string) (*entity.Pod, bool)
+	// AddPod runs a pod based on the pod spec passed in as parameter.
+	// The status and metadata of the pod will be managed.
+	AddPod(ctx context.Context, pod *entity.Pod) error
+	// DeletePodByName destroys a pod indexed by name and all its containers.
+	DeletePodByName(ctx context.Context, name string) error
+}
 
+// Kubelet is the core data structure of the component. It manages pods, containers, monitors.
+type dockerKubelet struct {
+	// // Client to communicate with API server.
+	// apiClient *client.KubeletClient
+    PodManager *PodManagerClient.Manager
+}
 
-/*********************************************************
-**********************   主程序   *************************
-**********************************************************/
+var kubelet Kubelet
+
+/**************************************************************
+**********************  Kubelet 主程序  ************************
+***************************************************************/
 func Run() {
 	println("[kubelet] running...")
 

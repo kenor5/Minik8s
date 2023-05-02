@@ -27,12 +27,12 @@ type PodSpec struct {
 
 type PodStatus struct {
 	// Pod 被调度到的主机的 IP 地址。如果尚未被调度，则为字段为空。
-	HostIp string `json:"host_ip" yaml:"host_ip"`
+	HostIp string `json:"host_ip,omitempty" yaml:"host_ip,omitempty"`
 
 	// Pod 的 Phase 是对 Pod 在其生命周期中所处位置的简单、高级摘要。phase 的取值有五种可能性：
 	// Pending Running Succeeded Failed Unknown
-	Phase string `json:"phase" yaml:"phase"`
+	Phase string `json:"phase,omitempty" yaml:"phase,omitempty"`
 
 	// 分配给 Pod 的 IP 地址。至少在集群内可路由。如果尚未分配则为空。
-	PodIp string `json:"pod_ip" yaml:"pod_ip"`
+	PodIp string `json:"pod_ip,omitempty" yaml:"pod_ip,omitempty"`
 }
