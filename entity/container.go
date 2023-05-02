@@ -10,6 +10,8 @@ type Container struct {
 
 	Ports     []ContainerPort      `json:"ports,omitempty" yaml:"ports,omitempty"`
 	Resources ResourceRequirements `json:"resources,omitempty" yaml:"resources,omitempty"`
+
+	Command []string `json:"command,omitempty" yaml:"command,omitempty"`
 }
 
 type ResourceRequirements struct {

@@ -1,7 +1,9 @@
 package main
 
-import "minik8s/pkg/apiserver"
+import (
+	"minik8s/cmd/kube-apiserver/app"
+)
 
 func main() {
-	apiserver.Run()
+	app.Run()
 }

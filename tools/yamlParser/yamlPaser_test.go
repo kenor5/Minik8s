@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-var yamlPath = "../../test/pod1.yaml"
+var yamlPath = "../../test/pod2.yaml"
 
 func TestParser(t *testing.T) {
 

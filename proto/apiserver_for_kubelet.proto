@@ -1,0 +1,14 @@
+// grpc server is API Server and client is Kubelet
+syntax = "proto3";
+
+package apiserver_for_kubelet;
+
+option go_package = "minik8s/pkg/proto";
+
+import "share.proto";
+
+service ApiServerKubeletService {
+    rpc SayHello(share.HelloRequest) returns (share.HelloResponse);
+    rpc RegisterNode(share.RegisterNodeRequest) returns (share.StatusResponse);
+    rpc UpdatePodStatus(share.UpdatePodStatusRequest) returns (share.StatusResponse);
+}
