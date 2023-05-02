@@ -50,5 +50,20 @@ func CreatePod(pod *entity.Pod) error {
 
 		docker.StartContainer(body.ID)
 	}
+
+	// 更新Pod.Status
+	// Inspect the container
+	containerJSON, err := cli.ContainerInspect(context.Background(), pauseContainerId)
+	if err != nil {
+		panic(err)
+	}
+
+	// Get the container's IP address
+	containerIP := containerJSON.NetworkSettings.IPAddress
+	pod.Status.PodIp = containerIP
+	pod.Status.Phase = "Running"
+	// TODO:给Kubelet分配真正的IP
+	pod.Status.HostIp = "127.0.0.1"
+
 	return nil
 }

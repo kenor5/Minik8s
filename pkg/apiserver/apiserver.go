@@ -48,7 +48,6 @@ func (master *ApiServer) ApplyPod(in *pb.ApplyPodRequest) (*pb.StatusResponse, e
 // TODO: 修改连接逻辑，正确的逻辑应该是Kubelet注册后，ApiServer获取了Kubelet的url，由此建立连接
 func ConnectToKubelet(kubelet_url string) (pb.KubeletApiServerServiceClient, error) {
 	// 发送消息给Kubelet
-
 	dial, err := grpc.Dial(kubelet_url, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
