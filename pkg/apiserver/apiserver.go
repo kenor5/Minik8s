@@ -45,6 +45,28 @@ func (master *ApiServer) ApplyPod(in *pb.ApplyPodRequest) (*pb.StatusResponse, e
 	return &pb.StatusResponse{Status: 0}, err
 }
 
+func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse, error) {
+	// 发送消息给Kubelet
+	err := client.KubeletDeletePod(apiServer.conn, in)
+	if err != nil {
+		log.Fatal(err)
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	return &pb.StatusResponse{Status: 0}, err
+}
+
+func (master *ApiServer) GetPod(in *pb.GetPodRequest) (*pb.GetPodResponse, error) {
+	// 发送消息给Kubelet
+	pod, err := client.KubeletGetPod(apiServer.conn, in)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	return pod, nil
+}
+
 // TODO: 修改连接逻辑，正确的逻辑应该是Kubelet注册后，ApiServer获取了Kubelet的url，由此建立连接
 func ConnectToKubelet(kubelet_url string) (pb.KubeletApiServerServiceClient, error) {
 	// 发送消息给Kubelet

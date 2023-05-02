@@ -16,9 +16,17 @@ message ApplyPodRequest {
     bytes data = 1;
 }
 
-message UpdatePodStatusRequest {
-    string pod_name = 1;
-    bytes pod_status = 2;
+message DeletePodRequest {
+    string name = 1;
+}
+
+
+message GetPodRequest {
+    string name = 1;
+}
+
+message GetPodResponse {
+    bytes data = 1;
 }
 
 message StatusResponse {

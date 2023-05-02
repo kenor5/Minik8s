@@ -98,7 +98,7 @@ func doApply(cmd *cobra.Command, args []string) {
 			Data: podByte,
 		})
 
-		fmt.Println("Create Pod, responce ", res)
+		fmt.Println("Create Pod, response ", res)
 
 	case "Deployment":
 	case "deployment":
