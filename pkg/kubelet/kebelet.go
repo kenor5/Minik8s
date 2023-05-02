@@ -4,6 +4,7 @@ import (
 	// "context"
 	// "encoding/json"
 	// "fmt"
+
 	"log"
 	"minik8s/configs"
 	"minik8s/entity"
@@ -45,8 +46,11 @@ func KubeletObject() *Kubelet {
 }
 
 func (kl *Kubelet) CreatePod(pod *entity.Pod) error {
+	// 实际创建Pod,IP等信息在这里更新进Pod.Status中
 	podfunc.CreatePod(pod)
 
+	// 更新PodStatus
+	client.UpdatePodStatus(kubelet.connToApiServer, pod)
 	return nil
 }
 
