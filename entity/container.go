@@ -1,15 +1,14 @@
 package entity
 
-
 type Container struct {
 	Name  string `json:"name" yaml:"name"`
 	Image string `json:"image" yaml:"image"`
 	// 镜像拉取策略。"Always"、"Never"、"IfNotPresent" 之一。
-	ImagePullPolicy string        `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
-	VolumeMounts    []VolumeMount `json:"volume_mounts,omitempty" yaml:"volumeMounts,omitempty"`
-
-	Ports     []ContainerPort      `json:"ports,omitempty" yaml:"ports,omitempty"`
-	Resources ResourceRequirements `json:"resources,omitempty" yaml:"resources,omitempty"`
+	ImagePullPolicy string               `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
+	VolumeMounts    []VolumeMount        `json:"volume_mounts,omitempty" yaml:"volumeMounts,omitempty"`
+	Command         []string             `json:"command,omitempty" yaml:"command,omitempty"`
+	Ports           []ContainerPort      `json:"ports,omitempty" yaml:"ports,omitempty"`
+	Resources       ResourceRequirements `json:"resources,omitempty" yaml:"resources,omitempty"`
 }
 
 type ResourceRequirements struct {
