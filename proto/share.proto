@@ -16,6 +16,28 @@ message ApplyPodRequest {
     bytes data = 1;
 }
 
+message DeletePodRequest {
+    bytes data = 1;
+}
+
+
+message GetPodRequest {
+    string name = 1;
+}
+
+message GetPodResponse {
+    bytes data = 1;
+}
+
 message StatusResponse {
     int32 status = 1;
+}
+
+message RegisterNodeRequest{
+    string NodeName = 1;
+    string kubelet_url = 2;
+}
+
+message UpdatePodStatusRequest {
+    bytes data = 1;
 }

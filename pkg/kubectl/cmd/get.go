@@ -1,8 +1,13 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
+	"context"
+	"fmt"
+	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
+	"time"
+
+	"github.com/spf13/cobra"
 )
 
 var getCmd = &cobra.Command{
@@ -41,7 +46,21 @@ func doGet(cmd *cobra.Command, args []string) {
 }
 
 func getPod(name string) {
-
+		// 通过 rpc 连接 apiserver
+		cli := NewClient()
+		if cli == nil {
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+	
+		res, err := cli.GetPod(ctx, &pb.GetPodRequest{
+			Name: name,
+		})
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("Get Pod, response ", res)
 }
 
 func getNode(name string) {

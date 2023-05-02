@@ -44,9 +44,13 @@ var file_proto_apiserver_for_kubelet_proto_goTypes = []interface{}{
 }
 var file_proto_apiserver_for_kubelet_proto_depIdxs = []int32{
 	0, // 0: apiserver_for_kubelet.ApiServerKubeletService.SayHello:input_type -> share.HelloRequest
-	1, // 1: apiserver_for_kubelet.ApiServerKubeletService.SayHello:output_type -> share.HelloResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	1, // 1: apiserver_for_kubelet.ApiServerKubeletService.RegisterNode:input_type -> share.RegisterNodeRequest
+	2, // 2: apiserver_for_kubelet.ApiServerKubeletService.UpdatePodStatus:input_type -> share.UpdatePodStatusRequest
+	3, // 3: apiserver_for_kubelet.ApiServerKubeletService.SayHello:output_type -> share.HelloResponse
+	4, // 4: apiserver_for_kubelet.ApiServerKubeletService.RegisterNode:output_type -> share.StatusResponse
+	4, // 5: apiserver_for_kubelet.ApiServerKubeletService.UpdatePodStatus:output_type -> share.StatusResponse
+	3, // [3:6] is the sub-list for method output_type
+	0, // [0:3] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name

@@ -21,8 +21,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ApiServerKubectlService_SayHello_FullMethodName = "/apiserver_for_kubectl.ApiServerKubectlService/SayHello"
-	ApiServerKubectlService_ApplyPod_FullMethodName = "/apiserver_for_kubectl.ApiServerKubectlService/ApplyPod"
+	ApiServerKubectlService_SayHello_FullMethodName  = "/apiserver_for_kubectl.ApiServerKubectlService/SayHello"
+	ApiServerKubectlService_ApplyPod_FullMethodName  = "/apiserver_for_kubectl.ApiServerKubectlService/ApplyPod"
+	ApiServerKubectlService_DeletePod_FullMethodName = "/apiserver_for_kubectl.ApiServerKubectlService/DeletePod"
+	ApiServerKubectlService_GetPod_FullMethodName    = "/apiserver_for_kubectl.ApiServerKubectlService/GetPod"
 )
 
 // ApiServerKubectlServiceClient is the client API for ApiServerKubectlService service.
@@ -31,6 +33,8 @@ const (
 type ApiServerKubectlServiceClient interface {
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
 	ApplyPod(ctx context.Context, in *ApplyPodRequest, opts ...grpc.CallOption) (*StatusResponse, error)
+	DeletePod(ctx context.Context, in *DeletePodRequest, opts ...grpc.CallOption) (*StatusResponse, error)
+	GetPod(ctx context.Context, in *GetPodRequest, opts ...grpc.CallOption) (*GetPodResponse, error)
 }
 
 type apiServerKubectlServiceClient struct {
@@ -59,12 +63,32 @@ func (c *apiServerKubectlServiceClient) ApplyPod(ctx context.Context, in *ApplyP
 	return out, nil
 }
 
+func (c *apiServerKubectlServiceClient) DeletePod(ctx context.Context, in *DeletePodRequest, opts ...grpc.CallOption) (*StatusResponse, error) {
+	out := new(StatusResponse)
+	err := c.cc.Invoke(ctx, ApiServerKubectlService_DeletePod_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *apiServerKubectlServiceClient) GetPod(ctx context.Context, in *GetPodRequest, opts ...grpc.CallOption) (*GetPodResponse, error) {
+	out := new(GetPodResponse)
+	err := c.cc.Invoke(ctx, ApiServerKubectlService_GetPod_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ApiServerKubectlServiceServer is the server API for ApiServerKubectlService service.
 // All implementations must embed UnimplementedApiServerKubectlServiceServer
 // for forward compatibility
 type ApiServerKubectlServiceServer interface {
 	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
 	ApplyPod(context.Context, *ApplyPodRequest) (*StatusResponse, error)
+	DeletePod(context.Context, *DeletePodRequest) (*StatusResponse, error)
+	GetPod(context.Context, *GetPodRequest) (*GetPodResponse, error)
 	mustEmbedUnimplementedApiServerKubectlServiceServer()
 }
 
@@ -77,6 +101,12 @@ func (UnimplementedApiServerKubectlServiceServer) SayHello(context.Context, *Hel
 }
 func (UnimplementedApiServerKubectlServiceServer) ApplyPod(context.Context, *ApplyPodRequest) (*StatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApplyPod not implemented")
+}
+func (UnimplementedApiServerKubectlServiceServer) DeletePod(context.Context, *DeletePodRequest) (*StatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeletePod not implemented")
+}
+func (UnimplementedApiServerKubectlServiceServer) GetPod(context.Context, *GetPodRequest) (*GetPodResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPod not implemented")
 }
 func (UnimplementedApiServerKubectlServiceServer) mustEmbedUnimplementedApiServerKubectlServiceServer() {
 }
@@ -128,6 +158,42 @@ func _ApiServerKubectlService_ApplyPod_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ApiServerKubectlService_DeletePod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePodRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServerKubectlServiceServer).DeletePod(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ApiServerKubectlService_DeletePod_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServerKubectlServiceServer).DeletePod(ctx, req.(*DeletePodRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ApiServerKubectlService_GetPod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPodRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServerKubectlServiceServer).GetPod(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ApiServerKubectlService_GetPod_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServerKubectlServiceServer).GetPod(ctx, req.(*GetPodRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ApiServerKubectlService_ServiceDesc is the grpc.ServiceDesc for ApiServerKubectlService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -142,6 +208,14 @@ var ApiServerKubectlService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ApplyPod",
 			Handler:    _ApiServerKubectlService_ApplyPod_Handler,
+		},
+		{
+			MethodName: "DeletePod",
+			Handler:    _ApiServerKubectlService_DeletePod_Handler,
+		},
+		{
+			MethodName: "GetPod",
+			Handler:    _ApiServerKubectlService_GetPod_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

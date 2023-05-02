@@ -1,4 +1,4 @@
-package docker
+package containerfunc
 
 import (
 	"context"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"minik8s/pkg/kubelet/docker"
+	docker "minik8s/pkg/kubelet/container/containerfunc"
 )
 
 /**

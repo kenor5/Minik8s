@@ -51,26 +51,39 @@ func (s *server) CreatePod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Sta
 	return &pb.StatusResponse{Status: 0}, err
 }
 
+func (s *server) DeletePod(ctx context.Context, in *pb.DeletePodRequest) (*pb.StatusResponse, error) {
+	log.Println("[Kubelet] Api Server call delete Pod...")
+	log.Println(in)
+
+	pod := &entity.Pod{}
+	err := json.Unmarshal(in.Data, pod)
+	if err != nil {
+		fmt.Println("pod unmarshel err")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	// 调用kubelet对象实现删除 Pod的真正逻辑
+	err = kubelet.KubeletObject().DeletePod(pod)
+
+	if err != nil {
+		fmt.Println("delete pod err")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+	fmt.Println("[Kubelet] delete Pod Success")
+	return &pb.StatusResponse{Status: 0}, err
+}
+
 /*********************************************************
 **********************  Kubelet主程序   *************************
 **********************************************************/
 func Run() {
 	println("[kubelet] running...")
 
-	// /**
-	// *    TODO:这里的代码换成Kubelet启动时向APIServer注册
-	// **/
-	// 	// 连接服务端，因为我们没有SSL证书，因此这里需要禁用安全传输
-	// 	apiserver_url := "127.0.0.1" + configs.GrpcPort
-	// 	dial, err := grpc.Dial(apiserver_url, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 		return
-	// 	}
-	// 	defer dial.Close()
-
-	// 	conn := pb.NewApiServerKubeletServiceClient(dial)
-	// 	sayHello(conn)
+	/**
+	*    Kubelet启动时向APIServer注册
+	**/
+	kubelet.KubeletObject().RegisterNode()
+	println("[kubelet] has registered to apiserver...")
 
 	/**
 	 *    Kubelet启动自己的服务端，接受来自ApiServer的消息

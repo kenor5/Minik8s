@@ -37,6 +37,7 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 	return &pb.HelloResponse{Reply: "Hello " + in.Name}, nil
 }
 
+// 客户端为Kubectl
 func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.StatusResponse, error) {
 
 	pod := &entity.Pod{}
@@ -54,6 +55,56 @@ func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Stat
 	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
 
 	return apiserver.ApiServerObject().ApplyPod(in)
+}
+
+func (s *server) DeletePod(ctx context.Context, in *pb.DeletePodRequest) (*pb.StatusResponse, error) {
+
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		fmt.Println("connect to etcd error")
+	}
+	out, err:= etcdctl.Get(cli, "Pod/"+string(in.Data))
+	// fmt.Println(out.Kvs[0].Value)
+	// pod := &entity.Pod{}
+	// err = json.Unmarshal(out.Kvs[0].Value, pod)
+	// if err != nil {
+	// 	fmt.Println("pod unmarshal error")
+	// }
+	// fmt.Println("get etcd", pod)
+
+	return apiserver.ApiServerObject().DeletePod(&pb.DeletePodRequest{
+		Data : out.Kvs[0].Value,
+	})
+}
+
+// 客户端为Kubelet
+func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
+
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		fmt.Println("etcd client connetc error")
+	}
+	fmt.Println("[ApiServer] Regiseter Node: put kubelet_url in etcd", in.KubeletUrl)
+	etcdctl.Put(cli, "Node/"+in.NodeName, string(in.KubeletUrl))
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequest) (*pb.StatusResponse, error) {
+	pod := &entity.Pod{}
+	err := json.Unmarshal(in.Data, pod)
+	if err != nil {
+		fmt.Println("pod unmarshel err")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		fmt.Println("etcd client connetc error")
+	}
+	fmt.Println("put etcd", in.Data)
+	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
+	return &pb.StatusResponse{Status: 0}, err
 }
 
 func Run() {

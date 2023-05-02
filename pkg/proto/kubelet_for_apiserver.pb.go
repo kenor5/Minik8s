@@ -51,10 +51,14 @@ var file_proto_kubelet_for_apiserver_proto_goTypes = []interface{}{
 var file_proto_kubelet_for_apiserver_proto_depIdxs = []int32{
 	0, // 0: kubelet_for_apiserver.kubeletApiServerService.SayHello:input_type -> share.HelloRequest
 	1, // 1: kubelet_for_apiserver.kubeletApiServerService.CreatePod:input_type -> share.ApplyPodRequest
-	2, // 2: kubelet_for_apiserver.kubeletApiServerService.SayHello:output_type -> share.HelloResponse
-	3, // 3: kubelet_for_apiserver.kubeletApiServerService.CreatePod:output_type -> share.StatusResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	2, // 2: kubelet_for_apiserver.kubeletApiServerService.DeletePod:input_type -> share.DeletePodRequest
+	3, // 3: kubelet_for_apiserver.kubeletApiServerService.GetPod:input_type -> share.GetPodRequest
+	4, // 4: kubelet_for_apiserver.kubeletApiServerService.SayHello:output_type -> share.HelloResponse
+	5, // 5: kubelet_for_apiserver.kubeletApiServerService.CreatePod:output_type -> share.StatusResponse
+	5, // 6: kubelet_for_apiserver.kubeletApiServerService.DeletePod:output_type -> share.StatusResponse
+	6, // 7: kubelet_for_apiserver.kubeletApiServerService.GetPod:output_type -> share.GetPodResponse
+	4, // [4:8] is the sub-list for method output_type
+	0, // [0:4] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name

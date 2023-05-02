@@ -161,6 +161,147 @@ func (x *ApplyPodRequest) GetData() []byte {
 	return nil
 }
 
+type DeletePodRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *DeletePodRequest) Reset() {
+	*x = DeletePodRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_share_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DeletePodRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeletePodRequest) ProtoMessage() {}
+
+func (x *DeletePodRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_share_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeletePodRequest.ProtoReflect.Descriptor instead.
+func (*DeletePodRequest) Descriptor() ([]byte, []int) {
+	return file_share_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *DeletePodRequest) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type GetPodRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *GetPodRequest) Reset() {
+	*x = GetPodRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_share_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetPodRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPodRequest) ProtoMessage() {}
+
+func (x *GetPodRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_share_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPodRequest.ProtoReflect.Descriptor instead.
+func (*GetPodRequest) Descriptor() ([]byte, []int) {
+	return file_share_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetPodRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type GetPodResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *GetPodResponse) Reset() {
+	*x = GetPodResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_share_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetPodResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPodResponse) ProtoMessage() {}
+
+func (x *GetPodResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_share_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPodResponse.ProtoReflect.Descriptor instead.
+func (*GetPodResponse) Descriptor() ([]byte, []int) {
+	return file_share_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GetPodResponse) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
 type StatusResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -308,6 +449,30 @@ func file_proto_share_proto_init() {
 				return nil
 			}
 		}
+		file_share_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RegisterNodeRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_share_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UpdatePodStatusRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -315,7 +480,7 @@ func file_proto_share_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_share_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
