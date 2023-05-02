@@ -55,7 +55,7 @@ func getPod(name string) {
 		defer cancel()
 	
 		res, err := cli.GetPod(ctx, &pb.GetPodRequest{
-			Name: name,
+			PodName: name,
 		})
 		if err != nil {
 			fmt.Println(err)

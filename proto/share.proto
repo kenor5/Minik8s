@@ -20,13 +20,12 @@ message DeletePodRequest {
     bytes data = 1;
 }
 
-
 message GetPodRequest {
-    string name = 1;
+    string PodName = 1;
 }
 
 message GetPodResponse {
-    bytes data = 1;
+    bytes PodData = 1;
 }
 
 message StatusResponse {

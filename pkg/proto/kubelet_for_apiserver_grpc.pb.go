@@ -24,7 +24,6 @@ const (
 	KubeletApiServerService_SayHello_FullMethodName  = "/kubelet_for_apiserver.kubeletApiServerService/SayHello"
 	KubeletApiServerService_CreatePod_FullMethodName = "/kubelet_for_apiserver.kubeletApiServerService/CreatePod"
 	KubeletApiServerService_DeletePod_FullMethodName = "/kubelet_for_apiserver.kubeletApiServerService/DeletePod"
-	KubeletApiServerService_GetPod_FullMethodName    = "/kubelet_for_apiserver.kubeletApiServerService/GetPod"
 )
 
 // KubeletApiServerServiceClient is the client API for KubeletApiServerService service.
@@ -34,7 +33,6 @@ type KubeletApiServerServiceClient interface {
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
 	CreatePod(ctx context.Context, in *ApplyPodRequest, opts ...grpc.CallOption) (*StatusResponse, error)
 	DeletePod(ctx context.Context, in *DeletePodRequest, opts ...grpc.CallOption) (*StatusResponse, error)
-	GetPod(ctx context.Context, in *GetPodRequest, opts ...grpc.CallOption) (*GetPodResponse, error)
 }
 
 type kubeletApiServerServiceClient struct {
@@ -72,15 +70,6 @@ func (c *kubeletApiServerServiceClient) DeletePod(ctx context.Context, in *Delet
 	return out, nil
 }
 
-func (c *kubeletApiServerServiceClient) GetPod(ctx context.Context, in *GetPodRequest, opts ...grpc.CallOption) (*GetPodResponse, error) {
-	out := new(GetPodResponse)
-	err := c.cc.Invoke(ctx, KubeletApiServerService_GetPod_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // KubeletApiServerServiceServer is the server API for KubeletApiServerService service.
 // All implementations must embed UnimplementedKubeletApiServerServiceServer
 // for forward compatibility
@@ -88,7 +77,6 @@ type KubeletApiServerServiceServer interface {
 	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
 	CreatePod(context.Context, *ApplyPodRequest) (*StatusResponse, error)
 	DeletePod(context.Context, *DeletePodRequest) (*StatusResponse, error)
-	GetPod(context.Context, *GetPodRequest) (*GetPodResponse, error)
 	mustEmbedUnimplementedKubeletApiServerServiceServer()
 }
 
@@ -104,9 +92,6 @@ func (UnimplementedKubeletApiServerServiceServer) CreatePod(context.Context, *Ap
 }
 func (UnimplementedKubeletApiServerServiceServer) DeletePod(context.Context, *DeletePodRequest) (*StatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePod not implemented")
-}
-func (UnimplementedKubeletApiServerServiceServer) GetPod(context.Context, *GetPodRequest) (*GetPodResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetPod not implemented")
 }
 func (UnimplementedKubeletApiServerServiceServer) mustEmbedUnimplementedKubeletApiServerServiceServer() {
 }
@@ -176,24 +161,6 @@ func _KubeletApiServerService_DeletePod_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _KubeletApiServerService_GetPod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetPodRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(KubeletApiServerServiceServer).GetPod(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: KubeletApiServerService_GetPod_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KubeletApiServerServiceServer).GetPod(ctx, req.(*GetPodRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // KubeletApiServerService_ServiceDesc is the grpc.ServiceDesc for KubeletApiServerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -212,10 +179,6 @@ var KubeletApiServerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeletePod",
 			Handler:    _KubeletApiServerService_DeletePod_Handler,
-		},
-		{
-			MethodName: "GetPod",
-			Handler:    _KubeletApiServerService_GetPod_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

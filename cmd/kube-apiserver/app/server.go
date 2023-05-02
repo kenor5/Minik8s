@@ -77,6 +77,24 @@ func (s *server) DeletePod(ctx context.Context, in *pb.DeletePodRequest) (*pb.St
 	})
 }
 
+// TODO: get pods后不跟PodName返回所有的Pod
+func (s *server) GetPod(ctx context.Context, in *pb.GetPodRequest) (*pb.GetPodResponse, error) {
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		fmt.Println("connect to etcd error")
+	}
+	out, err:= etcdctl.Get(cli, "Pod/"+string(in.PodName))
+	//fmt.Println(out.Kvs[0].Value)
+	// pod := &entity.Pod{}
+	// err = json.Unmarshal(out.Kvs[0].Value, pod)
+	// if err != nil {
+	// 	fmt.Println("pod unmarshal error")
+	// }
+	// fmt.Println("get etcd", pod)	
+	
+	return &pb.GetPodResponse{PodData: out.Kvs[0].Value}, nil
+}
+
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
 
