@@ -25,7 +25,9 @@ import (
 ************************    Kubelet主结构    *******************************
 ***************************************************************************/
 type Kubelet struct {
-	connToApiServer  pb.ApiServerKubeletServiceClient
+	connToApiServer  pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
+	flannelIP        string                           // flannel分给此节点的网段（为10.0.1.0/24到10.0.20.0/24之间20个子网中的一个）
+	flannelBridgeID  string                           // 创建容器所使用的网桥(flannel_bridge)的ID
 	podManger        *PodManager.Manager
 	containerManager *ContainerManager.ContainerManager
 }
@@ -49,9 +51,15 @@ func KubeletObject() *Kubelet {
 	return kubelet
 }
 
+// 给kubelet成员变量赋值，后面有需要可能会增加参数给更多的成员变量赋值
+func (kl *Kubelet) SetMember(flannelIP string, flannelBridgeID string) {
+	kl.flannelIP = flannelIP
+	kl.flannelBridgeID = flannelBridgeID
+}
+
 func (kl *Kubelet) CreatePod(pod *entity.Pod) error {
 	// 实际创建Pod,IP等信息在这里更新进Pod.Status中
-	ContainerIds, err := podfunc.CreatePod(pod)
+	ContainerIds, err := podfunc.CreatePod(pod, kl.flannelBridgeID)
 	if err != nil {
 		return err
 	}
