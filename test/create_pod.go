@@ -8,9 +8,9 @@ import (
 	"minik8s/tools/yamlParser"
 )
 
-var yamlPath = "test/pod3.yaml"
+var yamlPath = "test/pod2.yaml"
 
-func main_1() {
+func main() {
 	// parse yaml
 	newPod := &entity.Pod{}
 	yamlParser.ParseYaml(newPod, yamlPath)
