@@ -6,17 +6,18 @@ import (
 	"minik8s/entity"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
 
-func CreatePauseContainer(pod *entity.Pod) (string, error) {
+func CreatePauseContainer(pod *entity.Pod, NetBridgeID string) (string, error) {
 	fmt.Printf("**********start create pause container***********\n")
-	// Step1 : Ensure Image
+	// Step1: 保证镜像存在
 	EnsureImage(entity.PauseImage)
 
-	// Step2: Populate exposed ports
-	// Because all the containers share the same network namespace with pause container
+	// Step2: 暴露Ports
+	// 因为所有容器与pause container共享相同的网络命名空间
 	fmt.Printf("Populate exposed ports\n")
 	ports := make(map[nat.Port]struct{})
 	for _, container := range pod.Spec.Containers {
@@ -25,13 +26,24 @@ func CreatePauseContainer(pod *entity.Pod) (string, error) {
 		}
 	}
 
-	// Step3 Create Container
+	// Step3: 创建pause container
 	fmt.Printf("create container\n")
 	cli, _ := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
 	)
 	defer cli.Close()
+
+	// 加入网络配置，使用Flannel网桥，保证IP分配
+	endpointConfig := &network.EndpointSettings{
+		NetworkID: NetBridgeID,
+	}
+	// "flannel_bridge"为网桥名称
+	networkconfig := &network.NetworkingConfig{
+		EndpointsConfig: map[string]*network.EndpointSettings{
+			"flannel_bridge": endpointConfig,
+		},
+	}
 
 	pauseName := pod.Metadata.Name + "_" + "pauseContainer"
 
@@ -40,7 +52,7 @@ func CreatePauseContainer(pod *entity.Pod) (string, error) {
 		ExposedPorts: ports,
 	}, &container.HostConfig{
 		IpcMode: "shareable",
-	}, nil, nil, pauseName)
+	}, networkconfig, nil, pauseName)
 
 	fmt.Printf("start container %s\n", err)
 	StartContainer(body.ID)
