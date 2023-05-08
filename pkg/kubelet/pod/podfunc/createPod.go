@@ -10,14 +10,14 @@ import (
 	"github.com/docker/docker/client"
 )
 
-func CreatePod(pod *entity.Pod, NetBridgeID string) ([]string, error) {
+func CreatePod(pod *entity.Pod) ([]string, error) {
 	// Create and Start Pause Container
 	fmt.Printf("create pause container\n")
 
 	// 该map返回Pod中的ContainerID
 	ContainerIDMap := []string{}
 
-	pauseContainerId, err := docker.CreatePauseContainer(pod, NetBridgeID)
+	pauseContainerId, err := docker.CreatePauseContainer(pod)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func CreatePod(pod *entity.Pod, NetBridgeID string) ([]string, error) {
 	}
 
 	// Get the container's IP address
-	containerIP := containerJSON.NetworkSettings.Networks["flannel_bridge"].IPAddress
+	containerIP := containerJSON.NetworkSettings.IPAddress
 	pod.Status.PodIp = containerIP
 	pod.Status.Phase = entity.Running
 	// TODO:给Kubelet分配真正的IP
