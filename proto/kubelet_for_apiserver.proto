@@ -11,5 +11,4 @@ service kubeletApiServerService {
     rpc SayHello(share.HelloRequest) returns (share.HelloResponse);
     rpc CreatePod(share.ApplyPodRequest) returns (share.StatusResponse);
     rpc DeletePod(share.DeletePodRequest) returns (share.StatusResponse);
-    rpc GetPod(share.GetPodRequest) returns (share.GetPodResponse);
 }

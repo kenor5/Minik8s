@@ -34,16 +34,3 @@ func KubeletDeletePod(c pb.KubeletApiServerServiceClient, in *pb.DeletePodReques
 
 	return err
 }
-
-func KubeletGetPod(c pb.KubeletApiServerServiceClient, in *pb.GetPodRequest) (*pb.GetPodResponse, error) {
-	ctx := context.Background()
-
-	// 调用服务端 SimpleRPC 并获取响应
-	reply, err := c.GetPod(ctx, in)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println(reply)
-
-	return reply, nil
-}

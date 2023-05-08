@@ -10,7 +10,7 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-func CreatePauseContainer(pod *entity.Pod) (string, error) {
+func CreatePauseContainer(pod *entity.Pod) (string, string, error) {
 	fmt.Printf("**********start create pause container***********\n")
 	// Step1 : Ensure Image
 	EnsureImage(entity.PauseImage)
@@ -45,5 +45,5 @@ func CreatePauseContainer(pod *entity.Pod) (string, error) {
 	fmt.Printf("start container %s\n", err)
 	StartContainer(body.ID)
 
-	return body.ID, err
+	return body.ID, pauseName, err
 }

@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"minik8s/entity"
+	"minik8s/tools/yamlParser"
 	"time"
 
 	docker "minik8s/pkg/kubelet/container/containerfunc"
@@ -14,21 +16,37 @@ import (
 * 3. stop the container
 * 4. remove the container
  */
-func main_1() {
-	containerName := "container1"
-	image := "nginx:latest"
-	id := docker.CreateContainer(containerName, image)
-	fmt.Printf("container %s created\n", id)
-	fmt.Printf("It will be started in 1s\n")
-	time.Sleep(time.Second * 1)
-	docker.StartContainer(id)
-	fmt.Printf("after 40s, container %s will be stopped\n", id)
-	time.Sleep(time.Second * 40)
-	docker.StopContainer(id)
-	fmt.Printf("after 3s, container %s will be removed\n", id)
-	time.Sleep(time.Second * 3)
-	id, err := docker.RemoveContainer(id)
-	if err == nil {
-		fmt.Printf("container %s is removed\n", id)
+func main() {
+	yamlPath := "./test/pod2.yaml"
+	pod := &entity.Pod{}
+	b, _ := yamlParser.ParseYaml(pod, yamlPath)
+	if !b {
+		fmt.Println("test ParseYaml error")
 	}
+	for _, container := range pod.Spec.Containers {
+		id := docker.CreateContainer(container)
+		fmt.Printf("container %s created\n", id)
+		fmt.Printf("It will be started in 1s\n")
+		time.Sleep(time.Second * 1)
+		docker.StartContainer(id)
+		fmt.Printf("after 10s, container %s will be stopped\n", id)
+		time.Sleep(time.Second * 10)
+		docker.StopContainer(id)
+		fmt.Printf("after 3s, container %s will be removed\n", id)
+		time.Sleep(time.Second * 3)
+		id, err := docker.RemoveContainer(id)
+		if err == nil {
+			fmt.Printf("container %s is removed\n", id)
+		}
+	}
+	//fmt.Printf("container %s created\n", id)
+	//fmt.Printf("It will be started in 1s\n")
+	//time.Sleep(time.Second * 1)
+	//docker.StartContainer(id)
+	//fmt.Printf("after 40s, container %s will be stopped\n", id)
+	//time.Sleep(time.Second * 40)
+	//docker.StopContainer(id)
+	//fmt.Printf("after 3s, container %s will be removed\n", id)
+	//time.Sleep(time.Second * 3)
+
 }
