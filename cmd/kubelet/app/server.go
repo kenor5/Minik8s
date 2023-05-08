@@ -8,7 +8,6 @@ import (
 	"minik8s/configs"
 	"minik8s/entity"
 	"minik8s/pkg/kubelet"
-	"minik8s/pkg/kubelet/netbridge"
 	pb "minik8s/pkg/proto"
 	"net"
 
@@ -85,20 +84,6 @@ func Run() {
 	 **/
 	kubelet.KubeletObject().RegisterNode()
 	println("[kubelet] has registered to apiserver...")
-
-	/**
-	 *    创建网桥,保证Pod全局唯一的IP分配，和Pod间通信
-	 **/
-	FlannelNetInterfaceName := "flannel.1"
-	// 获取IP地址
-	flannelIP, _ := netbridge.GetNetInterfaceIPv4Addr(FlannelNetInterfaceName)
-	// 判断flannel_bridge网桥是否存在，如果已存在，则不需要再创建；否则创建网桥
-	exist, NetBridgeId := netbridge.FindNetworkBridge()
-	if !exist {
-		NetBridgeId, _ = netbridge.CreateNetBridge(flannelIP)
-	}
-	// 存入全局变量kubelet中方便后续使用
-	kubelet.KubeletObject().SetMember(flannelIP, NetBridgeId)
 
 	/**
 	 *    Kubelet启动自己的服务端，接受来自ApiServer的消息
