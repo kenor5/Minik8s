@@ -5,7 +5,7 @@ package apiserver_for_kubectl;
 
 option go_package = "minik8s/pkg/proto";
 
-import "share.proto";
+import "proto/share.proto";
 
 service ApiServerKubectlService {
     rpc SayHello(share.HelloRequest) returns (share.HelloResponse);
