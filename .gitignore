@@ -31,3 +31,5 @@ default.etcd/*
 test/operate_simple_docker
 default*
 tools/etcdctl/default.etcd/*
+
+etcdstore

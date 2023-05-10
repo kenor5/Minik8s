@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
+
+	// "os"
+	// "strings"
 	"os/exec"
 	"time"
+
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -93,19 +96,44 @@ func Watch(client *clientv3.Client, k string) (clientv3.WatchChan, error) {
 
 func Start(dirPath string) (*clientv3.Client, error) {
 	// 获取到的是调用这个函数的文件路径，进行以下处理
-	calledPath, err := os.Getwd()
-	rootPath := calledPath[:strings.Index(calledPath, "minik8s")]
-	fmt.Println("start etcd with", rootPath+"minik8s/tools/etcdctl/etcd_start.sh")
+	// calledPath, err := os.Getwd()
+	// rootPath := calledPath[:strings.LastIndex(calledPath, "minik8s")]
 	
-	cmd := exec.Command(rootPath + "minik8s/tools/etcdctl/etcd_start.sh")
-	cmd.Dir = dirPath
-	err = cmd.Run()
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("started etcd")
-	}
 
+	cmd := exec.Command("etcdctl", "member", "list")
+	err := cmd.Run()
+	if err != nil {
+        fmt.Println("etcd not start")
+		fmt.Println("try to start etcd")
+
+			// data_dir := "/home/os/minik8s/minik8s/tools/etcdstore"
+		// listen_client_url := "http://127.0.0.1:2379"
+		advertise_client_url := "http://localhost:2379"
+		
+		args := []string {
+				// "--data-dir",
+				// data_dir,
+				// "--listen-client-urls",
+				// listen_client_url, 
+				"-advertise_client_urls",
+				advertise_client_url,
+			}
+		cmd := exec.Command("etcd", args...)
+		
+		
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err = cmd.Start()
+		if err != nil {
+			fmt.Print("etcd start error : ")
+			fmt.Println(err)
+		} else {
+			fmt.Println("started etcd")
+		}
+    }else {
+		fmt.Println("etcd already started")
+	}
+	
 	cli, err := clientv3.New(
 		clientv3.Config{
 			Endpoints:   []string{"127.0.0.1:2379"},
@@ -115,6 +143,8 @@ func Start(dirPath string) (*clientv3.Client, error) {
 	if err != nil {
 		fmt.Println("etcd connect error")
 		return nil, err
+	}else {
+		fmt.Println("connetced to etcd server")
 	}
 
 	return cli, nil

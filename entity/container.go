@@ -15,8 +15,8 @@ type Container struct {
 }
 
 type ResourceRequirements struct {
-	Limit   map[string]Quantity `json:"limit" yaml:"limit"`
-	Request map[string]Quantity `json:"request,omitempty" yaml:"request,omitempty"`
+	Limit   map[string]Quantity `json:"limits" yaml:"limits"`
+	Request map[string]Quantity `json:"requests,omitempty" yaml:"requests,omitempty"`
 }
 
 type Quantity struct {

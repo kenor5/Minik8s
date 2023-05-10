@@ -2,6 +2,7 @@ package entity
 
 // Deployment 在 Replicaset 的基础上，进一步封装workload对象
 type Deployment struct {
+	Kind	string	`json:"kind" yaml:"kind"`
 	Metadata ObjectMeta       `json:"metadata" yaml:"metadata"`
 	Spec     DeploymentSpec   `json:"spec" yaml:"spec"`
 	Status   DeploymentStatus `json:"status" yaml:"status"`
