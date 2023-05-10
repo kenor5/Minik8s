@@ -7,7 +7,7 @@ import (
 	"minik8s/tools/yamlParser"
 )
 
-var yamlPath = "./pod2.yaml"
+var yamlPath = "test/pod3.yaml"
 
 func main() {
 	// parse yaml

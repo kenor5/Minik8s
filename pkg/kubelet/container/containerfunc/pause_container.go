@@ -12,11 +12,11 @@ import (
 
 func CreatePauseContainer(pod *entity.Pod) (string, error) {
 	fmt.Printf("**********start create pause container***********\n")
-	// Step1 : Ensure Image
+	// Step1: 保证镜像存在
 	EnsureImage(entity.PauseImage)
 
-	// Step2: Populate exposed ports
-	// Because all the containers share the same network namespace with pause container
+	// Step2: 暴露Ports
+	// 因为所有容器与pause container共享相同的网络命名空间
 	fmt.Printf("Populate exposed ports\n")
 	ports := make(map[nat.Port]struct{})
 	for _, container := range pod.Spec.Containers {
@@ -25,7 +25,7 @@ func CreatePauseContainer(pod *entity.Pod) (string, error) {
 		}
 	}
 
-	// Step3 Create Container
+	// Step3: 创建pause container
 	fmt.Printf("create container\n")
 	cli, _ := client.NewClientWithOpts(
 		client.FromEnv,

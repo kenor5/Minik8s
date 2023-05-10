@@ -80,14 +80,14 @@ func Run() {
 	println("[kubelet] running...")
 
 	/**
-	*    Kubelet启动时向APIServer注册
-	**/
+	 *    Kubelet启动时向APIServer注册
+	 **/
 	kubelet.KubeletObject().RegisterNode()
 	println("[kubelet] has registered to apiserver...")
 
 	/**
 	 *    Kubelet启动自己的服务端，接受来自ApiServer的消息
-	 **/
+	**/
 	listen, err := net.Listen("tcp", configs.KubeletGrpcPort)
 	if err != nil {
 		fmt.Println(err)
