@@ -15,7 +15,8 @@ import (
 
 	"minik8s/pkg/kubelet/client"
 	"minik8s/pkg/kubelet/container/ContainerManager"
-	"minik8s/pkg/kubelet/pod/PodManager"
+
+	//"minik8s/pkg/kubelet/pod/PodManager"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,8 +26,8 @@ import (
 ************************    Kubelet主结构    *******************************
 ***************************************************************************/
 type Kubelet struct {
-	connToApiServer  pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
-	podManger        *PodManager.Manager
+	connToApiServer pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
+	//podManger        *PodManager.Manager
 	containerManager *ContainerManager.ContainerManager
 }
 
@@ -46,6 +47,7 @@ func KubeletObject() *Kubelet {
 	if kubelet == nil {
 		kubelet = newKubelet()
 	}
+
 	return kubelet
 }
 
@@ -78,10 +80,10 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 	return nil
 }
 
-//func (kl *Kubelet) GetPods() ([]*entity.Pod, error) {
-//	//pm := kl.podManger.GetPods()
-//	//return pm, nil
-//}
+// func (kl *Kubelet) GetPods() ([]*entity.Pod, error) {
+// 	pm := kl.podManger.GetPods()
+// 	return pm, nil
+// }
 
 func (kl *Kubelet) AddPod(pod *entity.Pod) error {
 	//更新元数据
@@ -97,10 +99,10 @@ func (kl *Kubelet) AddPod(pod *entity.Pod) error {
 	return nil
 }
 
-//func (kl *Kubelet) GetPodByName(namespace string, name string) (*entity.Pod, bool) {
-//	pm, ok := kl.podManger.GetPodByName(namespace, name)
-//	return pm, ok
-//}
+// func (kl *Kubelet) GetPodByName(namespace string, name string) (*entity.Pod, bool) {
+// 	pm, ok := kl.podManger.GetPodByName(namespace, name)
+// 	return pm, ok
+// }
 
 func (kl *Kubelet) RegisterNode() error {
 	registerNodeRequest := &pb.RegisterNodeRequest{
