@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	// "os"
-	// "strings"
+	"strings"
 	"os/exec"
 	"time"
 
@@ -96,42 +95,16 @@ func Watch(client *clientv3.Client, k string) (clientv3.WatchChan, error) {
 
 func Start(dirPath string) (*clientv3.Client, error) {
 	// 获取到的是调用这个函数的文件路径，进行以下处理
-	// calledPath, err := os.Getwd()
-	// rootPath := calledPath[:strings.LastIndex(calledPath, "minik8s")]
+	calledPath, err := os.Getwd()
+	rootPath := calledPath[:strings.LastIndex(calledPath, "minik8s")]
+	scriptPath := rootPath + "minik8s/tools/etcdctl/etcd_start.sh"
 	
-
-	cmd := exec.Command("etcdctl", "member", "list")
-	err := cmd.Run()
+	cmd := exec.Command("sh", scriptPath)
+	err = cmd.Run()
 	if err != nil {
-        fmt.Println("etcd not start")
-		fmt.Println("try to start etcd")
-
-			// data_dir := "/home/os/minik8s/minik8s/tools/etcdstore"
-		// listen_client_url := "http://127.0.0.1:2379"
-		advertise_client_url := "http://localhost:2379"
-		
-		args := []string {
-				// "--data-dir",
-				// data_dir,
-				// "--listen-client-urls",
-				// listen_client_url, 
-				"-advertise_client_urls",
-				advertise_client_url,
-			}
-		cmd := exec.Command("etcd", args...)
-		
-		
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Start()
-		if err != nil {
-			fmt.Print("etcd start error : ")
-			fmt.Println(err)
-		} else {
-			fmt.Println("started etcd")
-		}
+        fmt.Println("try to start etcd using", scriptPath)
     }else {
-		fmt.Println("etcd already started")
+		fmt.Println("if ", err, "is eq nil, just ignore it, or this may be an error")
 	}
 	
 	cli, err := clientv3.New(

@@ -16,7 +16,7 @@ type Manager interface {
 	GetPodByFullName(podFullName string) (*entity.Pod, bool)
 	// GetPodByName provides the (non-mirror) pod that matches namespace and
 	// name, as well as whether the pod was found.
-	GetPodByName(namespace, name string) (*entity.Pod, bool)
+	GetPodByName(namespace string, name string) (*entity.Pod, bool)
 	// GetPodByUID provides the (non-mirror) pod that matches pod UID, as well as
 	// whether the pod is found.
 	GetPodByUID(string) (*entity.Pod, bool)
@@ -55,6 +55,9 @@ func NewBasicPodManager() Manager {
 	pm.podByFullName = map[string]*entity.Pod{}
 
 	return pm
+}
+func NewPodManager() Manager {
+	return NewBasicPodManager()
 }
 
 func (pm *basicManager) AddPod(pod *entity.Pod) {

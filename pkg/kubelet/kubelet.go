@@ -15,7 +15,8 @@ import (
 
 	"minik8s/pkg/kubelet/client"
 	"minik8s/pkg/kubelet/container/ContainerManager"
-	"minik8s/pkg/kubelet/pod/PodManager"
+
+	//"minik8s/pkg/kubelet/pod/PodManager"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,10 +26,8 @@ import (
 ************************    Kubelet主结构    *******************************
 ***************************************************************************/
 type Kubelet struct {
-	connToApiServer  pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
-	flannelIP        string                           // flannel分给此节点的网段（为10.0.1.0/24到10.0.20.0/24之间20个子网中的一个）
-	flannelBridgeID  string                           // 创建容器所使用的网桥(flannel_bridge)的ID
-	podManger        *PodManager.Manager
+	connToApiServer pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
+	//podManger        *PodManager.Manager
 	containerManager *ContainerManager.ContainerManager
 }
 
@@ -48,18 +47,13 @@ func KubeletObject() *Kubelet {
 	if kubelet == nil {
 		kubelet = newKubelet()
 	}
-	return kubelet
-}
 
-// 给kubelet成员变量赋值，后面有需要可能会增加参数给更多的成员变量赋值
-func (kl *Kubelet) SetMember(flannelIP string, flannelBridgeID string) {
-	kl.flannelIP = flannelIP
-	kl.flannelBridgeID = flannelBridgeID
+	return kubelet
 }
 
 func (kl *Kubelet) CreatePod(pod *entity.Pod) error {
 	// 实际创建Pod,IP等信息在这里更新进Pod.Status中
-	ContainerIds, err := podfunc.CreatePod(pod, kl.flannelBridgeID)
+	ContainerIds, err := podfunc.CreatePod(pod)
 	if err != nil {
 		return err
 	}
@@ -79,16 +73,36 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 
 	// 实际停止并删除Pod中的所有容器
 	podfunc.DeletePod(containerIds)
-
+	//kl.podManger.DeletePod(pod)
 	// 更新Pod的状态
 	pod.Status.Phase = entity.Succeed
 	client.UpdatePodStatus(kubelet.connToApiServer, pod)
 	return nil
 }
 
-func (kl *Kubelet) GetPods() ([]*entity.Pod, error) {
-	return nil, nil
+// func (kl *Kubelet) GetPods() ([]*entity.Pod, error) {
+// 	pm := kl.podManger.GetPods()
+// 	return pm, nil
+// }
+
+func (kl *Kubelet) AddPod(pod *entity.Pod) error {
+	//更新元数据
+	//kl.podManger.AddPod(pod)
+	pod.Status.Phase = entity.Running
+
+	//启动沙箱容器和pod.spec.containers中的容器
+	if _, err := podfunc.CreatePod(pod); err != nil {
+		pod.Status.Phase = entity.Failed
+		return err
+	}
+
+	return nil
 }
+
+// func (kl *Kubelet) GetPodByName(namespace string, name string) (*entity.Pod, bool) {
+// 	pm, ok := kl.podManger.GetPodByName(namespace, name)
+// 	return pm, ok
+// }
 
 func (kl *Kubelet) RegisterNode() error {
 	registerNodeRequest := &pb.RegisterNodeRequest{

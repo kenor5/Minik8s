@@ -16,6 +16,7 @@ import (
 	"minik8s/pkg/apiserver"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
+
 	"google.golang.org/grpc"
 )
 
@@ -64,13 +65,16 @@ func (s *server) DeletePod(ctx context.Context, in *pb.DeletePodRequest) (*pb.St
 		fmt.Println("connect to etcd error")
 	}
 	out, err:= etcdctl.Get(cli, "Pod/"+string(in.Data))
-	// fmt.Println(out.Kvs[0].Value)
-	// pod := &entity.Pod{}
-	// err = json.Unmarshal(out.Kvs[0].Value, pod)
-	// if err != nil {
-	// 	fmt.Println("pod unmarshal error")
-	// }
-	// fmt.Println("get etcd", pod)
+
+	if len(out.Kvs) == 0 {
+		return apiserver.ApiServerObject().DeletePod(&pb.DeletePodRequest{
+			Data : nil,
+		})
+	}else {
+		return apiserver.ApiServerObject().DeletePod(&pb.DeletePodRequest{
+			Data : out.Kvs[0].Value,
+		})
+	}
 
 	return apiserver.ApiServerObject().DeletePod(&pb.DeletePodRequest{
 		Data : out.Kvs[0].Value,
@@ -84,15 +88,11 @@ func (s *server) GetPod(ctx context.Context, in *pb.GetPodRequest) (*pb.GetPodRe
 		fmt.Println("connect to etcd error")
 	}
 	out, err:= etcdctl.Get(cli, "Pod/"+string(in.PodName))
-	//fmt.Println(out.Kvs[0].Value)
-	// pod := &entity.Pod{}
-	// err = json.Unmarshal(out.Kvs[0].Value, pod)
-	// if err != nil {
-	// 	fmt.Println("pod unmarshal error")
-	// }
-	// fmt.Println("get etcd", pod)	
-	
-	return &pb.GetPodResponse{PodData: out.Kvs[0].Value}, nil
+	if len(out.Kvs) == 0 {
+		return &pb.GetPodResponse{PodData: nil}, nil
+	}else {
+		return &pb.GetPodResponse{PodData: out.Kvs[0].Value}, nil
+	}
 }
 
 // 客户端为Kubelet
@@ -123,6 +123,44 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 	fmt.Println("put etcd", in.Data)
 	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
 	return &pb.StatusResponse{Status: 0}, err
+}
+
+// Service
+func (s *server)GetService(ctx context.Context, in *pb.GetServiceRequest) (*pb.GetServiceResponse, error) {
+//TODO
+	return &pb.GetServiceResponse{Data: nil}, nil
+}
+
+func (s *server)DeleteService(ctx context.Context, in *pb.DeleteServiceRequest) (*pb.StatusResponse, error) {
+	//TODO
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (s *server)ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (*pb.StatusResponse, error) {
+	service := &entity.Service{}
+	err := json.Unmarshal(in.Data, service)
+	if err != nil {
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+// Deployment
+func (s *server)GetDeployment(ctx context.Context, in *pb.GetDeploymentRequest) (*pb.GetDeploymentResponse, error) {
+	//TODO
+	return &pb.GetDeploymentResponse{Data: nil}, nil
+}
+
+func (s *server)DeleteDeployment(ctx context.Context, in *pb.DeleteDeploymentRequest) (*pb.StatusResponse, error) {
+	//TODO
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (s *server)ApplyDeployment(ctx context.Context, in *pb.ApplyDeploymentRequest) (*pb.StatusResponse, error) {
+	//TODO
+	return &pb.StatusResponse{Status: 0}, nil
 }
 
 func Run() {

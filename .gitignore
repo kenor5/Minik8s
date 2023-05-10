@@ -33,3 +33,5 @@ default*
 tools/etcdctl/default.etcd/*
 
 etcdstore
+/pkg/proto/*
+/build/go_build_minik8s_test_create_pod

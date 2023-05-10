@@ -5,11 +5,20 @@ package apiserver_for_kubectl;
 
 option go_package = "minik8s/pkg/proto";
 
-import "share.proto";
+import "proto/share.proto";
 
 service ApiServerKubectlService {
     rpc SayHello(share.HelloRequest) returns (share.HelloResponse);
+
     rpc ApplyPod(share.ApplyPodRequest) returns (share.StatusResponse);
     rpc DeletePod(share.DeletePodRequest) returns (share.StatusResponse);
     rpc GetPod(share.GetPodRequest) returns (share.GetPodResponse);
+
+    rpc ApplyDeployment(share.ApplyDeploymentRequest) returns (share.StatusResponse);
+    rpc GetDeployment(share.GetDeploymentRequest) returns (share.GetDeploymentResponse);
+    rpc DeleteDeployment(share.DeleteDeploymentRequest) returns (share.StatusResponse);
+
+    rpc ApplyService(share.ApplyServiceRequest) returns (share.StatusResponse);
+    rpc GetService(share.GetServiceRequest) returns (share.GetServiceResponse);
+    rpc DeleteService(share.DeleteServiceRequest) returns (share.StatusResponse);
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"minik8s/entity"
 	"os"
 
 	"github.com/docker/docker/api/types"
@@ -16,20 +17,24 @@ import (
 * if image dosen't exit, the function will try to pull it first
 * return the new container's containerID
  */
-func CreateContainer(containerName string, image string) string {
+func CreateContainer(Container entity.Container) string {
 
 	cli, _ := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
 	)
 	defer cli.Close()
-
+	image := Container.Image
+	containerName := Container.Name
 	error := EnsureImage(image)
 	if error != nil {
 		panic(error)
 	}
 
-	config := &container.Config{Image: image}
+	config := &container.Config{
+		Image: image,
+		Cmd:   Container.Command,
+	}
 
 	body, err := cli.ContainerCreate(context.Background(), config, &container.HostConfig{}, nil, nil, containerName)
 

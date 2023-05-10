@@ -6,12 +6,11 @@ import (
 	"minik8s/entity"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
 
-func CreatePauseContainer(pod *entity.Pod, NetBridgeID string) (string, error) {
+func CreatePauseContainer(pod *entity.Pod) (string, string, error) {
 	fmt.Printf("**********start create pause container***********\n")
 	// Step1: 保证镜像存在
 	EnsureImage(entity.PauseImage)
@@ -34,17 +33,6 @@ func CreatePauseContainer(pod *entity.Pod, NetBridgeID string) (string, error) {
 	)
 	defer cli.Close()
 
-	// 加入网络配置，使用Flannel网桥，保证IP分配
-	endpointConfig := &network.EndpointSettings{
-		NetworkID: NetBridgeID,
-	}
-	// "flannel_bridge"为网桥名称
-	networkconfig := &network.NetworkingConfig{
-		EndpointsConfig: map[string]*network.EndpointSettings{
-			"flannel_bridge": endpointConfig,
-		},
-	}
-
 	pauseName := pod.Metadata.Name + "_" + "pauseContainer"
 
 	body, err := cli.ContainerCreate(context.Background(), &container.Config{
@@ -52,10 +40,10 @@ func CreatePauseContainer(pod *entity.Pod, NetBridgeID string) (string, error) {
 		ExposedPorts: ports,
 	}, &container.HostConfig{
 		IpcMode: "shareable",
-	}, networkconfig, nil, pauseName)
+	}, nil, nil, pauseName)
 
 	fmt.Printf("start container %s\n", err)
 	StartContainer(body.ID)
 
-	return body.ID, err
+	return body.ID, pauseName, err
 }
