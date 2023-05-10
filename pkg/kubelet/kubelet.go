@@ -25,8 +25,8 @@ import (
 ************************    Kubelet主结构    *******************************
 ***************************************************************************/
 type Kubelet struct {
-	connToApiServer  pb.ApiServerKubeletServiceClient
-	podManger        PodManager.Manager
+	connToApiServer  pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
+	podManger        *PodManager.Manager
 	containerManager *ContainerManager.ContainerManager
 }
 

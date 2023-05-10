@@ -95,9 +95,9 @@ func ImageExist(targetImage string) (bool, error) {
 	}
 
 	for _, image := range images {
-		fmt.Println(image)
+		// fmt.Println(image)
 		for _, tag := range image.RepoTags {
-			fmt.Printf("tag %s\n", tag)
+			// fmt.Printf("tag %s\n", tag)
 			if tag == targetImage {
 				fmt.Printf("-----have found the image-----\n")
 				return true, nil
