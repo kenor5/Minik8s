@@ -15,7 +15,8 @@ import (
 
 	"minik8s/pkg/kubelet/client"
 	"minik8s/pkg/kubelet/container/ContainerManager"
-	"minik8s/pkg/kubelet/pod/PodManager"
+
+	//"minik8s/pkg/kubelet/pod/PodManager"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,8 +26,8 @@ import (
 ************************    Kubelet主结构    *******************************
 ***************************************************************************/
 type Kubelet struct {
-	connToApiServer  pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
-	podManger        *PodManager.Manager
+	connToApiServer pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
+	//podManger        *PodManager.Manager
 	containerManager *ContainerManager.ContainerManager
 }
 
@@ -46,6 +47,7 @@ func KubeletObject() *Kubelet {
 	if kubelet == nil {
 		kubelet = newKubelet()
 	}
+
 	return kubelet
 }
 
@@ -71,16 +73,36 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 
 	// 实际停止并删除Pod中的所有容器
 	podfunc.DeletePod(containerIds)
-
+	//kl.podManger.DeletePod(pod)
 	// 更新Pod的状态
 	pod.Status.Phase = entity.Succeed
 	client.UpdatePodStatus(kubelet.connToApiServer, pod)
 	return nil
 }
 
-func (kl *Kubelet) GetPods() ([]*entity.Pod, error) {
-	return nil, nil
+// func (kl *Kubelet) GetPods() ([]*entity.Pod, error) {
+// 	pm := kl.podManger.GetPods()
+// 	return pm, nil
+// }
+
+func (kl *Kubelet) AddPod(pod *entity.Pod) error {
+	//更新元数据
+	//kl.podManger.AddPod(pod)
+	pod.Status.Phase = entity.Running
+
+	//启动沙箱容器和pod.spec.containers中的容器
+	if _, err := podfunc.CreatePod(pod); err != nil {
+		pod.Status.Phase = entity.Failed
+		return err
+	}
+
+	return nil
 }
+
+// func (kl *Kubelet) GetPodByName(namespace string, name string) (*entity.Pod, bool) {
+// 	pm, ok := kl.podManger.GetPodByName(namespace, name)
+// 	return pm, ok
+// }
 
 func (kl *Kubelet) RegisterNode() error {
 	registerNodeRequest := &pb.RegisterNodeRequest{
