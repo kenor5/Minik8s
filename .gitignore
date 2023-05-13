@@ -31,6 +31,8 @@ default.etcd/*
 test/operate_simple_docker
 default*
 tools/etcdctl/default.etcd/*
+
+etcdstore
 /pkg/proto/*
 /build/go_build_minik8s_test_create_pod
 /build/go_build_kubelet_go

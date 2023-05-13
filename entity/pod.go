@@ -11,6 +11,7 @@ const (
 
 
 type Pod struct {
+	Kind	string	`json:"kind" yaml:"kind"`
 	Metadata ObjectMeta `json:"metadata" yaml:"metadata"`
 	Spec     PodSpec    `json:"spec" yaml:"spec"`
 	Status   PodStatus  `json:"status,omitempty" yaml:"status,omitempty"`

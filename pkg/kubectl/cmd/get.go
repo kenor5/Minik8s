@@ -28,19 +28,15 @@ func doGet(cmd *cobra.Command, args []string) {
 	}
 	name := args[1]
 	switch args[0] {
-	case "po":
-	case "pod":
-	case "pods":
+	case "po","pod","pods":
 		getPod(name)
-	case "node":
-	case "nodes":
+	case "node","nodes":
 		getNode(name)
 	case "service":
 		getService(name)
 	case "function":
 		getFunction(name)
-	case "deployment":
-	case "deploy":
+	case "deployment","deploy":
 		getDeployment(name)
 	}
 }
