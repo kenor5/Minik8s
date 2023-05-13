@@ -34,3 +34,4 @@ tools/etcdctl/default.etcd/*
 /pkg/proto/*
 /build/go_build_minik8s_test_create_pod
 /build/go_build_kubelet_go
+/build/go_build_create_deployment_go
