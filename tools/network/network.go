@@ -1,4 +1,4 @@
-package netbridge
+package network
 
 import (
 	"fmt"

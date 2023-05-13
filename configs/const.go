@@ -3,7 +3,7 @@ package configs
 
 const (
 	EtcdStartPath = "/usr/local/bin"
-	ApiServerUrl = "127.0.0.1"
+	ApiServerUrl = "192.168.163.132"
 
 	GrpcPort = ":5678"
 	KubeletGrpcPort = ":5679"

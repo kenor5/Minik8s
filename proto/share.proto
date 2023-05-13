@@ -35,7 +35,8 @@ message StatusResponse {
 
 message RegisterNodeRequest{
     string NodeName = 1;
-    string kubelet_url = 2;
+    string NodeIp = 2;
+    string kubelet_url = 3;
 }
 
 message UpdatePodStatusRequest {

@@ -10,15 +10,18 @@ import (
 	"minik8s/configs"
 	"minik8s/entity"
 	"minik8s/pkg/kubelet/pod/podfunc"
+	"os"
 
 	pb "minik8s/pkg/proto"
 	// "net"
 
 	"minik8s/pkg/kubelet/client"
 	"minik8s/pkg/kubelet/container/ContainerManager"
+	"minik8s/tools/network"
 
 	//"minik8s/pkg/kubelet/pod/PodManager"
 
+	// "github.com/docker/docker/libnetwork/drivers/host"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -27,6 +30,8 @@ import (
 ************************    Kubelet主结构    *******************************
 ***************************************************************************/
 type Kubelet struct {
+	hostName string
+	hostIp string
 	connToApiServer pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
 	//podManger        *PodManager.Manager
 	containerManager *ContainerManager.ContainerManager
@@ -35,12 +40,20 @@ type Kubelet struct {
 var kubelet *Kubelet
 
 // newKubelet creates a new Kubelet object.
-func newKubelet() *Kubelet {
+func newKubelet() *Kubelet {    
 	newKubelet := &Kubelet{
 		containerManager: ContainerManager.NewContainerManager(),
 	}
-	apiserver_url := "127.0.0.1" + configs.GrpcPort
+	apiserver_url := configs.ApiServerUrl + configs.GrpcPort
 	newKubelet.connToApiServer, _ = ConnectToApiServer(apiserver_url)
+	// 获取主机名和主机IP
+	hostname, _ := os.Hostname()
+	newKubelet.hostName = hostname
+    IP, err :=network.GetNetInterfaceIPv4Addr("ens33")
+    if err != nil {
+		panic("fail to get hostIP!")
+	}
+	newKubelet.hostIp = IP
 	return newKubelet
 }
 
@@ -48,12 +61,14 @@ func KubeletObject() *Kubelet {
 	if kubelet == nil {
 		kubelet = newKubelet()
 	}
-
 	return kubelet
 }
 
+
 func (kl *Kubelet) CreatePod(pod *entity.Pod) error {
 	// 实际创建Pod,IP等信息在这里更新进Pod.Status中
+	pod.Status.HostIp = kl.hostIp
+	pod.Spec.NodeName = kl.hostName
 	ContainerIds, err := podfunc.CreatePod(pod)
 	if err != nil {
 		return err
@@ -107,11 +122,11 @@ func (kl *Kubelet) AddPod(pod *entity.Pod) error {
 // }
 
 func (kl *Kubelet) RegisterNode() error {
-	registerNodeRequest := &pb.RegisterNodeRequest{
-		NodeName:   "node1",
-		KubeletUrl: "127.0.0.1" + configs.KubeletGrpcPort,
-	}
-	client.RegisterNode(kubelet.connToApiServer, registerNodeRequest)
+	// registerNodeRequest := &pb.RegisterNodeRequest{
+	// 	NodeName:   kl.hostName,
+	// 	KubeletUrl: kl.hostIp + configs.KubeletGrpcPort,
+	// }
+	client.RegisterNode(kl.connToApiServer, kl.hostName, kl.hostIp)
 	return nil
 }
 
