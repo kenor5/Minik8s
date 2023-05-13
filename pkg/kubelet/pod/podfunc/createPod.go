@@ -100,8 +100,6 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 	containerIP := containerJSON.NetworkSettings.IPAddress
 	pod.Status.PodIp = containerIP
 	pod.Status.Phase = entity.Running
-	// TODO:给Kubelet分配真正的IP
-	pod.Status.HostIp = "127.0.0.1"
 
 	fmt.Printf("Create Pod success! Pod IP: %s\n", containerIP)
 	return ContainerIDMap, nil
