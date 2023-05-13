@@ -76,3 +76,12 @@ message DeleteServiceRequest{
 message GetServiceResponse{
     bytes data = 1;
 }
+
+// Node
+message GetNodeRequest{
+    string NodeName = 1;
+}
+
+message GetNodeResponse{
+    bytes NodeData = 1;
+}

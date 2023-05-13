@@ -60,7 +60,21 @@ func getPod(name string) {
 }
 
 func getNode(name string) {
-
+	// 通过 rpc 连接 apiserver
+	cli := NewClient()
+    if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	res, err := cli.GetNode(ctx, &pb.GetNodeRequest{
+		NodeName: name,
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Get Node, response ", res)
 }
 
 func getDeployment(name string) {

@@ -93,14 +93,28 @@ func (s *server) GetPod(ctx context.Context, in *pb.GetPodRequest) (*pb.GetPodRe
 	}
 }
 
+func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNodeResponse, error) {
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		fmt.Println("connect to etcd error")
+	}
+	out, _ := etcdctl.Get(cli, "Node/"+string(in.NodeName))
+	fmt.Println(out.Kvs)
+	if len(out.Kvs) == 0 {
+		return &pb.GetNodeResponse{NodeData: nil}, nil
+	} else {
+		return &pb.GetNodeResponse{NodeData: out.Kvs[0].Value}, nil
+	}
+}
+
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
-    newNode := &entity.Node{}
+	newNode := &entity.Node{}
 	newNode.Ip = in.NodeIp
 	newNode.Name = in.NodeName
 	newNode.KubeletUrl = in.KubeletUrl
-    newNode.Status = entity.NodeLive
-    apiserver.ApiServerObject().NodeManager.RegiseterNode(newNode)
+	newNode.Status = entity.NodeLive
+	apiserver.ApiServerObject().NodeManager.RegiseterNode(newNode)
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
