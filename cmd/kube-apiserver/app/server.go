@@ -40,7 +40,7 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 	return &pb.HelloResponse{Reply: "Hello " + in.Name}, nil
 }
 
-// 客户端为Kubectl
+// ApplyPod 客户端为Kubectl
 func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.StatusResponse, error) {
 
 	pod := &entity.Pod{}
@@ -51,6 +51,7 @@ func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Stat
 	}
 
 	cli, err := etcdctl.NewClient()
+	defer cli.Close()
 	if err != nil {
 		fmt.Println("etcd client connetc error")
 	}
@@ -79,7 +80,7 @@ func (s *server) DeletePod(ctx context.Context, in *pb.DeletePodRequest) (*pb.St
 	}
 }
 
-// TODO: get pods后不跟PodName返回所有的Pod
+// GetPod TODO: get pods后不跟PodName返回所有的Pod
 func (s *server) GetPod(ctx context.Context, in *pb.GetPodRequest) (*pb.GetPodResponse, error) {
 	cli, err := etcdctl.NewClient()
 	if err != nil {
@@ -93,7 +94,7 @@ func (s *server) GetPod(ctx context.Context, in *pb.GetPodRequest) (*pb.GetPodRe
 	}
 }
 
-// 客户端为Kubelet
+// RegisterNode 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
 
 	cli, err := etcdctl.NewClient()
@@ -123,7 +124,7 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 	return &pb.StatusResponse{Status: 0}, err
 }
 
-// Service
+// GetService Service
 func (s *server) GetService(ctx context.Context, in *pb.GetServiceRequest) (*pb.GetServiceResponse, error) {
 	//TODO
 	return &pb.GetServiceResponse{Data: nil}, nil

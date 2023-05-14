@@ -9,6 +9,7 @@ import (
 	"log"
 	"minik8s/configs"
 	"minik8s/entity"
+	"minik8s/pkg/kubelet/pod/PodManager"
 	"minik8s/pkg/kubelet/pod/podfunc"
 
 	pb "minik8s/pkg/proto"
@@ -27,8 +28,8 @@ import (
 ************************    Kubelet主结构    *******************************
 ***************************************************************************/
 type Kubelet struct {
-	connToApiServer pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
-	//podManger        *PodManager.Manager
+	connToApiServer  pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
+	podManger        *PodManager.Manager              //存储在内存中的pod信息
 	containerManager *ContainerManager.ContainerManager
 }
 
@@ -72,7 +73,7 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 	containerIds := kubelet.containerManager.GetContainerIDsByPodName(pod.Metadata.Name)
 	kubelet.containerManager.DeletePodNameToContainerIds(pod.Metadata.Name)
 
-	fmt.Printf("containerIds: %s\n",containerIds)
+	fmt.Printf("containerIds: %s\n", containerIds)
 	// 实际停止并删除Pod中的所有容器
 	podfunc.DeletePod(containerIds)
 	//kl.podManger.DeletePod(pod)

@@ -104,5 +104,6 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 	pod.Status.HostIp = "127.0.0.1"
 
 	fmt.Printf("Create Pod success! Pod IP: %s\n", containerIP)
+
 	return ContainerIDMap, nil
 }
