@@ -84,6 +84,7 @@ func Run() {
 	 **/
 	kubelet.KubeletObject().RegisterNode()
 	println("[kubelet] has registered to apiserver...")
+	//go kubelet.KubeletObject().
 
 	/**
 	 *    Kubelet启动自己的服务端，接受来自ApiServer的消息
@@ -92,7 +93,8 @@ func Run() {
 	if err != nil {
 		fmt.Println(err)
 	}
-
+	//Kubelet启动监控检查本地的Pod运行状态
+	//go kubelet.KubeletObject().beginMonitor()
 	// 创建gRPC服务器
 	svr := grpc.NewServer()
 	// 将实现的接口注册进 gRPC 服务器

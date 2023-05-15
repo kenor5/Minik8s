@@ -1,12 +1,16 @@
 package apiserver
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"minik8s/configs"
+	"minik8s/entity"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	Controller "minik8s/pkg/apiserver/ControllerManager"
 	"minik8s/pkg/apiserver/client"
 	pb "minik8s/pkg/proto"
 )
@@ -54,6 +58,30 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 	}
 
 	return &pb.StatusResponse{Status: 0}, err
+}
+
+// TODO 修改Controller的使用逻辑？？？
+func (master *ApiServer) AddDeployment(deployment *entity.Deployment) {
+	//写入etcd元数据
+	podList, err := Controller.ApplyDeployment(deployment)
+	if err != nil {
+		return
+	}
+	//依次创建deployment 中的pod
+	for _, pod := range podList {
+		podByte, err := json.Marshal(pod)
+		if err != nil {
+			fmt.Println("parse pod error")
+			return
+		}
+		err = client.KubeletCreatePod(apiServer.conn,
+			&pb.ApplyPodRequest{
+				Data: podByte,
+			})
+		if err != nil {
+			return
+		}
+	}
 }
 
 // TODO: 修改连接逻辑，正确的逻辑应该是Kubelet注册后，ApiServer获取了Kubelet的url，由此建立连接

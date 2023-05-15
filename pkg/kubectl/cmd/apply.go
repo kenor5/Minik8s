@@ -59,7 +59,6 @@ func doApply(cmd *cobra.Command, args []string) {
 	if len(dirname) == 0 {
 		dirname = "."
 	}
-	
 
 	filenameWithoutExtention = strings.Split(arr[len(arr)-1], ".")[0]
 
@@ -77,11 +76,11 @@ func doApply(cmd *cobra.Command, args []string) {
 			fmt.Println(err)
 		}
 
-
 	case "Deployment", "deployment":
-		applyDeployment(filename)
+		err := applyDeployment(filename)
 		if err != nil {
 			fmt.Println(err)
+			return
 		}
 
 	case "Service", "service":
@@ -92,51 +91,50 @@ func doApply(cmd *cobra.Command, args []string) {
 
 	case "Node", "node":
 	// TODO
-	
+
 	default:
 		fmt.Println("there is no object named ")
 	}
 }
 
-
 func applyPod(filename string) error {
-			// 先 parse yaml 文件
-			pod := &entity.Pod{}
-			_, err := yamlParser.ParseYaml(pod, filename)
-			if err != nil {
-				fmt.Println("parse pod failed")
-				return err
-			}
-			fmt.Println(pod)
-	
-			// 通过 rpc 连接 apiserver
-			cli := NewClient()
-			if cli == nil {
-				return fmt.Errorf("fail to connect to apiserver")
-			}
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-	
-			// 把 pod 序列化成 string 传给 apiserver
-			podByte, err := json.Marshal(pod)
-			if err != nil {
-				fmt.Println("parse pod error")
-				return err
-			}
-	
-			res, err := cli.ApplyPod(ctx, &pb.ApplyPodRequest{
-				Data: podByte,
-			})
-	
-			fmt.Println("Create Pod, response ", res)
-			return nil
+	// 先 parse yaml 文件
+	pod := &entity.Pod{}
+	_, err := yamlParser.ParseYaml(pod, filename)
+	if err != nil {
+		fmt.Println("parse pod failed")
+		return err
+	}
+	fmt.Println(pod)
+
+	// 通过 rpc 连接 apiserver
+	cli := NewClient()
+	if cli == nil {
+		return fmt.Errorf("fail to connect to apiserver")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 把 pod 序列化成 string 传给 apiserver
+	podByte, err := json.Marshal(pod)
+	if err != nil {
+		fmt.Println("parse pod error")
+		return err
+	}
+
+	res, err := cli.ApplyPod(ctx, &pb.ApplyPodRequest{
+		Data: podByte,
+	})
+
+	fmt.Println("Create Pod, response ", res)
+	return nil
 }
 
 func applyDeployment(filename string) error {
-	deploy := &entity.Deployment{}
-	_, err := yamlParser.ParseYaml(deploy, filename)
+	deployment := &entity.Deployment{}
+	_, err := yamlParser.ParseYaml(deployment, filename)
 	if err != nil {
-		fmt.Println("parse deploy failed")
+		fmt.Println("parse deployment failed")
 		return err
 	}
 
@@ -147,20 +145,20 @@ func applyDeployment(filename string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// 把 pod 序列化成 string 传给 apiserver
-	podByte, err := json.Marshal(deploy)
+	// 把 deployment 序列化成 string 传给 apiserver
+	deploymentByte, err := json.Marshal(deployment)
 	if err != nil {
-		fmt.Println("parse deploy error")
+		fmt.Println("parse deployment error")
 		return err
 	}
 
 	res, err := cli.ApplyDeployment(ctx, &pb.ApplyDeploymentRequest{
-		Data: podByte,
+		Data: deploymentByte,
 	})
 
 	fmt.Println("Create Deployment, response ", res)
 	return nil
-}	
+}
 
 func applyService(filename string) error {
 	service := &entity.Service{}
@@ -190,4 +188,4 @@ func applyService(filename string) error {
 
 	fmt.Println("Create Service, response ", res)
 	return nil
-}	
+}

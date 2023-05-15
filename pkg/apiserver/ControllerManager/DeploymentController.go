@@ -14,12 +14,12 @@ import (
 )
 
 // ApplyDeployment 将对应的pod抽象和deployment抽象写入etcd
-func ApplyDeployment(deployment *entity.Deployment) error {
+func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 	Replicas := 0
 	Replicas = int(deployment.Spec.Replicas)
 	if Replicas == 0 {
 		fmt.Println("[yaml ERROR]Replicas==0")
-		return nil
+		return nil, nil
 	}
 	//根据template获得template hash
 	templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name + strconv.Itoa(int(deployment.Spec.Replicas))))))
@@ -69,20 +69,22 @@ func ApplyDeployment(deployment *entity.Deployment) error {
 	err = etcdctl.Put(cli, "Deployment/"+deployment.Metadata.Name, string(DeploymentData))
 	if err != nil {
 		fmt.Println("write DeploymentYaml to etcd error!")
-		return err
+		return nil, err
 	}
 	//pod信息写入etcd
+	podsList := []*entity.Pod{}
 	for _, pod := range Pods {
+		podsList = append(podsList, pod)
 		PodData, err := json.Marshal(pod)
 		err = etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(PodData))
 		if err != nil {
 			fmt.Println("write PodData to etcd error!")
-			return err
+			return nil, err
 		}
 	}
 	//写入成功
 	fmt.Println("*************write deployment success!************")
-	return err
+	return podsList, err
 }
 
 // DeleteDeployment kubectl调用后删除etcd中的deployment信息

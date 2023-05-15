@@ -169,7 +169,14 @@ func (s *server) DeleteDeployment(ctx context.Context, in *pb.DeleteDeploymentRe
 }
 
 func (s *server) ApplyDeployment(ctx context.Context, in *pb.ApplyDeploymentRequest) (*pb.StatusResponse, error) {
-	//TODO
+	//TODO 调用DeploymentController 创建deployment
+	deployment := &entity.Deployment{}
+	err := json.Unmarshal(in.Data, deployment)
+	if err != nil {
+		fmt.Print("[ApiServer]ApplyDeployment Unmarshal error!\n")
+		return nil, err
+	}
+
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
