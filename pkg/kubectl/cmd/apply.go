@@ -156,7 +156,7 @@ func applyDeployment(filename string) error {
 		Data: deploymentByte,
 	})
 
-	fmt.Println("Create Deployment, response ", res)
+	fmt.Printf("Create Deployment, response %v,error %v\n", res, err)
 	return nil
 }
 

@@ -47,6 +47,7 @@ var kubelet *Kubelet
 // newKubelet creates a new Kubelet object.
 func newKubelet() *Kubelet {
 	newKubelet := &Kubelet{
+		lock:             &sync.RWMutex{},
 		podManger:        PodManager.NewPodManager(),
 		containerManager: ContainerManager.NewContainerManager(),
 	}
@@ -65,8 +66,8 @@ func KubeletObject() *Kubelet {
 }
 
 func (kl *Kubelet) CreatePod(pod *entity.Pod) error {
-	kl.lock.Lock()
-	defer kl.lock.Unlock()
+	//kl.lock.Lock()
+	//defer kl.lock.Unlock()
 	// 实际创建Pod,IP等信息在这里更新进Pod.Status中
 	ContainerIds, err := podfunc.CreatePod(pod)
 	if err != nil {

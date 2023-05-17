@@ -28,6 +28,7 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 	for i := 0; i < Replicas; i++ {
 		//创建replicas份Pod
 		pod := &entity.Pod{}
+		pod.Kind = "Pod"
 		pod.Metadata = deployment.Spec.Template.Metadata
 		pod.Metadata.Uid = UUID.UUID()
 		//组合产生Deployment pod的名字

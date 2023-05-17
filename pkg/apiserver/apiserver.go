@@ -61,7 +61,13 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 }
 
 // TODO 修改Controller的使用逻辑？？？
-func (master *ApiServer) AddDeployment(deployment *entity.Deployment) {
+func (master *ApiServer) AddDeployment(in *pb.ApplyDeploymentRequest) {
+	deployment := &entity.Deployment{}
+	err := json.Unmarshal(in.Data, deployment)
+	if err != nil {
+		fmt.Print("[ApiServer]ApplyDeployment Unmarshal error!\n")
+		return
+	}
 	//写入etcd元数据
 	podList, err := Controller.ApplyDeployment(deployment)
 	if err != nil {
@@ -74,13 +80,17 @@ func (master *ApiServer) AddDeployment(deployment *entity.Deployment) {
 			fmt.Println("parse pod error")
 			return
 		}
-		err = client.KubeletCreatePod(apiServer.conn,
-			&pb.ApplyPodRequest{
-				Data: podByte,
-			})
+		_, err = master.ApplyPod(&pb.ApplyPodRequest{
+			Data: podByte,
+		})
 		if err != nil {
+			fmt.Printf("create Pod of Deployment error:%s", err)
 			return
 		}
+		//err = client.KubeletCreatePod(apiServer.conn)
+		//if err != nil {
+		//	return
+		//}
 	}
 }
 

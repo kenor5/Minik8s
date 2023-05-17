@@ -53,7 +53,7 @@ func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Stat
 	cli, err := etcdctl.NewClient()
 	defer cli.Close()
 	if err != nil {
-		fmt.Println("etcd client connetc error")
+		fmt.Println("etcd client connect error")
 	}
 	fmt.Println("put etcd", in.Data)
 	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
@@ -170,13 +170,7 @@ func (s *server) DeleteDeployment(ctx context.Context, in *pb.DeleteDeploymentRe
 
 func (s *server) ApplyDeployment(ctx context.Context, in *pb.ApplyDeploymentRequest) (*pb.StatusResponse, error) {
 	//TODO 调用DeploymentController 创建deployment
-	deployment := &entity.Deployment{}
-	err := json.Unmarshal(in.Data, deployment)
-	if err != nil {
-		fmt.Print("[ApiServer]ApplyDeployment Unmarshal error!\n")
-		return nil, err
-	}
-
+	apiserver.ApiServerObject().AddDeployment(in)
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
