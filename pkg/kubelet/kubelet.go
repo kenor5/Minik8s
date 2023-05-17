@@ -49,7 +49,7 @@ func newKubelet() *Kubelet {
 	// 获取主机名和主机IP
 	hostname, _ := os.Hostname()
 	newKubelet.hostName = hostname
-    IP, err :=network.GetNetInterfaceIPv4Addr("ens33")
+    IP, err :=network.GetNetInterfaceIPv4Addr("ens3")
     if err != nil {
 		panic("fail to get hostIP!")
 	}
