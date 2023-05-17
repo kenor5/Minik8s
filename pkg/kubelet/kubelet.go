@@ -87,6 +87,7 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 	containerIds := kubelet.containerManager.GetContainerIDsByPodName(pod.Metadata.Name)
 	kubelet.containerManager.DeletePodNameToContainerIds(pod.Metadata.Name)
 
+	fmt.Printf("containerIds: %s\n",containerIds)
 	// 实际停止并删除Pod中的所有容器
 	podfunc.DeletePod(containerIds)
 	//kl.podManger.DeletePod(pod)

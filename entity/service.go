@@ -10,7 +10,7 @@ type Service struct{
 type ServiceSpec struct {
 	Selector map[string]string 	`json:"selector" yaml:"selector"`
 	Ports []ServicePort `json:"ports" yaml:"ports"`
-	Type      string            `json"type,omitempty" yaml:"type,omitempty"`
+	Type      string            `json:"type,omitempty" yaml:"type,omitempty"`
 	ClusterIP string            `json:"clusterIP,omitempty" yaml:"clusterIP,omitempty"`
 }
 

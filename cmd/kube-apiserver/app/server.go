@@ -17,6 +17,8 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 
+	"minik8s/pkg/apiserver/ControllerManager"
+
 	"google.golang.org/grpc"
 )
 
@@ -64,21 +66,17 @@ func (s *server) DeletePod(ctx context.Context, in *pb.DeletePodRequest) (*pb.St
 	if err != nil {
 		fmt.Println("connect to etcd error")
 	}
-	out, err:= etcdctl.Get(cli, "Pod/"+string(in.Data))
+	out, err := etcdctl.Get(cli, "Pod/"+string(in.Data))
 
 	if len(out.Kvs) == 0 {
 		return apiserver.ApiServerObject().DeletePod(&pb.DeletePodRequest{
-			Data : nil,
+			Data: nil,
 		})
-	}else {
+	} else {
 		return apiserver.ApiServerObject().DeletePod(&pb.DeletePodRequest{
-			Data : out.Kvs[0].Value,
+			Data: out.Kvs[0].Value,
 		})
 	}
-
-	return apiserver.ApiServerObject().DeletePod(&pb.DeletePodRequest{
-		Data : out.Kvs[0].Value,
-	})
 }
 
 // TODO: get pods后不跟PodName返回所有的Pod
@@ -87,10 +85,10 @@ func (s *server) GetPod(ctx context.Context, in *pb.GetPodRequest) (*pb.GetPodRe
 	if err != nil {
 		fmt.Println("connect to etcd error")
 	}
-	out, err:= etcdctl.Get(cli, "Pod/"+string(in.PodName))
+	out, err := etcdctl.Get(cli, "Pod/"+string(in.PodName))
 	if len(out.Kvs) == 0 {
 		return &pb.GetPodResponse{PodData: nil}, nil
-	}else {
+	} else {
 		return &pb.GetPodResponse{PodData: out.Kvs[0].Value}, nil
 	}
 }
@@ -126,39 +124,50 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 }
 
 // Service
-func (s *server)GetService(ctx context.Context, in *pb.GetServiceRequest) (*pb.GetServiceResponse, error) {
-//TODO
+func (s *server) GetService(ctx context.Context, in *pb.GetServiceRequest) (*pb.GetServiceResponse, error) {
+	//TODO
 	return &pb.GetServiceResponse{Data: nil}, nil
 }
 
-func (s *server)DeleteService(ctx context.Context, in *pb.DeleteServiceRequest) (*pb.StatusResponse, error) {
+func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest) (*pb.StatusResponse, error) {
 	//TODO
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
-func (s *server)ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (*pb.StatusResponse, error) {
+func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (*pb.StatusResponse, error) {
 	service := &entity.Service{}
 	err := json.Unmarshal(in.Data, service)
 	if err != nil {
 		return &pb.StatusResponse{Status: -1}, err
 	}
 
-	
+	// 放进etcd
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		fmt.Println("etcd client connetc error")
+	}
+	fmt.Println("put etcd", in.Data)
+	etcdctl.Put(cli, "Service/"+service.Metadata.Name, string(in.Data))
+
+	// 获取符合条件的Pod
+	selectedPods := ControllerManager.GetPodsByLabels(&service.Metadata.Labels)
+	ControllerManager.PrintList(selectedPods)
+
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
 // Deployment
-func (s *server)GetDeployment(ctx context.Context, in *pb.GetDeploymentRequest) (*pb.GetDeploymentResponse, error) {
+func (s *server) GetDeployment(ctx context.Context, in *pb.GetDeploymentRequest) (*pb.GetDeploymentResponse, error) {
 	//TODO
 	return &pb.GetDeploymentResponse{Data: nil}, nil
 }
 
-func (s *server)DeleteDeployment(ctx context.Context, in *pb.DeleteDeploymentRequest) (*pb.StatusResponse, error) {
+func (s *server) DeleteDeployment(ctx context.Context, in *pb.DeleteDeploymentRequest) (*pb.StatusResponse, error) {
 	//TODO
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
-func (s *server)ApplyDeployment(ctx context.Context, in *pb.ApplyDeploymentRequest) (*pb.StatusResponse, error) {
+func (s *server) ApplyDeployment(ctx context.Context, in *pb.ApplyDeploymentRequest) (*pb.StatusResponse, error) {
 	//TODO
 	return &pb.StatusResponse{Status: 0}, nil
 }
