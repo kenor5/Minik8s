@@ -5,12 +5,15 @@ import (
 	// "encoding/json"
 	// "fmt"
 
+	"fmt"
 	"log"
 	"minik8s/configs"
 	"minik8s/entity"
 	"minik8s/pkg/kubelet/pod/podfunc"
 
+	kp "minik8s/pkg/kube_proxy"
 	pb "minik8s/pkg/proto"
+
 	// "net"
 
 	"minik8s/pkg/kubelet/client"
@@ -32,6 +35,7 @@ type Kubelet struct {
 }
 
 var kubelet *Kubelet
+var kubeProxy *kp.KubeProxy
 
 // newKubelet creates a new Kubelet object.
 func newKubelet() *Kubelet {
@@ -49,6 +53,18 @@ func KubeletObject() *Kubelet {
 	}
 
 	return kubelet
+}
+
+func KubeProxyObject() *kp.KubeProxy {
+	if kubeProxy == nil {
+		kubeProxy, err := kp.NewKubeProxy()
+		if err != nil {
+			fmt.Println("error when creating kubeproxy")
+			return nil
+		}
+		return kubeProxy
+	}
+	return kubeProxy
 }
 
 func (kl *Kubelet) CreatePod(pod *entity.Pod) error {

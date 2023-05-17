@@ -19,12 +19,16 @@ func NewKubeProxy() (*KubeProxy, error) {
 	iptableCli, err := iptable.NewClient()
 	if err != nil {
 		fmt.Println("error when create iptable client")
+		fmt.Println(err)
+		fmt.Println("gjl notes: if '/run/xtables.lock: Permission denied', pleast run in root")
 		return nil, nil
 	}
 
 	err = iptableCli.Init()
 	if err != nil {
 		fmt.Println("error when create init iptable client")
+		fmt.Println(err)
+		fmt.Println("gjl notes: if '/run/xtables.lock: Permission denied', pleast run in root")
 		return nil, err
 	}
 	fmt.Println("success in create kp")
