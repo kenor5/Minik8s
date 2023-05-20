@@ -21,6 +21,6 @@ type DeploymentSpec struct {
 
 type DeploymentStatus struct {
 	// 此部署所针对的（其标签与选择算符匹配）未终止 Pod 的总数。
-	StartTime time.Time
-	Replicas  int32 `json:"replicas" yaml:"replicas"`
+	StartTime time.Time `json:"starttime,omitempty" yaml:"starttime,omitempty"`
+	Replicas  int32     `json:"replicas" yaml:"replicas"`
 }

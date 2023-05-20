@@ -44,10 +44,10 @@ func (s *server) CreatePod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Sta
 	err = kubelet.KubeletObject().CreatePod(pod)
 
 	if err != nil {
-		fmt.Println("create pod err")
+		log.Println("create pod err")
 		return &pb.StatusResponse{Status: -1}, err
 	}
-	fmt.Println("[Kubelet] Create Pod Success")
+	log.Println("[Kubelet] Create Pod Success")
 	return &pb.StatusResponse{Status: 0}, err
 }
 

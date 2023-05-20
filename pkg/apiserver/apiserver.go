@@ -60,7 +60,7 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 	return &pb.StatusResponse{Status: 0}, err
 }
 
-// TODO 修改Controller的使用逻辑？？？
+// AddDeployment TODO 修改Controller的使用逻辑？？？
 func (master *ApiServer) AddDeployment(in *pb.ApplyDeploymentRequest) {
 	deployment := &entity.Deployment{}
 	err := json.Unmarshal(in.Data, deployment)
@@ -94,7 +94,14 @@ func (master *ApiServer) AddDeployment(in *pb.ApplyDeploymentRequest) {
 	}
 }
 
-// TODO: 修改连接逻辑，正确的逻辑应该是Kubelet注册后，ApiServer获取了Kubelet的url，由此建立连接
+// DeleteDeployment  使用Controller删除deployment
+func (master *ApiServer) DeleteDeployment(in *pb.DeleteDeploymentRequest) {
+	deploymentname := in.DeploymentName
+	//从etcd中删除该deployment
+	Controller.DeleteDeployment(deploymentname)
+}
+
+// ConnectToKubelet TODO: 修改连接逻辑，正确的逻辑应该是Kubelet注册后，ApiServer获取了Kubelet的url，由此建立连接
 func ConnectToKubelet(kubelet_url string) (pb.KubeletApiServerServiceClient, error) {
 	// 发送消息给Kubelet
 	dial, err := grpc.Dial(kubelet_url, grpc.WithTransportCredentials(insecure.NewCredentials()))

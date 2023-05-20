@@ -82,6 +82,7 @@ func (kl *Kubelet) CreatePod(pod *entity.Pod) error {
 	kl.containerManager.SetContainerIDsByPodName(pod, ContainerIds)
 
 	// 更新PodStatus
+	log.Println("[Kubelet] CreatePod success,Begin update Pod")
 	client.UpdatePodStatus(kubelet.connToApiServer, pod)
 	return nil
 }
@@ -97,8 +98,9 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 	//kl.podManger.DeletePod(pod)
 	// 更新Pod的状态
 	pod.Status.Phase = entity.Succeed
-	kl.DeletePod(pod)
-	client.UpdatePodStatus(kubelet.connToApiServer, pod)
+	//kl.DeletePod(pod)
+	log.Println("[Kubelet] DeletePod success,Begin update Pod")
+	//client.UpdatePodStatus(kubelet.connToApiServer, pod)
 	return nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"log"
 	"minik8s/entity"
 	"minik8s/tools/etcdctl"
 	HASH "minik8s/tools/hash"
@@ -125,12 +126,13 @@ func DeleteDeployment(DeploymentName string) error {
 	}
 	//TODO 通知Node删除Pod,利用hostip
 
+	log.Printf("Node删除成功后删除etcd信息")
 	//Node删除成功后删除etcd信息
 	for _, pod := range Pods {
 		podpath := "Pod/" + pod.Metadata.Name
 		err := etcdctl.Delete(cli, podpath)
 		if err != nil {
-			fmt.Print("delete " + podpath + "failed!")
+			log.Print("delete " + podpath + "failed!")
 			return err
 		}
 	}

@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"log"
 	"minik8s/entity"
 	docker "minik8s/pkg/kubelet/container/containerfunc"
 	UUID "minik8s/tools/uuid"
+	"time"
 )
 
 func CreatePod(pod *entity.Pod) ([]string, error) {
@@ -97,13 +99,15 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 	}
 
 	// Get the container's IP address
+	fmt.Printf("Kubelet create Pod and begin Update Status\n")
 	containerIP := containerJSON.NetworkSettings.IPAddress
+	pod.Status.StartTime = time.Now()
 	pod.Status.PodIp = containerIP
 	pod.Status.Phase = entity.Running
 	// TODO:给Kubelet分配真正的IP
 	pod.Status.HostIp = "127.0.0.1"
 
-	fmt.Printf("Create Pod success! Pod IP: %s\n", containerIP)
+	log.Printf("Create Pod success! Pod IP: %s,status:%s\n", containerIP, pod.Status.Phase)
 
 	return ContainerIDMap, nil
 }
