@@ -47,13 +47,21 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 		//增加卷volume绑定
 		//映射示例  Binds: []string{"/path/on/host:/path/in/container:rw"},
 		vBinds := make([]string, 0, len(con.VolumeMounts))
-		for _, m := range con.VolumeMounts {
-			PodPath := pauseName + pod.Metadata.Uid + "_" + con.Name
-			vBinds = append(vBinds, fmt.Sprintf("%v:%v", PodPath, m.MountPath))
+		if len(pod.Spec.Volumes) == 0 {
+			for _, m := range con.VolumeMounts {
+				PodPath := pauseName + pod.Metadata.Uid + "_" + con.Name
+				vBinds = append(vBinds, fmt.Sprintf("%v:%v", PodPath, m.MountPath))
+			}
+		} else {
+			for _, m := range con.VolumeMounts {
+				for _, pm := range pod.Spec.Volumes {
+					if pm.Name == m.Name {
+						vBinds = append(vBinds, fmt.Sprintf("%v:%v", pm.HostPath, m.MountPath))
+					}
+				}
+			}
 		}
-		// for _, m := range pod.Spec.Volumes {
-		// 	vBinds = append(vBinds, fmt.Sprintf("%v:%v", m.Name, m.HostPath))
-		// }
+
 		//增加容器CPU资源限制
 		//resources := container.Resources{}
 		// fmt.Println(con.Resources.Limit["cpu"])
