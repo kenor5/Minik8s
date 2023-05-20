@@ -49,6 +49,9 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 			PodPath := pauseName + pod.Metadata.Uid + "_" + con.Name
 			vBinds = append(vBinds, fmt.Sprintf("%v:%v", PodPath, m.MountPath))
 		}
+		for _, m := range pod.Spec.Volumes {
+			vBinds = append(vBinds, fmt.Sprintf("%v:%v", m.Name, m.HostPath))
+		}
 		//增加容器CPU资源限制
 		//resources := container.Resources{}
 		fmt.Println(con.Resources.Limit["cpu"])

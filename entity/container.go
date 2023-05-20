@@ -39,5 +39,5 @@ type Volume struct {
 	Name string `json:"name" yaml:"name"`
 
 	// 必需。path 是要创建的文件的相对路径名称。不得使用绝对路径，也不得包含 “..” 路径。 必须用 UTF-8 进行编码。相对路径的第一项不得用 “..” 开头。
-	Path string `json:"path" yaml:"path"`
+	HostPath string `json:"path" yaml:"path"`
 }
