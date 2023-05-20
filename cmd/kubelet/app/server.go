@@ -122,7 +122,8 @@ func Run() {
 	if err != nil {
 		log.PrintE(err)
 	}
-
+	//Kubelet启动监控检查本地的Pod运行状态
+	//go kubelet.KubeletObject().beginMonitor()
 	// 创建gRPC服务器
 	svr := grpc.NewServer()
 	// 将实现的接口注册进 gRPC 服务器

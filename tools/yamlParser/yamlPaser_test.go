@@ -8,7 +8,7 @@ import (
 
 var yamlPath = "../../test/pod2.yaml"
 var yamlPath2 = "../../test/service_test.yaml"
-var yamlPath3 = "../../test/nginx-deployment.yaml"
+var yamlPath3 = "../../test/nginx_deployment.yaml"
 
 func TestParser(t *testing.T) {
 
@@ -16,7 +16,7 @@ func TestParser(t *testing.T) {
 	b, _ := ParseYaml(pod, yamlPath)
 
 	service := &entity.Service{}
-	s,_ := ParseYaml(service, yamlPath2)
+	s, _ := ParseYaml(service, yamlPath2)
 
 	fmt.Println(pod)
 	fmt.Println(service)
@@ -34,6 +34,5 @@ func TestParser(t *testing.T) {
 	if !d {
 		fmt.Println("parse deploy error")
 	}
-	fmt.Println(deploy);
+	fmt.Println(deploy)
 }
-

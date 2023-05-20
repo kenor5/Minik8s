@@ -18,6 +18,7 @@ func GetPodsByLabels(labels *map[string]string) *list.List {
 	if err != nil {
 		fmt.Println("etcd client connetc error")
 	}
+	defer cli.Close()
 
 	out, _ := etcdctl.GetWithPrefix(cli, "Pod/")
 

@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"log"
 	"minik8s/entity"
 	"minik8s/tools/log"
 	docker "minik8s/pkg/kubelet/container/containerfunc"
 	UUID "minik8s/tools/uuid"
+	"time"
 )
 
 func CreatePod(pod *entity.Pod) ([]string, error) {
@@ -47,6 +49,9 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 		for _, m := range con.VolumeMounts {
 			PodPath := pauseName + pod.Metadata.Uid + "_" + con.Name
 			vBinds = append(vBinds, fmt.Sprintf("%v:%v", PodPath, m.MountPath))
+		}
+		for _, m := range pod.Spec.Volumes {
+			vBinds = append(vBinds, fmt.Sprintf("%v:%v", m.Name, m.HostPath))
 		}
 		//增加容器CPU资源限制
 		//resources := container.Resources{}
@@ -98,7 +103,9 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 	}
 
 	// Get the container's IP address
+	fmt.Printf("Kubelet create Pod and begin Update Status\n")
 	containerIP := containerJSON.NetworkSettings.IPAddress
+	pod.Status.StartTime = time.Now()
 	pod.Status.PodIp = containerIP
 	pod.Status.Phase = entity.Running
 

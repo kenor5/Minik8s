@@ -8,7 +8,10 @@ func DeletePod(containerIds []string) error {
 	for _, containerId := range containerIds {
 		docker.StopContainer(containerId)
 
-		docker.RemoveContainer(containerId)
+		_, err := docker.RemoveContainer(containerId)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -3,11 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"minik8s/tools/log"
-	"time"
-
-	pb "minik8s/pkg/proto"
 	"github.com/spf13/cobra"
+	pb "minik8s/pkg/proto"
+	//"minik8s/tools/log"
+	"log"
+	"time"
 )
 
 var deleteCmd = &cobra.Command{
@@ -47,8 +47,7 @@ func deletePod(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
-	
+
 	res, err := cli.DeletePod(ctx, &pb.DeletePodRequest{
 		Data: []byte(name),
 	})
@@ -65,7 +64,22 @@ func deleteNode(name string) {
 }
 
 func deleteDeployment(name string) {
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	log.Println("begin delete Deployment", name)
+	res, err := cli.DeleteDeployment(ctx, &pb.DeleteDeploymentRequest{
+		DeploymentName: name,
+	})
 
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("Delete Pod, response ", res)
 }
 
 func deleteFunction(name string) {

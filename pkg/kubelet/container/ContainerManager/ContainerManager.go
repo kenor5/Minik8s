@@ -2,12 +2,12 @@
 package ContainerManager
 
 import (
-	"sync"
 	"minik8s/entity"
+	"sync"
 )
 
 type ContainerManager struct {
-	mtx sync.RWMutex
+	mtx                   sync.RWMutex
 	PodNameToContainerIDs map[string][]string
 }
 
@@ -40,6 +40,6 @@ func (rm *ContainerManager) GetContainerIDsByPodName(PodName string) []string {
 func (rm *ContainerManager) DeletePodNameToContainerIds(PodName string) error {
 	rm.mtx.Lock()
 	defer rm.mtx.Unlock()
-    delete(rm.PodNameToContainerIDs, PodName)
+	delete(rm.PodNameToContainerIDs, PodName)
 	return nil
 }
