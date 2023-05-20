@@ -4,16 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"minik8s/configs"
 	"minik8s/entity"
 	pb "minik8s/pkg/proto"
 )
 
 /**
-** Kubelet作为客户端给Api Server发请求
+** Kubelet作为客户端给Api Server发请求  in *pb.RegisterNodeRequest
 **/
-func RegisterNode(c pb.ApiServerKubeletServiceClient, in *pb.RegisterNodeRequest) error {
+func RegisterNode(c pb.ApiServerKubeletServiceClient, hostName string, hostIp string) error {
 	ctx := context.Background()
-
+    // 组装消息
+	in := &pb.RegisterNodeRequest{
+		NodeName: hostName,
+		NodeIp : hostIp,
+		KubeletUrl: hostIp + configs.KubeletGrpcPort,
+	}
 	// 调用服务端 RegisterNode 并获取响应
 	reply, err := c.RegisterNode(ctx, in)
 	if err != nil {

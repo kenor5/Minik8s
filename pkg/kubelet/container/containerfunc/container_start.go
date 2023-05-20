@@ -2,7 +2,7 @@ package containerfunc
 
 import (
 	"context"
-	"fmt"
+	"minik8s/tools/log"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -23,6 +23,6 @@ func StartContainer(containerID string) {
 	err := cli.ContainerStart(context.Background(), containerID, types.ContainerStartOptions{})
 
 	if err == nil {
-		fmt.Println("container", containerID, "start successfully")
+		log.PrintS("container", containerID, "start successfully")
 	}
 }

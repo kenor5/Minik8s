@@ -5,21 +5,21 @@ metadata:
   labels:
     key: test
 spec: #详细
-  volumes:
-    - name: nginxConfig
-      type: hostFile
-      path: /home/minik8s/test/pod/nginx.conf
+  # volumes:
+  #   - name: nginxConfig
+  #     type: hostFile
+  #     path: /home/minik8s/test/pod/nginx.conf
   containers: #容器信息
     - name: nginx #容器叫nginx
       image: nginx:latest #使用的镜像
       ports: #容器开放的端口
         - containerPort: 80
           hostPort: 801
-      volumeMounts:
-        - name: nginxConfig
-          mountPath: /etc/nginx/nginx.conf
-    - name: viewer
-      image: dplsming/nginx-fileserver:1.0
-      ports: 
-        - containerPort: 80
-          hostPort: 8080
+      # volumeMounts:
+      #   - name: nginxConfig
+      #     mountPath: /etc/nginx/nginx.conf
+    # - name: viewer
+      # image: dplsming/nginx-fileserver:1.0
+      # ports: 
+      #   - containerPort: 80
+      #     hostPort: 8080

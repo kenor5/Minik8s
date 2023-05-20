@@ -2,7 +2,7 @@ package containerfunc
 
 import (
 	"context"
-	"fmt"
+	"minik8s/tools/log"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
@@ -28,6 +28,6 @@ func StopContainer(containerID string) {
 	if err != nil {
 		panic(err)
 	} else {
-		fmt.Printf("container %s is stopped\n", containerID)
+		log.Print("container %s is stopped\n", containerID)
 	}
 }

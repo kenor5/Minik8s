@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/client"
 	"log"
 	"minik8s/entity"
+	"minik8s/tools/log"
 	docker "minik8s/pkg/kubelet/container/containerfunc"
 	UUID "minik8s/tools/uuid"
 	"time"
@@ -14,7 +15,7 @@ import (
 
 func CreatePod(pod *entity.Pod) ([]string, error) {
 	// Create and Start Pause Container
-	fmt.Printf("create pause container\n")
+	log.Print("create pause container\n")
 
 	// 该map返回Pod中的ContainerID
 	ContainerIDMap := []string{}
@@ -38,7 +39,7 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 	pod.Metadata.Uid = UUID.UUID()
 
 	for _, con := range pod.Spec.Containers {
-		fmt.Printf("create common container: %s\n", con.Name)
+		log.Print("create common container: %s\n", con.Name)
 		docker.EnsureImage(con.Image)
 
 		//TODO：待明确Pod中将哪一个目录供Container挂载使用 emptydir?
@@ -54,7 +55,7 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 		}
 		//增加容器CPU资源限制
 		//resources := container.Resources{}
-		fmt.Println(con.Resources.Limit["cpu"])
+		// fmt.Println(con.Resources.Limit["cpu"])
 		//if bytes, ok := con.Resources.Limit["CPU"]; ok {
 		//	//if int64(bytes) < 0 {
 		//	//	return fmt.Errorf("memory limit overflow: %v", bytes)
@@ -107,10 +108,7 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 	pod.Status.StartTime = time.Now()
 	pod.Status.PodIp = containerIP
 	pod.Status.Phase = entity.Running
-	// TODO:给Kubelet分配真正的IP
-	pod.Status.HostIp = "127.0.0.1"
 
-	log.Printf("Create Pod success! Pod IP: %s,status:%s\n", containerIP, pod.Status.Phase)
-
+	log.PrintS("Create Pod success! Pod IP: %s\n", containerIP)
 	return ContainerIDMap, nil
 }

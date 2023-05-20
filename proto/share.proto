@@ -35,16 +35,17 @@ message StatusResponse {
 
 message RegisterNodeRequest{
     string NodeName = 1;
-    string kubelet_url = 2;
+    string NodeIp = 2;
+    string kubelet_url = 3;
 }
 
 message UpdatePodStatusRequest {
-    bytes data = 1;
+    bytes Data = 1;
 }
 
 // Deployment
 message ApplyDeploymentRequest{
-    bytes data = 1;
+    bytes Data = 1;
 }
 
 message GetDeploymentRequest{
@@ -56,12 +57,12 @@ message DeleteDeploymentRequest{
 }
 
 message GetDeploymentResponse{
-    bytes data = 1;
+    bytes Data = 1;
 }
 
 // service
 message ApplyServiceRequest{
-    bytes data = 1;
+    bytes Data = 1;
 }
 
 message GetServiceRequest{
@@ -73,5 +74,25 @@ message DeleteServiceRequest{
 }
 
 message GetServiceResponse{
-    bytes data = 1;
+    bytes Data = 1;
+}
+
+// apiserver -> kubelet
+message ApplyServiceRequest2{
+    bytes Data = 1;
+    repeated string PodNames = 2;
+    repeated string PodIps = 3;
+}
+
+message DeleteServiceRequest2{
+    string ServiceName = 1;
+}
+
+// Node
+message GetNodeRequest{
+    string NodeName = 1;
+}
+
+message GetNodeResponse{
+    bytes NodeData = 1;
 }

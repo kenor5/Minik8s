@@ -16,24 +16,20 @@ var describeCmd = &cobra.Command{
 
 func doDescribe(cmd *cobra.Command, args []string) {
 	if len(args) != 2 {
-		log.LOG("describe err must have 2 args")
+		log.PrintE("describe err must have 2 args")
 		return
 	}
 	name := args[1]
 	switch args[0] {
-	case "po":
-	case "pod":
-	case "pods":
+	case "po","pod","pods":
 		describePod(name)
-	case "node":
-	case "nodes":
+	case "node","nodes":
 		describeNode(name)
 	case "service":
 		describeService(name)
 	case "function":
 		describeFunction(name)
-	case "deployment":
-	case "deploy":
+	case "deployment","deploy":
 		describeDeployment(name)
 	}
 }

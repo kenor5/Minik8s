@@ -21,27 +21,20 @@ var deleteCmd = &cobra.Command{
 
 func doDelete(cmd *cobra.Command, args []string) {
 	if len(args) != 2 {
-		//log.LOG("describe err must have 2 args")
-		log.Println("describe err must have 2 args")
+		log.PrintE("describe err must have 2 args")
 		return
 	}
 	name := args[1]
 	switch args[0] {
-	case "po":
-	case "pod":
-	case "pods":
-		log.Printf("[CMD]exec delete Pod %s", name)
+	case "po","pod","pods":
 		deletePod(name)
-	case "node":
-	case "nodes":
+	case "node","nodes":
 		deleteNode(name)
 	case "service":
 		deleteService(name)
 	case "function":
 		deleteFunction(name)
-	case "deployment":
-	case "deploy":
-		log.Printf("[CMD]exec delete Deployment %s", name)
+	case "deployment","deploy":
 		deleteDeployment(name)
 	}
 }
@@ -94,5 +87,21 @@ func deleteFunction(name string) {
 }
 
 func deleteService(name string) {
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	
+	res, err := cli.DeleteService(ctx, &pb.DeleteServiceRequest{
+		ServiceName: name,
+	})
 
+	if err != nil {
+		log.PrintE(err)
+	}
+
+	fmt.Println("Delete service, response ", res)
 }

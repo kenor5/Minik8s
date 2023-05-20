@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"minik8s/entity"
+	"minik8s/tools/log"
 	"os"
 
 	"github.com/docker/docker/api/types"
@@ -42,7 +43,7 @@ func CreateContainer(Container entity.Container) string {
 		panic(err)
 	}
 
-	fmt.Printf("ID: %s\n", body.ID)
+	log.Print("ID: %s\n", body.ID)
 	return body.ID
 }
 
@@ -66,7 +67,7 @@ func EnsureImage(targetImage string) error {
 		return nil
 	}
 
-	fmt.Printf("image %s doesn't exist, automatically pulling\n", targetImage)
+	log.PrintE("image %s doesn't exist, automatically pulling\n", targetImage)
 
 	reader, err := cli.ImagePull(context.Background(), targetImage, types.ImagePullOptions{})
 	io.Copy(os.Stdout, reader)
@@ -99,7 +100,7 @@ func ImageExist(targetImage string) (bool, error) {
 		for _, tag := range image.RepoTags {
 			// fmt.Printf("tag %s\n", tag)
 			if tag == targetImage {
-				fmt.Printf("-----have found the image-----\n")
+				log.Print("-----have found the image-----\n")
 				return true, nil
 			}
 		}

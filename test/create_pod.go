@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var yamlPath = "test/pod3.yaml"
+var yamlPath = "test/pod2.yaml"
 
 func main_2() {
 	// parse yaml

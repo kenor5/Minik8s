@@ -1,7 +1,13 @@
 package log
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestLOG(t *testing.T) {
-	LOG("hello")
+	Print("hello")
+	PrintE("hello")
+	PrintS("hello")
+	PrintW("hello")
+
 }
