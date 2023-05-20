@@ -1,5 +1,6 @@
 package entity
 
+import "time"
 
 const (
 	Pending string = "Pending"
@@ -9,9 +10,8 @@ const (
 	Unknown string = "Unknown"
 )
 
-
 type Pod struct {
-	Kind	string	`json:"kind" yaml:"kind"`
+	Kind     string     `json:"kind" yaml:"kind"`
 	Metadata ObjectMeta `json:"metadata" yaml:"metadata"`
 	Spec     PodSpec    `json:"spec" yaml:"spec"`
 	Status   PodStatus  `json:"status,omitempty" yaml:"status,omitempty"`
@@ -27,6 +27,7 @@ type PodSpec struct {
 }
 
 type PodStatus struct {
+	StartTime time.Time `json:"starttime,omitempty" yaml:"starttime,omitempty"`
 	// Pod 被调度到的主机的 IP 地址。如果尚未被调度，则为字段为空。
 	HostIp string `json:"host_ip,omitempty" yaml:"host_ip,omitempty"`
 

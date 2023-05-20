@@ -2,6 +2,7 @@ package apiserver
 
 import (
 	"encoding/json"
+	"fmt"
 
 	// "minik8s/configs"
 
@@ -10,6 +11,7 @@ import (
 
 	"minik8s/entity"
 	"minik8s/pkg/apiserver/ControllerManager/NodeController"
+	Controller "minik8s/pkg/apiserver/ControllerManager"
 	"minik8s/pkg/apiserver/client"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
@@ -86,6 +88,50 @@ func (master *ApiServer) CreateService(in *pb.ApplyServiceRequest2) (*pb.StatusR
 			log.PrintE(err)
 		    return &pb.StatusResponse{Status: -1}, err
 	    }
+
 	}
 	return &pb.StatusResponse{Status: 0}, nil
+	
 }
+
+// AddDeployment TODO 修改Controller的使用逻辑？？？
+func (master *ApiServer) AddDeployment(in *pb.ApplyDeploymentRequest) {
+	deployment := &entity.Deployment{}
+	err := json.Unmarshal(in.Data, deployment)
+	if err != nil {
+		fmt.Print("[ApiServer]ApplyDeployment Unmarshal error!\n")
+		return
+	}
+	//写入etcd元数据
+	podList, err := Controller.ApplyDeployment(deployment)
+	if err != nil {
+		return
+	}
+	//依次创建deployment 中的pod
+	for _, pod := range podList {
+		podByte, err := json.Marshal(pod)
+		if err != nil {
+			fmt.Println("parse pod error")
+			return
+		}
+		_, err = master.ApplyPod(&pb.ApplyPodRequest{
+			Data: podByte,
+		})
+		if err != nil {
+			fmt.Printf("create Pod of Deployment error:%s", err)
+			return
+		}
+		//err = client.KubeletCreatePod(apiServer.conn)
+		//if err != nil {
+		//	return
+		//}
+	}
+}
+
+// DeleteDeployment  使用Controller删除deployment
+func (master *ApiServer) DeleteDeployment(in *pb.DeleteDeploymentRequest) {
+	deploymentname := in.DeploymentName
+	//从etcd中删除该deployment
+	Controller.DeleteDeployment(deploymentname)
+}
+
