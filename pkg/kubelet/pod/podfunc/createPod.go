@@ -3,12 +3,13 @@ package podfunc
 import (
 	"context"
 	"fmt"
+
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
-	"log"
+
 	"minik8s/entity"
-	"minik8s/tools/log"
 	docker "minik8s/pkg/kubelet/container/containerfunc"
+	"minik8s/tools/log"
 	UUID "minik8s/tools/uuid"
 	"time"
 )
@@ -50,18 +51,13 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 			PodPath := pauseName + pod.Metadata.Uid + "_" + con.Name
 			vBinds = append(vBinds, fmt.Sprintf("%v:%v", PodPath, m.MountPath))
 		}
-		for _, m := range pod.Spec.Volumes {
-			vBinds = append(vBinds, fmt.Sprintf("%v:%v", m.Name, m.HostPath))
-		}
+		// for _, m := range pod.Spec.Volumes {
+		// 	vBinds = append(vBinds, fmt.Sprintf("%v:%v", m.Name, m.HostPath))
+		// }
 		//增加容器CPU资源限制
 		//resources := container.Resources{}
 		// fmt.Println(con.Resources.Limit["cpu"])
 		//if bytes, ok := con.Resources.Limit["CPU"]; ok {
-		//	//if int64(bytes) < 0 {
-		//	//	return fmt.Errorf("memory limit overflow: %v", bytes)
-		//	//} else {
-		//	//	resources, = int64(bytes)
-		//	//}
 		//}
 		// 容器的限制：128MB 的内存，相当于 134217728 字节，和 1 个 CPU 核
 		resources := container.Resources{

@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	pb "minik8s/pkg/proto"
 	//"minik8s/tools/log"
-	"log"
+	"minik8s/tools/log"
 	"time"
 )
 
@@ -70,7 +70,7 @@ func deleteDeployment(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	log.Println("begin delete Deployment", name)
+	log.Print("begin delete Deployment", name)
 	res, err := cli.DeleteDeployment(ctx, &pb.DeleteDeploymentRequest{
 		DeploymentName: name,
 	})

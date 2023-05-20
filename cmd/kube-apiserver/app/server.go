@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"minik8s/tools/log"
 	"minik8s/configs"
+	"minik8s/tools/log"
 	"strings"
 
 	"minik8s/entity"
 	"minik8s/tools/etcdctl"
 	"net"
 
+	"minik8s/pkg/kubelet"
 	pb "minik8s/pkg/proto"
 
 	"minik8s/pkg/apiserver"
@@ -135,7 +136,7 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 	}
 	defer cli.Close()
 
-	log.Println("Update Pod Status: put etcd:", string(in.Data))
+	log.Print("Update Pod Status: put etcd:", string(in.Data))
 	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
 	//更新deployment replica
 	if strings.Contains(pod.Metadata.Name, "deployment") {
@@ -147,10 +148,10 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 			deploymentName = str[:index]
 		}
 		deploymentName = deploymentName + "deployment"
-		log.Println("Update deployment Status.Replicas", deploymentName)
+		log.Print("Update deployment Status.Replicas", deploymentName)
 		out, err := etcdctl.Get(cli, "Deployment/"+deploymentName)
 		if err != nil {
-			log.Printf("deployment %s not exist", deploymentName)
+			log.Print("deployment %s not exist", deploymentName)
 		}
 		deployment := &entity.Deployment{}
 		err = json.Unmarshal(out.Kvs[0].Value, deployment)
@@ -164,22 +165,51 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 
 // GetService Service
 func (s *server) GetService(ctx context.Context, in *pb.GetServiceRequest) (*pb.GetServiceResponse, error) {
-	// cli, err := etcdctl.NewClient()
-	// if err != nil {
-	// 	log.PrintE("connect to etcd error")
-	// }
-	// out, _ := etcdctl.Get(cli, "Service/"+string(in.ServiceName))
-	// fmt.Println(out.Kvs)
-	// if len(out.Kvs) == 0 {
-	// 	return &pb.GetServiceResponse{NodeData: nil}, nil
-	// } else {
-	// 	return &pb.GetServiceResponse{NodeData: out.Kvs[0].Value}, nil
-	// }
-	return nil, nil
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("connect to etcd error")
+	}
+	out, _ := etcdctl.Get(cli, "Service/"+string(in.ServiceName))
+	fmt.Println(out.Kvs)
+	if len(out.Kvs) == 0 {
+		return &pb.GetServiceResponse{Data: nil}, nil
+	} else {
+		return &pb.GetServiceResponse{Data: out.Kvs[0].Value}, nil
+	}
+
 }
 
 func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest) (*pb.StatusResponse, error) {
-	//TODO
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("connect to etcd error")
+	}
+	out, _ := etcdctl.Get(cli, "Service/"+string(in.ServiceName))
+	fmt.Println(out.Kvs)
+	if len(out.Kvs) == 0 {
+		return &pb.StatusResponse{Status: 0}, nil
+	} 
+
+
+	err = kubelet.KubeProxyObject().RemoveService(in.ServiceName)
+	if err != nil {
+		log.PrintE(err)
+	}
+	// service := &entity.Service{}
+	// for _,data := range out.Kvs {
+	// 	err := json.Unmarshal(data.Value, service)
+	// 	if err != nil {
+	// 		log.PrintE("service unmarshal error")
+	// 	}
+
+	// 	if service.Metadata.Name == in.ServiceName {
+	// 		kubelet.KubeProxyObject().RemoveService(in.ServiceName)
+	// 		break;
+	// 	}
+	// }
+
+
+
 	return &pb.StatusResponse{Status: 0}, nil
 }
 

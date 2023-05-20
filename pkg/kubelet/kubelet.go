@@ -7,10 +7,11 @@ import (
 
 	"context"
 	"fmt"
+
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	dockerclient "github.com/docker/docker/client"
-	"log"
+
 	"minik8s/configs"
 	"minik8s/entity"
 	"minik8s/pkg/kubelet/pod/PodManager"
@@ -20,7 +21,7 @@ import (
 	kp "minik8s/pkg/kube_proxy"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
-	pb "minik8s/pkg/proto"
+
 	"regexp"
 	"strconv"
 	"sync"
@@ -44,9 +45,8 @@ import (
 ***************************************************************************/
 type Kubelet struct {
 	hostName string
-	hostIp string
-	connToApiServer pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
-	//podManger        *PodManager.Manager
+	hostIp   string
+
 	lock             sync.Locker
 	connToApiServer  pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
 	podManger        PodManager.PodManager            //存储在内存中的pod信息
@@ -57,7 +57,7 @@ var kubelet *Kubelet
 var kubeProxy *kp.KubeProxy
 
 // newKubelet creates a new Kubelet object.
-func newKubelet() *Kubelet {    
+func newKubelet() *Kubelet {
 	newKubelet := &Kubelet{
 		lock:             &sync.RWMutex{},
 		podManger:        PodManager.NewPodManager(),
@@ -68,8 +68,8 @@ func newKubelet() *Kubelet {
 	// 获取主机名和主机IP
 	hostname, _ := os.Hostname()
 	newKubelet.hostName = hostname
-    IP, err :=network.GetNetInterfaceIPv4Addr(configs.NetInterface)
-    if err != nil {
+	IP, err := network.GetNetInterfaceIPv4Addr(configs.NetInterface)
+	if err != nil {
 		log.PrintE("fail to get hostIP!")
 	}
 	newKubelet.hostIp = IP
@@ -108,14 +108,14 @@ func (kl *Kubelet) CreatePod(pod *entity.Pod) error {
 	}
 
 	// 维护ContainerRuntimeManager
-	kl.AddPod(pod)
+	// kl.AddPod(pod)
 	for _, ContainerId := range ContainerIds {
 		kubelet.podManger.AddContainerToPod(ContainerId, pod)
 	}
 	kl.containerManager.SetContainerIDsByPodName(pod, ContainerIds)
 
 	// 更新PodStatus
-	log.Println("[Kubelet] CreatePod success,Begin update Pod")
+	log.Print("[Kubelet] CreatePod success,Begin update Pod")
 	client.UpdatePodStatus(kubelet.connToApiServer, pod)
 	return nil
 }
@@ -125,14 +125,14 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 	containerIds := kubelet.containerManager.GetContainerIDsByPodName(pod.Metadata.Name)
 	kl.containerManager.DeletePodNameToContainerIds(pod.Metadata.Name)
 
-	log.Print("containerIds: %s\n",containerIds)
+	log.Print("containerIds: %s\n", containerIds)
 	// 实际停止并删除Pod中的所有容器
 	podfunc.DeletePod(containerIds)
 	//kl.podManger.DeletePod(pod)
 	// 更新Pod的状态
 	pod.Status.Phase = entity.Succeed
 	//kl.DeletePod(pod)
-	log.Println("[Kubelet] DeletePod success,Begin update Pod")
+	log.Print("[Kubelet] DeletePod success,Begin update Pod")
 	//client.UpdatePodStatus(kubelet.connToApiServer, pod)
 	return nil
 }
@@ -144,7 +144,7 @@ func (kl *Kubelet) AddPod(pod *entity.Pod) error {
 
 	//启动沙箱容器和pod.spec.containers中的容器
 	if _, err := podfunc.CreatePod(pod); err != nil {
-		pod.Status.Phase = entity.Failed
+		// pod.Status.Phase = entity.Failed
 		return err
 	}
 

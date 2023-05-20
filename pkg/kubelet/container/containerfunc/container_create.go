@@ -67,7 +67,7 @@ func EnsureImage(targetImage string) error {
 		return nil
 	}
 
-	log.PrintE("image %s doesn't exist, automatically pulling\n", targetImage)
+	log.PrintW("image %s doesn't exist, automatically pulling\n", targetImage)
 
 	reader, err := cli.ImagePull(context.Background(), targetImage, types.ImagePullOptions{})
 	io.Copy(os.Stdout, reader)
