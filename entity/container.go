@@ -7,7 +7,7 @@ type Container struct {
 	ImagePullPolicy string        `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
 	VolumeMounts    []VolumeMount `json:"volumeMounts,omitempty" yaml:"volumeMounts,omitempty"`
 
-	Ports     []ContainerPort      `json:"ports,omitempty" yaml:"ports,omitempty"`
+	Ports     []ContainerPort      `json:"ports" yaml:"ports"`
 	Resources ResourceRequirements `json:"resources,omitempty" yaml:"resources,omitempty"`
 
 	Command []string `json:"command,omitempty" yaml:"command,omitempty"`
@@ -25,6 +25,8 @@ type Quantity struct {
 
 type ContainerPort struct {
 	ContainerPort string `json:"containerPort" yaml:"containerPort"`
+	Protocol      string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+	HostPort      string `json:"hostPort,omitempty" yaml:"hostPort,omitempty"`
 }
 
 type VolumeMount struct {
