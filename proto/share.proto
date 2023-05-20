@@ -96,3 +96,8 @@ message GetNodeRequest{
 message GetNodeResponse{
     bytes NodeData = 1;
 }
+
+// Job
+message ApplyJobRequest {
+    bytes Data = 1;
+}

@@ -133,3 +133,22 @@ func (master *ApiServer) DeleteDeployment(in *pb.DeleteDeploymentRequest) {
 	//从etcd中删除该deployment
 	Controller.DeleteDeployment(deploymentname)
 }
+
+func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
+    // pod := &entity.Pod{
+	// 	Kind : "pod",
+	// 	Metadata : entity.ObjectMeta{
+	// 		Name : job.Metadata.Name + "_" + 
+	// 		Labels: map[string]string{
+	// 			"app": "Job",
+	// 		},
+	// 	},
+
+	// }
+
+	return &pb.StatusResponse{Status:0}, nil
+}
+
+
+// // 创建Slurm Pod
+// func CreateSlurmPod()

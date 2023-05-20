@@ -111,6 +111,28 @@ func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNod
 }
 
 
+func (s *server)ApplyJob(ctx context.Context, in *pb.ApplyJobRequest) (*pb.StatusResponse, error) {
+	// 解析Job
+	job := &entity.Job{}
+	err := json.Unmarshal(in.Data, job)
+	if err != nil {
+		log.PrintE("pod unmarshel err")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	// 存入etcd中
+	cli, err := etcdctl.NewClient()
+	defer cli.Close()
+	if err != nil {
+		log.PrintE("etcd client connetc error")
+	}
+	log.Print("put etcd")
+	etcdctl.Put(cli, "Job/"+job.Metadata.Name ,string(in.Data))	
+    
+	return apiserver.ApiServerObject().ApplyJob(job)
+}
+
+
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
 	newNode := &entity.Node{}
