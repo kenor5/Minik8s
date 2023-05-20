@@ -3,8 +3,7 @@ package apiserver
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"minik8s/configs"
+	// "minik8s/configs"
 
 	// "minik8s/configs"
 
@@ -135,15 +134,4 @@ func (master *ApiServer) DeleteDeployment(in *pb.DeleteDeploymentRequest) {
 	deploymentname := in.DeploymentName
 	//从etcd中删除该deployment
 	Controller.DeleteDeployment(deploymentname)
-}
-
-// ConnectToKubelet TODO: 修改连接逻辑，正确的逻辑应该是Kubelet注册后，ApiServer获取了Kubelet的url，由此建立连接
-func ConnectToKubelet(kubelet_url string) (pb.KubeletApiServerServiceClient, error) {
-	// 发送消息给Kubelet
-	dial, err := grpc.Dial(kubelet_url, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatal(err)
-		return nil, err
-	}
-	return &pb.StatusResponse{Status: 0}, nil
 }
