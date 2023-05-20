@@ -3,11 +3,6 @@ package apiserver
 import (
 	"encoding/json"
 	"fmt"
-<<<<<<< HEAD
-	// "minik8s/configs"
-=======
->>>>>>> b4a166ffdafd8820d26b2201693cb83e695544f5
-
 	// "minik8s/configs"
 
 	// "google.golang.org/grpc"
