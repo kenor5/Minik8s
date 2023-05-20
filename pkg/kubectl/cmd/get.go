@@ -23,7 +23,7 @@ var getCmd = &cobra.Command{
 
 func doGet(cmd *cobra.Command, args []string) {
 	if len(args) != 2 {
-		log.LOG("get err must have 2 args")
+		log.PrintE("get err must have 2 args")
 		return
 	}
 	name := args[1]
@@ -54,13 +54,27 @@ func getPod(name string) {
 			PodName: name,
 		})
 		if err != nil {
-			fmt.Println(err)
+			log.PrintE(err)
 		}
 		fmt.Println("Get Pod, response ", res)
 }
 
 func getNode(name string) {
-
+	// 通过 rpc 连接 apiserver
+	cli := NewClient()
+    if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	res, err := cli.GetNode(ctx, &pb.GetNodeRequest{
+		NodeName: name,
+	})
+	if err != nil {
+		log.PrintE(err)
+	}
+	fmt.Println("Get Node, response ", res)
 }
 
 func getDeployment(name string) {
@@ -72,5 +86,18 @@ func getFunction(name string) {
 }
 
 func getService(name string) {
-
+	cli := NewClient()
+    if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	res, err := cli.GetService(ctx, &pb.GetServiceRequest{
+		ServiceName: name,
+	})
+	if err != nil {
+		log.PrintE(err)
+	}
+	fmt.Println("Get Serivce, response ", res)
 }

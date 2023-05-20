@@ -18,6 +18,8 @@ const (
 )
 
 type IpTable struct {
+	hostIp	string
+	flannelIp	string
 	iptables *iptables.IPTables
 }
 
@@ -62,42 +64,42 @@ reference to :
 
 func (cli *IpTable) Init() error {
 	// 如果有这样的规则，则先删除,防止它在其它规则后面
-	err := cli.iptables.DeleteIfExists("nat", chainPreRouting, "-j", chainService)
-	if err != nil {
-		return err
-	}
+	// err := cli.iptables.DeleteIfExists("nat", chainPreRouting, "-j", chainService)
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = cli.iptables.DeleteIfExists("nat", chainOUTPUT, "-j", chainService)
-	if err != nil {
-		return err
-	}
+	// err = cli.iptables.DeleteIfExists("nat", chainOUTPUT, "-j", chainService)
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = cli.iptables.DeleteIfExists("nat", chainPostRouting,  "-j", chainKubePostRouting)
-	if err != nil {
-		return err
-	}
+	// err = cli.iptables.DeleteIfExists("nat", chainPostRouting,  "-j", chainKubePostRouting)
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = cli.iptables.DeleteIfExists("nat",
-		chainKubePostRouting,
-		"-m",
-		"mark",
-		"--mark",
-		"0x4000/0x4000",
-		"-j",
-		chainMasquerade)
-	if err != nil {
-		return err
-	}
+	// err = cli.iptables.DeleteIfExists("nat",
+	// 	chainKubePostRouting,
+	// 	"-m",
+	// 	"mark",
+	// 	"--mark",
+	// 	"0x4000/0x4000",
+	// 	"-j",
+	// 	chainMasquerade)
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = cli.iptables.DeleteIfExists("nat",
-		chainKubeMarkMasq,
-		"-j",
-		"MARK",
-		"--set-xmark",
-		"0x4000/0x4000")
-	if err != nil {
-		return err
-	}
+	// err := cli.iptables.DeleteIfExists("nat",
+	// 	chainKubeMarkMasq,
+	// 	"-j",
+	// 	"MARK",
+	// 	"--set-xmark",
+	// 	"0x4000/0x4000")
+	// if err != nil {
+	// 	return err
+	// }
 
 	
 	// 创建新链和新规则
@@ -197,33 +199,80 @@ func (cli *IpTable) Init() error {
 		}
 	}
 
+	// 这里是为了把外部来的包的source换掉
+	
+	// exists, err = cli.iptables.Exists("nat",
+	// 	chainKubePostRouting,
+	// 	"-j",
+	// 	chainMasquerade,
+	// 	"--random-fully")
+	// if err != nil {
+	// 	return err
+	// }
+	// if !exists {
+	// 	// -A KUBE-POSTROUTING -j MASQUERADE
+	// 	err = cli.iptables.Insert("nat",
+	// 		chainKubePostRouting,
+	// 		1,
+	// 		"-j",
+	// 		chainMasquerade,
+	// 		"--random-fully")
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	// exists, err = cli.iptables.Exists("nat",
+	// chainKubePostRouting,
+	// "-j",
+	// "MARK",
+	// "--set-xmark",
+	// "0x4000/0")
+	// if err != nil {
+	// 	return err
+	// }
+	// if !exists {
+	// 	// -A KUBERBOAT-POSTROUTING -j MARK --set-xmark 0x4000/0
+	// 	err = cli.iptables.Insert("nat",
+	// 	chainKubePostRouting,
+	// 	1,
+	// 	"-j",
+	// 	"MARK",
+	// 	"--set-xmark",
+	// 	"0x4000/0")
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 	exists, err = cli.iptables.Exists("nat",
 		chainKubePostRouting,
 		"-m",
 		"mark",
+		
 		"--mark",
 		"0x4000/0x4000",
 		"-j",
-		chainMasquerade)
+		"MASQUERADE")
 	if err != nil {
 		return err
 	}
 	if !exists {
-		// -A KUBE-POSTROUTING -m mark --mark 0x4000/0x4000 -j MASQUERADE
+		// -A KUBE-POSTROUTING -m mark ! --mark 0x4000/0x4000 -j RETURN
 		err = cli.iptables.Insert("nat",
 			chainKubePostRouting,
 			1,
 			"-m",
 			"mark",
+			
 			"--mark",
 			"0x4000/0x4000",
 			"-j",
-			chainMasquerade)
+			"MASQUERADE")
 		if err != nil {
 			return err
 		}
 	}
-
+	
 	return nil
 
 }
@@ -254,7 +303,27 @@ func (cli *IpTable) CreatePodChain() string {
 func (cli *IpTable) AddServiceRules(clusterIp string, serviceChainName string, port uint32) error {
 	//-A KUBE-SERVICES ! -s 10.244.0.0/16 -d 10.1.190.219/32 -p tcp  -m tcp --dport 8080 -j KUBE-MARK-MASQ
 	//-A KUBE-SERVICES -d 10.1.190.219/32 -p tcp -m tcp --dport 8080 -j KUBE-SVC-ELCM5PCEQWBTUJ2
+	
+
 	err := cli.iptables.AppendUnique(
+		"nat",
+		chainService,
+		"-p",
+		"tcp",
+		"-d",
+		clusterIp,
+		"-m",
+		"tcp",
+		"--dport",
+		fmt.Sprint(port),
+		"-j",
+		"KUBE-MARK-MASQ",
+	)
+	if err != nil {
+		return err
+	}
+
+	err = cli.iptables.AppendUnique(
 		"nat",
 		chainService,
 		"-p",
@@ -271,6 +340,8 @@ func (cli *IpTable) AddServiceRules(clusterIp string, serviceChainName string, p
 	if err != nil {
 		return err
 	}
+
+
 	return nil
 }
 
@@ -373,6 +444,8 @@ func (cli *IpTable) ApplyPodRules(
 		"nth",
 		"--every",
 		fmt.Sprint(nth),
+		"--packet",
+		"0",
 		"-j",
 		podChainName,
 	)

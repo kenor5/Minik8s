@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"minik8s/entity"
 	"minik8s/pkg/kube_proxy/iptable"
+	"minik8s/tools/log"
 	"net"
 	"strings"
 )
@@ -18,20 +19,20 @@ func NewKubeProxy() (*KubeProxy, error) {
 	fmt.Println("creating new proxy")
 	iptableCli, err := iptable.NewClient()
 	if err != nil {
-		fmt.Println("error when create iptable client")
-		fmt.Println(err)
-		fmt.Println("gjl notes: if '/run/xtables.lock: Permission denied', pleast run in root")
+		log.PrintE("error when create iptable client")
+		log.PrintE(err)
+		log.PrintW("gjl notes: if '/run/xtables.lock: Permission denied', pleast run in root")
 		return nil, nil
 	}
 
 	err = iptableCli.Init()
 	if err != nil {
-		fmt.Println("error when create init iptable client")
-		fmt.Println(err)
-		fmt.Println("gjl notes: if '/run/xtables.lock: Permission denied', pleast run in root")
+		log.PrintE("error when create init iptable client")
+		log.PrintE(err)
+		log.PrintW("gjl notes: if '/run/xtables.lock: Permission denied', pleast run in root")
 		return nil, err
 	}
-	fmt.Println("success in create kp")
+	log.PrintS("success in create kp")
 
 	return &KubeProxy{
 		IptableClient:  iptableCli,
@@ -39,8 +40,9 @@ func NewKubeProxy() (*KubeProxy, error) {
 	}, nil
 }
 
-func (kp *KubeProxy) NewService(serviceName string, service *entity.Service, podNames []string, podIps []string) error {
+func (kp *KubeProxy) NewService(service *entity.Service, podNames []string, podIps []string) error {
 	servicePorts := service.Spec.Ports
+	serviceName := service.Metadata.Name
 	podLen := len(podNames)
 	// 需要再内存和 iptable 中分别加上相应的信息
 

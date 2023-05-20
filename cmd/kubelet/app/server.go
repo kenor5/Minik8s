@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"minik8s/tools/log"
 	"minik8s/configs"
 	"minik8s/entity"
@@ -83,7 +82,7 @@ func (s *server) CreateService(ctx context.Context, in *pb.ApplyServiceRequest2)
 		return &pb.StatusResponse{Status: -1}, err
 	}
 
-	err = kubelet.KubeProxyObject().NewService(in.ServiceName, service, in.PodNames, in.PodIps)
+	err = kubelet.KubeProxyObject().NewService(service, in.PodNames, in.PodIps)
 	if err != nil {
 		log.PrintE("kubeproxy create service failed")
 		return &pb.StatusResponse{Status: -1}, err
@@ -121,7 +120,7 @@ func Run() {
 	**/
 	listen, err := net.Listen("tcp", configs.KubeletGrpcPort)
 	if err != nil {
-		fmt.Println(err)
+		log.PrintE(err)
 	}
 
 	// 创建gRPC服务器
@@ -132,7 +131,7 @@ func Run() {
 	// 启动 gRPC 服务器
 	err = svr.Serve(listen)
 	if err != nil {
-		log.Fatal(err)
+		log.PrintE(err)
 		return
 	}
 }

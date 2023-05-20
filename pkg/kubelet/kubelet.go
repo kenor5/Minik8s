@@ -5,22 +5,24 @@ import (
 	// "encoding/json"
 	// "fmt"
 
-	"fmt"
-	"log"
 	"minik8s/configs"
 	"minik8s/entity"
 	"minik8s/pkg/kubelet/pod/podfunc"
+	"os"
 
 	kp "minik8s/pkg/kube_proxy"
 	pb "minik8s/pkg/proto"
+	"minik8s/tools/log"
 
 	// "net"
 
 	"minik8s/pkg/kubelet/client"
 	"minik8s/pkg/kubelet/container/ContainerManager"
+	"minik8s/tools/network"
 
 	//"minik8s/pkg/kubelet/pod/PodManager"
 
+	// "github.com/docker/docker/libnetwork/drivers/host"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -29,6 +31,8 @@ import (
 ************************    Kubelet主结构    *******************************
 ***************************************************************************/
 type Kubelet struct {
+	hostName string
+	hostIp string
 	connToApiServer pb.ApiServerKubeletServiceClient // kubelet连接到apiserver的conn
 	//podManger        *PodManager.Manager
 	containerManager *ContainerManager.ContainerManager
@@ -38,12 +42,20 @@ var kubelet *Kubelet
 var kubeProxy *kp.KubeProxy
 
 // newKubelet creates a new Kubelet object.
-func newKubelet() *Kubelet {
+func newKubelet() *Kubelet {    
 	newKubelet := &Kubelet{
 		containerManager: ContainerManager.NewContainerManager(),
 	}
-	apiserver_url := "127.0.0.1" + configs.GrpcPort
+	apiserver_url := configs.ApiServerUrl + configs.GrpcPort
 	newKubelet.connToApiServer, _ = ConnectToApiServer(apiserver_url)
+	// 获取主机名和主机IP
+	hostname, _ := os.Hostname()
+	newKubelet.hostName = hostname
+    IP, err :=network.GetNetInterfaceIPv4Addr(configs.NetInterface)
+    if err != nil {
+		log.PrintE("fail to get hostIP!")
+	}
+	newKubelet.hostIp = IP
 	return newKubelet
 }
 
@@ -51,7 +63,6 @@ func KubeletObject() *Kubelet {
 	if kubelet == nil {
 		kubelet = newKubelet()
 	}
-
 	return kubelet
 }
 
@@ -59,7 +70,7 @@ func KubeProxyObject() *kp.KubeProxy {
 	if kubeProxy == nil {
 		kubeProxy, err := kp.NewKubeProxy()
 		if err != nil {
-			fmt.Println("error when creating kubeproxy")
+			log.PrintE("error when creating kubeproxy")
 			return nil
 		}
 		return kubeProxy
@@ -69,6 +80,8 @@ func KubeProxyObject() *kp.KubeProxy {
 
 func (kl *Kubelet) CreatePod(pod *entity.Pod) error {
 	// 实际创建Pod,IP等信息在这里更新进Pod.Status中
+	pod.Status.HostIp = kl.hostIp
+	pod.Spec.NodeName = kl.hostName
 	ContainerIds, err := podfunc.CreatePod(pod)
 	if err != nil {
 		return err
@@ -87,7 +100,7 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 	containerIds := kubelet.containerManager.GetContainerIDsByPodName(pod.Metadata.Name)
 	kubelet.containerManager.DeletePodNameToContainerIds(pod.Metadata.Name)
 
-	fmt.Printf("containerIds: %s\n",containerIds)
+	log.Print("containerIds: %s\n",containerIds)
 	// 实际停止并删除Pod中的所有容器
 	podfunc.DeletePod(containerIds)
 	//kl.podManger.DeletePod(pod)
@@ -122,18 +135,18 @@ func (kl *Kubelet) AddPod(pod *entity.Pod) error {
 // }
 
 func (kl *Kubelet) RegisterNode() error {
-	registerNodeRequest := &pb.RegisterNodeRequest{
-		NodeName:   "node1",
-		KubeletUrl: "127.0.0.1" + configs.KubeletGrpcPort,
-	}
-	client.RegisterNode(kubelet.connToApiServer, registerNodeRequest)
+	// registerNodeRequest := &pb.RegisterNodeRequest{
+	// 	NodeName:   kl.hostName,
+	// 	KubeletUrl: kl.hostIp + configs.KubeletGrpcPort,
+	// }
+	client.RegisterNode(kl.connToApiServer, kl.hostName, kl.hostIp)
 	return nil
 }
 
 func ConnectToApiServer(apiserver_url string) (pb.ApiServerKubeletServiceClient, error) {
 	dial, err := grpc.Dial(apiserver_url, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatal(err)
+		log.PrintE(err)
 		return nil, err
 	}
 	// defer dial.Close()

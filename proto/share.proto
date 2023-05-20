@@ -35,7 +35,8 @@ message StatusResponse {
 
 message RegisterNodeRequest{
     string NodeName = 1;
-    string kubelet_url = 2;
+    string NodeIp = 2;
+    string kubelet_url = 3;
 }
 
 message UpdatePodStatusRequest {
@@ -79,11 +80,19 @@ message GetServiceResponse{
 // apiserver -> kubelet
 message ApplyServiceRequest2{
     bytes Data = 1;
-    string ServiceName = 2;
-    repeated string PodNames = 3;
-    repeated string PodIps = 4;
+    repeated string PodNames = 2;
+    repeated string PodIps = 3;
 }
 
 message DeleteServiceRequest2{
     string ServiceName = 1;
+}
+
+// Node
+message GetNodeRequest{
+    string NodeName = 1;
+}
+
+message GetNodeResponse{
+    bytes NodeData = 1;
 }

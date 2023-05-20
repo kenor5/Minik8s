@@ -21,4 +21,6 @@ service ApiServerKubectlService {
     rpc ApplyService(share.ApplyServiceRequest) returns (share.StatusResponse);
     rpc GetService(share.GetServiceRequest) returns (share.GetServiceResponse);
     rpc DeleteService(share.DeleteServiceRequest) returns (share.StatusResponse);
+
+    rpc GetNode(share.GetNodeRequest) returns (share.GetNodeResponse);
 }
