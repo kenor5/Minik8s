@@ -1,12 +1,16 @@
 package apiserver
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"minik8s/configs"
+	"minik8s/entity"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	Controller "minik8s/pkg/apiserver/ControllerManager"
 	"minik8s/pkg/apiserver/client"
 	pb "minik8s/pkg/proto"
 )
@@ -56,7 +60,48 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 	return &pb.StatusResponse{Status: 0}, err
 }
 
-// TODO: 修改连接逻辑，正确的逻辑应该是Kubelet注册后，ApiServer获取了Kubelet的url，由此建立连接
+// AddDeployment TODO 修改Controller的使用逻辑？？？
+func (master *ApiServer) AddDeployment(in *pb.ApplyDeploymentRequest) {
+	deployment := &entity.Deployment{}
+	err := json.Unmarshal(in.Data, deployment)
+	if err != nil {
+		fmt.Print("[ApiServer]ApplyDeployment Unmarshal error!\n")
+		return
+	}
+	//写入etcd元数据
+	podList, err := Controller.ApplyDeployment(deployment)
+	if err != nil {
+		return
+	}
+	//依次创建deployment 中的pod
+	for _, pod := range podList {
+		podByte, err := json.Marshal(pod)
+		if err != nil {
+			fmt.Println("parse pod error")
+			return
+		}
+		_, err = master.ApplyPod(&pb.ApplyPodRequest{
+			Data: podByte,
+		})
+		if err != nil {
+			fmt.Printf("create Pod of Deployment error:%s", err)
+			return
+		}
+		//err = client.KubeletCreatePod(apiServer.conn)
+		//if err != nil {
+		//	return
+		//}
+	}
+}
+
+// DeleteDeployment  使用Controller删除deployment
+func (master *ApiServer) DeleteDeployment(in *pb.DeleteDeploymentRequest) {
+	deploymentname := in.DeploymentName
+	//从etcd中删除该deployment
+	Controller.DeleteDeployment(deploymentname)
+}
+
+// ConnectToKubelet TODO: 修改连接逻辑，正确的逻辑应该是Kubelet注册后，ApiServer获取了Kubelet的url，由此建立连接
 func ConnectToKubelet(kubelet_url string) (pb.KubeletApiServerServiceClient, error) {
 	// 发送消息给Kubelet
 	dial, err := grpc.Dial(kubelet_url, grpc.WithTransportCredentials(insecure.NewCredentials()))

@@ -1,7 +1,7 @@
-kind:
+kind: 
   pod
 metadata:
-  name: pod
+  name: testPod
   namespace: default
   labels:
     app: myApp
@@ -16,15 +16,15 @@ spec:
       volumeMounts:
         - name: volume
           mountPath: /usr/share/nginx/html/files
-  #   - name: my-http-server
-  #     image: my-http-server:latest
-  #     ports:
-  #       - containerPort: 6800
-  #         hostPort: 6800
-  #     volumeMounts:
-  #       - name: volume
-  #         mountPath: /data
-  # volumes:
-  #   - name: volume
-  #     hostPath:
-  #       path: /pod
+    - name: my-http-server
+      image: my-http-server:latest
+      ports:
+        - containerPort: 6800
+          hostPort: 6800
+      volumeMounts:
+        - name: volume
+          mountPath: /data
+  volumes:
+    - name: volume
+      hostPath:
+        path: /pod

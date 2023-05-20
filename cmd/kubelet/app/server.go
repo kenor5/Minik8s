@@ -44,10 +44,10 @@ func (s *server) CreatePod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Sta
 	err = kubelet.KubeletObject().CreatePod(pod)
 
 	if err != nil {
-		fmt.Println("create pod err")
+		log.Println("create pod err")
 		return &pb.StatusResponse{Status: -1}, err
 	}
-	fmt.Println("[Kubelet] Create Pod Success")
+	log.Println("[Kubelet] Create Pod Success")
 	return &pb.StatusResponse{Status: 0}, err
 }
 
@@ -84,6 +84,7 @@ func Run() {
 	 **/
 	kubelet.KubeletObject().RegisterNode()
 	println("[kubelet] has registered to apiserver...")
+	//go kubelet.KubeletObject().
 
 	/**
 	 *    Kubelet启动自己的服务端，接受来自ApiServer的消息
@@ -92,7 +93,8 @@ func Run() {
 	if err != nil {
 		fmt.Println(err)
 	}
-
+	//Kubelet启动监控检查本地的Pod运行状态
+	//go kubelet.KubeletObject().beginMonitor()
 	// 创建gRPC服务器
 	svr := grpc.NewServer()
 	// 将实现的接口注册进 gRPC 服务器
