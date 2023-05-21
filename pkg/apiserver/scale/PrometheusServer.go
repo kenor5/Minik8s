@@ -3,20 +3,21 @@ package scale
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types"
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"log"
+	"minik8s/pkg/kubelet/container/containerfunc"
 )
 
 const (
-	prometheusName       = "prom/prometheus"
-	prometheusPort       = 9090
-	prometheusConfig     = "prometheus.yml"
-	ConfigPath           = "/home/zhaoxi/go/src/minik8s/configs/"
-	PrometheusConfigPath = "/etc/prometheus/"
+	prometheusConatinerName = "prometheus"
+	prometheusName          = "prom/prometheus"
+	prometheusPort          = 9090
+	prometheusConfig        = "prometheus.yml"
+	ConfigPath              = "/home/zhaoxi/go/src/minik8s/configs/"
+	PrometheusConfigPath    = "/etc/prometheus/"
 )
 
 // 部署启动一个prometheus服务
@@ -30,16 +31,15 @@ func StartPrometheusServer() error {
 	if err != nil {
 		panic(err)
 	} // Pull Prometheus image
-	reader, err := cli.ImagePull(ctx, "prom/prometheus", types.ImagePullOptions{})
+	err = containerfunc.EnsureImage("prom/prometheus")
 	if err != nil {
-		panic(err)
+		return err
 	}
-	defer reader.Close()
 	vBinds := make([]string, 0)
 	vBinds = append(vBinds, fmt.Sprintf("%v:%v", ConfigPath, PrometheusConfigPath))
 	//fmt.Println("Pulling Prometheus image...")
 	exposedPort := nat.Port(fmt.Sprintf("%d/tcp", prometheusPort))
-	resp, err := cli.ContainerCreate(context.Background(), &container.Config{
+	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Image: prometheusName,
 		ExposedPorts: nat.PortSet{
 			exposedPort: struct{}{},
@@ -55,7 +55,7 @@ func StartPrometheusServer() error {
 			},
 		},
 		Binds: vBinds,
-	}, nil, nil, "prometheus")
+	}, nil, nil, prometheusConatinerName)
 
 	err = cli.ContainerStart(context.Background(), resp.ID, dockertypes.ContainerStartOptions{})
 	if err != nil {

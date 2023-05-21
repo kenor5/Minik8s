@@ -8,6 +8,7 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"minik8s/pkg/kubelet/container/containerfunc"
 	"minik8s/tools/log"
 )
 
@@ -22,11 +23,15 @@ func StartcAdvisor() error {
 		client.WithAPIVersionNegotiation(),
 	)
 	defer cli.Close()
-	_, err := cli.ImagePull(context.Background(), cAdvisorImage, dockertypes.ImagePullOptions{})
+	err := containerfunc.EnsureImage(cAdvisorImage)
 	if err != nil {
-		log.PrintE("Can't pull image:", cAdvisorImage)
-		panic(err)
+		return err
 	}
+	//_, err := cli.ImagePull(context.Background(), cAdvisorImage, dockertypes.ImagePullOptions{})
+	//if err != nil {
+	//	log.PrintE("Can't pull image:", cAdvisorImage)
+	//	panic(err)
+	//}
 
 	//根据官网要求设置映射https://github.com/google/cadvisor
 	vBinds := []string{

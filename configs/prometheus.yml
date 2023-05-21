@@ -1,12 +1,12 @@
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s 
+  scrape_interval: 5s
+  evaluation_interval: 5s
 
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
-          # - alertmanager:9093
+#           - alertmanager:9093
 
 rule_files:
   - rule/record/*.yml
@@ -18,10 +18,4 @@ scrape_configs:
   - job_name: "cadvisor"
     static_configs:
       - targets: ["localhost:8080"]
-  - job_name: cadvisor2
-    static_configs:
-      - targets:
-         - 192.168.245.136:8080
-
-
-
+      - targets: ["10.180.241.142:8080"]

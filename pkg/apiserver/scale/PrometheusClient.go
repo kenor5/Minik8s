@@ -6,8 +6,12 @@ import (
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
+	"gopkg.in/yaml.v3"
 	"minik8s/entity"
+	"minik8s/pkg/kubelet/container/containerfunc"
 	"minik8s/tools/log"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -15,7 +19,7 @@ import (
 const (
 	PrometheusAddress    string        = "http://localhost:9090"
 	QueryTimeout         time.Duration = 5 * time.Second
-	UsageComputeDuration string        = "10s"
+	UsageComputeDuration string        = "30s"
 )
 
 // MetricsManager monitors the CPU and memory usage of all the ready pods at set intervals.
@@ -26,6 +30,7 @@ type MetricsManager interface {
 	PodMemoryUsage(pod *entity.Pod) (uint64, error)
 }
 
+// 初始化API查询CPU和Memory
 type metricsManagerInner struct {
 	prometheusAPI v1.API
 }
@@ -58,7 +63,7 @@ func (mm *metricsManagerInner) PodCPUUsage(pod *entity.Pod) (float64, error) {
 		queryBuilder.WriteString(containerQuery)
 	}
 
-	// Sum the results
+	// 查询总的Pod CPU使用率
 	query := "sum(" + queryBuilder.String() + ")"
 
 	// Query Promethus
@@ -96,7 +101,7 @@ func (mm *metricsManagerInner) PodMemoryUsage(pod *entity.Pod) (uint64, error) {
 		queryBuilder.WriteString(containerQuery)
 	}
 
-	// Sum the results
+	// 查询总的Pod Memory使用率
 	query := "sum(" + queryBuilder.String() + ")"
 
 	// Query Promethus
@@ -118,8 +123,7 @@ func (mm *metricsManagerInner) PodMemoryUsage(pod *entity.Pod) (uint64, error) {
 	return uint64(result.(model.Vector)[0].Value), nil
 }
 
-// containerCPUUsageQuery is a helper function that generates the PromQL to query a container's
-// CPU usage.
+// containerCPUUsageQuery 生成 PromQL 查询语句，查询一个容器的CPU过去30s平均使用率
 func containerCPUUsageQuery(containerName string) string {
 	var query strings.Builder
 	query.WriteString("sum(rate(container_cpu_usage_seconds_total{name=\"")
@@ -130,8 +134,7 @@ func containerCPUUsageQuery(containerName string) string {
 	return query.String()
 }
 
-// containerMemoryUsageQuery is a helper function that generates the PromQL to query a container's
-// memory usage.
+// containerMemoryUsageQuery 生成 PromQL 查询语句，查询一个容器的Memory过去30s平均使用率
 func containerMemoryUsageQuery(containerName string) string {
 	var query strings.Builder
 	query.WriteString("avg_over_time(container_memory_usage_bytes{name=\"")
@@ -142,43 +145,58 @@ func containerMemoryUsageQuery(containerName string) string {
 	return query.String()
 }
 
-// GeneratePrometheusTargets writes all the endpoints that prometheus needs to listen on into a config file.
-// Prometheus will check this file regularly to get the latest info.
-//func GeneratePrometheusTargets(nodes []*entity.Node) error {
-//	// Create the directory of prometheus target file if not exists
-//	rootPath, err := os.Getwd()
-//	if err != nil {
-//		return err
-//	}
-//	dirName := filepath.Join(rootPath, core.PROMETHEUS_TARGET_DIR)
-//	err = os.MkdirAll(dirName, os.ModePerm)
-//	if err != nil {
-//		return err
-//	}
-//
-//	// Construct file contents
-//	targets := make([]core.PrometheusTargetObject, 0, len(nodes))
-//	for _, node := range nodes {
-//		targetAddr := fmt.Sprintf("%s:%d", node.Status.Address, core.CADVISOR_PORT)
-//		targetObj := core.PrometheusTargetObject{
-//			Targets: []string{targetAddr},
-//			Label: core.PrometheusTargetLabel{
-//				Job: node.Name,
-//			},
-//		}
-//		targets = append(targets, targetObj)
-//	}
-//	data, err := json.MarshalIndent(targets, "", "  ")
-//	if err != nil {
-//		return err
-//	}
-//
-//	// Write to prometheus target file
-//	fileName := filepath.Join(dirName, core.PROMETHEUS_TARGET_FILE)
-//	err = os.WriteFile(fileName, data, os.ModePerm)
-//	if err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
+type static_configs struct {
+}
+
+type Config struct {
+	Global struct {
+		ScrapeInterval     string `yaml:"scrape_interval"`
+		EvaluationInterval string `yaml:"evaluation_interval"`
+	} `yaml:"global"`
+	Alerting struct {
+		AlertManagers []struct {
+			StaticConfigs []struct {
+				Targets []string `yaml:"targets"`
+			} `yaml:"static_configs"`
+		} `yaml:"alertmanagers"`
+	} `yaml:"alerting"`
+	RuleFiles     []string `yaml:"rule_files"`
+	ScrapeConfigs struct {
+		job []struct {
+			jobName       string `yaml:"job_name"`
+			StaticConfigs []struct {
+				Targets []string `yaml:"targets"`
+			} `yaml:"static_configs"`
+		}
+	} `yaml:"scrape_configs"`
+}
+
+// GeneratePrometheusTargets 使用HostIP和port(9090)注册job到Prometheus配置文件中
+func GeneratePrometheusTargets(nodes []*entity.Node) error {
+	// 打开配置文件，读取内容
+	configFile := ConfigPath + prometheusConfig
+	content, err := os.ReadFile(configFile)
+	config := &Config{}
+	err = yaml.Unmarshal(content, config)
+	if err != nil {
+		fmt.Printf("Failed to read config file: %s", err)
+		return err
+	}
+
+	// 将 hostIP 和 port 追加到文件尾部
+	for _, node := range nodes {
+		newTarget := fmt.Sprintf("%s:%s", node.Ip, strconv.Itoa(8080))
+		config.ScrapeConfigs.job[1].StaticConfigs[0].Targets = append(config.ScrapeConfigs.job[1].StaticConfigs[0].Targets, newTarget)
+	}
+
+	content, _ = yaml.Marshal(config)
+	// 将修改后的内容写入文件
+	err = os.WriteFile(configFile, content, 0644)
+	if err != nil {
+		fmt.Printf("Failed to write config file: %s", err)
+		return err
+	}
+	//重启服务
+	containerfunc.ReStartContainer(prometheusConatinerName)
+	return nil
+}
