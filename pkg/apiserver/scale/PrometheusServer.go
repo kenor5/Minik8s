@@ -11,8 +11,13 @@ import (
 	"log"
 )
 
-const prometheusName = "prom/prometheus"
-const prometheusPort = 9090
+const (
+	prometheusName       = "prom/prometheus"
+	prometheusPort       = 9090
+	prometheusConfig     = "prometheus.yml"
+	ConfigPath           = "/home/zhaoxi/go/src/minik8s/configs/"
+	PrometheusConfigPath = "/etc/prometheus/"
+)
 
 // 部署启动一个prometheus服务
 func StartPrometheusServer() error {
@@ -30,6 +35,8 @@ func StartPrometheusServer() error {
 		panic(err)
 	}
 	defer reader.Close()
+	vBinds := make([]string, 0)
+	vBinds = append(vBinds, fmt.Sprintf("%v:%v", ConfigPath, PrometheusConfigPath))
 	//fmt.Println("Pulling Prometheus image...")
 	exposedPort := nat.Port(fmt.Sprintf("%d/tcp", prometheusPort))
 	resp, err := cli.ContainerCreate(context.Background(), &container.Config{
@@ -47,11 +54,12 @@ func StartPrometheusServer() error {
 				},
 			},
 		},
-	}, nil, nil, prometheusName)
+		Binds: vBinds,
+	}, nil, nil, "prometheus")
 
 	err = cli.ContainerStart(context.Background(), resp.ID, dockertypes.ContainerStartOptions{})
 	if err != nil {
-		log.Printf("fail to start cadvisor container: %v", err)
+		log.Printf("fail to start prometheus container: %v", err)
 		return err
 	}
 	return err

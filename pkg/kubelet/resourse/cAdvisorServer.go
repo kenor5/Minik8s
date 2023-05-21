@@ -8,7 +8,7 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"log"
+	"minik8s/tools/log"
 )
 
 // const cAdvisorImage = "google/cadvisor:v0.36.0"
@@ -24,6 +24,7 @@ func StartcAdvisor() error {
 	defer cli.Close()
 	_, err := cli.ImagePull(context.Background(), cAdvisorImage, dockertypes.ImagePullOptions{})
 	if err != nil {
+		log.PrintE("Can't pull image:", cAdvisorImage)
 		panic(err)
 	}
 
@@ -60,9 +61,9 @@ func StartcAdvisor() error {
 	}
 	err = cli.ContainerStart(context.Background(), resp.ID, dockertypes.ContainerStartOptions{})
 	if err != nil {
-		log.Printf("fail to start cadvisor container: %v", err)
+		log.Print("fail to start cadvisor container", err)
 		return err
 	}
-	log.Println("starts cadvisor container success!")
+	log.Print("starts cadvisor container success!")
 	return err
 }
