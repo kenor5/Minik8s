@@ -135,20 +135,53 @@ func (master *ApiServer) DeleteDeployment(in *pb.DeleteDeploymentRequest) {
 }
 
 func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
-    // pod := &entity.Pod{
-	// 	Kind : "pod",
-	// 	Metadata : entity.ObjectMeta{
-	// 		Name : job.Metadata.Name + "_" + 
-	// 		Labels: map[string]string{
-	// 			"app": "Job",
-	// 		},
-	// 	},
+    pod := &entity.Pod{
+		Kind : "pod",
+		Metadata : entity.ObjectMeta{
+			Name : job.Metadata.Name + "-ServerPod", 
+			Labels: map[string]string{
+				"app": "Job",
+			},
+		},
+		Spec: entity.PodSpec{
+			Containers: []entity.Container{
+				{
+					Name:  "slurm-server",
+					Image: "luoshicai/slurm-server:latest",
+					VolumeMounts: []entity.VolumeMount{
+						{
+							Name:      "volume1",
+							MountPath: "/tryData",
+						},
+					},
+				},
+			},
+			Volumes : []entity.Volume{
+			    {
+				    Name : "volume1",
+				    HostPath: "/home/luoshicai/go/src/minik8s/tools/cuda/helloworld",
+			    },
+			},
+		},
+	}
 
-	// }
+	// 组装消息
+	podByte, err := json.Marshal(pod)
+	if err != nil {
+		fmt.Println("parse pod error")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+	in := &pb.ApplyPodRequest{
+		Data : podByte,
+	}
+	// 调度(获取conn)
+	conn := master.NodeManager.RoundRobin()
+	// 发送消息给Kubelet
+	err = client.KubeletCreatePod(conn, in)
+	if err != nil {
+		log.PrintE(err)
+		return &pb.StatusResponse{Status: -1}, err
+	}
 
-	return &pb.StatusResponse{Status:0}, nil
+	return &pb.StatusResponse{Status: 0}, err
 }
-
-
-// // 创建Slurm Pod
-// func CreateSlurmPod()
