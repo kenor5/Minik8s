@@ -23,31 +23,31 @@ const (
 )
 
 // MetricsManager monitors the CPU and memory usage of all the ready pods at set intervals.
-type MetricsManager interface {
-	// PodCPUUsage queries the average CPU usage of a given pod in the past certain seconds.
-	PodCPUUsage(pod *entity.Pod) (float64, error)
-	// PodMemoryUsage queries the average memory usage of a given pod in the past certain seconds.
-	PodMemoryUsage(pod *entity.Pod) (uint64, error)
-}
+//type MetricsManager interface {
+//	// PodCPUUsage queries the average CPU usage of a given pod in the past certain seconds.
+//	PodCPUUsage(pod *entity.Pod) (float64, error)
+//	// PodMemoryUsage queries the average memory usage of a given pod in the past certain seconds.
+//	PodMemoryUsage(pod *entity.Pod) (uint64, error)
+//}
 
 // 初始化API查询CPU和Memory
-type metricsManagerInner struct {
+type MetricsManager struct {
 	prometheusAPI v1.API
 }
 
-func NewMetricsManager() MetricsManager {
+func NewMetricsManager() *MetricsManager {
 	client, err := api.NewClient(api.Config{
 		Address: PrometheusAddress,
 	})
 	if err != nil {
 		log.PrintE(err)
 	}
-	return &metricsManagerInner{
+	return &MetricsManager{
 		prometheusAPI: v1.NewAPI(client),
 	}
 }
 
-func (mm *metricsManagerInner) PodCPUUsage(pod *entity.Pod) (float64, error) {
+func (mm *MetricsManager) PodCPUUsage(pod *entity.Pod) (float64, error) {
 	var queryBuilder strings.Builder
 
 	// Pause container
@@ -85,7 +85,7 @@ func (mm *metricsManagerInner) PodCPUUsage(pod *entity.Pod) (float64, error) {
 	return float64(result.(model.Vector)[0].Value), nil
 }
 
-func (mm *metricsManagerInner) PodMemoryUsage(pod *entity.Pod) (uint64, error) {
+func (mm *MetricsManager) PodMemoryUsage(pod *entity.Pod) (uint64, error) {
 	var queryBuilder strings.Builder
 
 	// Pause container
@@ -145,33 +145,66 @@ func containerMemoryUsageQuery(containerName string) string {
 	return query.String()
 }
 
-type static_configs struct {
-}
+/*
+	type Config struct {
+		Global       Global       `json:"global" yaml:"global"`
+		Alerting     Alerting     `json:"alerting" yaml:"alerting"`
+		RuleFiles    []string     `json:"rule_files" yaml:"rule_files"`
+		ScrapeConfig []ScrapeConf `json:"scrape_configs" yaml:"scrape_config"`
+	}
 
+	type Global struct {
+		ScrapeInterval    string `json:"scrape_interval" yaml:"scrape_interval"`
+		EvaluationInteval string `json:"evaluation_interval" yaml:"evaluation_interval"`
+	}
+
+	type Alerting struct {
+		Alertmanagers []Alertmanager `json:"alertmanagers" yaml:"alertmanagers"`
+	}
+
+	type Alertmanager struct {
+		StaticConfig StaticConfig `json:"static_configs" yaml:"static_configs"`
+	}
+
+	type StaticConfig struct {
+		Targets []string `json:"targets" yaml:"targets"`
+	}
+
+	type ScrapeConf struct {
+		JobName       string         `json:"job_name" yaml:"job_name"`
+		StaticConfigs []StaticConfig `json:"static_configs" yaml:"static_configs"`
+	}
+*/
 type Config struct {
-	Global struct {
-		ScrapeInterval     string `yaml:"scrape_interval"`
-		EvaluationInterval string `yaml:"evaluation_interval"`
-	} `yaml:"global"`
-	Alerting struct {
-		AlertManagers []struct {
-			StaticConfigs []struct {
-				Targets []string `yaml:"targets"`
-			} `yaml:"static_configs"`
-		} `yaml:"alertmanagers"`
-	} `yaml:"alerting"`
-	RuleFiles     []string `yaml:"rule_files"`
-	ScrapeConfigs struct {
-		job []struct {
-			jobName       string `yaml:"job_name"`
-			StaticConfigs []struct {
-				Targets []string `yaml:"targets"`
-			} `yaml:"static_configs"`
-		}
-	} `yaml:"scrape_configs"`
+	Global       Global       `yaml:"global"`
+	Alerting     Alerting     `yaml:"alerting,omitempty"`
+	RuleFiles    []string     `yaml:"rule_files"`
+	ScrapeConfig []ScrapeConf `yaml:"scrape_configs"`
 }
 
-// GeneratePrometheusTargets 使用HostIP和port(9090)注册job到Prometheus配置文件中
+type Global struct {
+	ScrapeInterval    string `yaml:"scrape_interval,omitempty"`
+	EvaluationInteval string `yaml:"evaluation_interval,omitempty"`
+}
+
+type Alerting struct {
+	Alertmanagers []Alertmanager `yaml:"alertmanagers,omitempty"`
+}
+
+type Alertmanager struct {
+	StaticConfig StaticConfig `yaml:"static_configs,omitempty"`
+}
+
+type StaticConfig struct {
+	Targets []string `yaml:"targets,omitempty"`
+}
+
+type ScrapeConf struct {
+	JobName       string         `yaml:"job_name,omitempty"`
+	StaticConfigs []StaticConfig `yaml:"static_configs,omitempty"`
+}
+
+// GeneratePrometheusTargets 使用Node的HostIP和port(9090)注册job到Prometheus配置文件中
 func GeneratePrometheusTargets(nodes []*entity.Node) error {
 	// 打开配置文件，读取内容
 	configFile := ConfigPath + prometheusConfig
@@ -182,12 +215,17 @@ func GeneratePrometheusTargets(nodes []*entity.Node) error {
 		fmt.Printf("Failed to read config file: %s", err)
 		return err
 	}
-
-	// 将 hostIP 和 port 追加到文件尾部
-	for _, node := range nodes {
-		newTarget := fmt.Sprintf("%s:%s", node.Ip, strconv.Itoa(8080))
-		config.ScrapeConfigs.job[1].StaticConfigs[0].Targets = append(config.ScrapeConfigs.job[1].StaticConfigs[0].Targets, newTarget)
+	for i, conf := range config.ScrapeConfig {
+		if conf.JobName == "cadvisor" {
+			for _, node := range nodes {
+				newTarget := fmt.Sprintf("%s:%s", node.Ip, strconv.Itoa(8080))
+				conf.StaticConfigs = append(conf.StaticConfigs, StaticConfig{Targets: []string{newTarget}})
+				config.ScrapeConfig[i] = conf
+			}
+			break
+		}
 	}
+	// 将 hostIP 和 port 追加到文件尾部
 
 	content, _ = yaml.Marshal(config)
 	// 将修改后的内容写入文件

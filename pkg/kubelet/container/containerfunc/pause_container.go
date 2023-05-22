@@ -34,7 +34,7 @@ func CreatePauseContainer(pod *entity.Pod) (string, string, error) {
 	)
 	defer cli.Close()
 
-	pauseName := pod.Metadata.Name + "-" + "pauseContainer"
+	pauseName := pod.Metadata.Name + "_" + "pauseContainer"
 
 	body, err := cli.ContainerCreate(context.Background(), &container.Config{
 		Image:        entity.PauseImage,
