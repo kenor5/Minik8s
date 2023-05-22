@@ -9,7 +9,7 @@ import (
 func TestResourceController_GetPodCPUUsage(t *testing.T) {
 	type fields struct {
 		PodsName       map[string]*entity.Pod
-		metricsManager MetricsManager
+		metricsManager *MetricsManager
 	}
 	type args struct {
 		pod *entity.Pod
