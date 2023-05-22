@@ -8,6 +8,6 @@ const (
 
 	GrpcPort = ":5678"
 	KubeletGrpcPort = ":5679"
-  
+    SlurmServerPort = ":8090"
 
 )
