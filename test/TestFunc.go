@@ -4,5 +4,7 @@ func main() {
 	//CreatePod()
 	//GetResourseByHTTP()
 	//GetResourseTest()
-	PromtheusQuery()
+	//query := "sum(container_cpu_usage_seconds_total{name=\"autoscale\"})"
+	//PromtheusQuery(query)
+	GetMetricsTest()
 }

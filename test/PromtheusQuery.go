@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func PromtheusQuery() {
+func PromtheusQuery(query string) {
 	// 设置Prometheus主机地址
 	cfg := api.Config{
 		Address: "http://localhost:9090",
@@ -25,12 +25,12 @@ func PromtheusQuery() {
 	v1api := v1.NewAPI(client)
 
 	// 查询容器CPU使用率
-	query := "container_cpu_usage_seconds_total{name=\"autoscale\"}"
-	SumQuery := "sum(" + query + ")"
+	//query:= "container_cpu_usage_seconds_total{name=\"autoscale\"}"
+	//SumQuery := "sum(" + query + ")"
 	ctx, cancel := context.WithTimeout(context.Background(), QueryTimeout)
 	defer cancel()
 	// 执行查询并获取结果
-	result, warnings, err := v1api.Query(ctx, SumQuery, time.Now())
+	result, warnings, err := v1api.Query(ctx, query, time.Now())
 	if err != nil {
 		panic(err)
 	}

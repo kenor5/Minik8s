@@ -22,15 +22,15 @@ const (
 	UsageComputeDuration string        = "30s"
 )
 
-// MetricsManager monitors the CPU and memory usage of all the ready pods at set intervals.
-//type MetricsManager interface {
-//	// PodCPUUsage queries the average CPU usage of a given pod in the past certain seconds.
-//	PodCPUUsage(pod *entity.Pod) (float64, error)
-//	// PodMemoryUsage queries the average memory usage of a given pod in the past certain seconds.
-//	PodMemoryUsage(pod *entity.Pod) (uint64, error)
-//}
+// MetricsManagerInterface  定义一组查询接口，用于调用查询
+type MetricsManagerInterface interface {
+	// PodCPUUsage 查询过去30s pod中所有容器的CPU使用率情况
+	PodCPUUsage(pod *entity.Pod) (float64, error)
+	// PodMemoryUsage 查询过去30s Pod中所有容器的Memory使用情况
+	PodMemoryUsage(pod *entity.Pod) (uint64, error)
+}
 
-// 初始化API查询CPU和Memory
+// MetricsManager 初始化API查询CPU和Memory
 type MetricsManager struct {
 	prometheusAPI v1.API
 }
