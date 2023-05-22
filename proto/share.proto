@@ -101,3 +101,11 @@ message GetNodeResponse{
 message ApplyJobRequest {
     bytes Data = 1;
 }
+
+message GetJobRequest {
+    string JobName = 1;
+}
+
+message GetJobResponse {
+    bytes Data = 1;
+}

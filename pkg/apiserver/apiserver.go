@@ -160,7 +160,7 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 			Volumes : []entity.Volume{
 			    {
 				    Name : "volume1",
-				    HostPath: "/home/luoshicai/go/src/minik8s/tools/cuda/helloworld",
+				    HostPath: "/home/luoshicai/go/src/minik8s/tools/cuda/"+job.Metadata.Name,
 			    },
 			},
 		},
@@ -184,7 +184,7 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 		return &pb.StatusResponse{Status: -1}, err
 	}
 
-    JobController.SbatchAndQuery(job.Metadata.Name, conn)
+    go JobController.SbatchAndQuery(job.Metadata.Name, conn)
 
 	return &pb.StatusResponse{Status: 0}, err
 }

@@ -38,7 +38,10 @@ func doGet(cmd *cobra.Command, args []string) {
 		getFunction(name)
 	case "deployment","deploy":
 		getDeployment(name)
+	case "job":
+		getJob(name)
 	}
+
 }
 
 func getPod(name string) {
@@ -100,4 +103,21 @@ func getService(name string) {
 		log.PrintE(err)
 	}
 	fmt.Println("Get Serivce, response ", res)
+}
+
+func getJob(name string) {
+	cli := NewClient()
+    if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	res, err := cli.GetJob(ctx, &pb.GetJobRequest{
+		JobName: name,
+	})
+	if err != nil {
+		log.PrintE(err)
+	}
+	fmt.Println("Get Job, response ", res)
 }

@@ -198,8 +198,23 @@ func (s *server) GetService(ctx context.Context, in *pb.GetServiceRequest) (*pb.
 	} else {
 		return &pb.GetServiceResponse{Data: out.Kvs[0].Value}, nil
 	}
-
 }
+
+// GetJob Service
+func (s *server) GetJob(ctx context.Context, in *pb.GetJobRequest) (*pb.GetJobResponse, error) {
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("connect to etcd error")
+	}
+	out, _ := etcdctl.Get(cli, "Job/"+string(in.JobName))
+	fmt.Println(out.Kvs)
+	if len(out.Kvs) == 0 {
+		return &pb.GetJobResponse{Data: nil}, nil
+	} else {
+		return &pb.GetJobResponse{Data: out.Kvs[0].Value}, nil
+	}
+}
+
 
 func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest) (*pb.StatusResponse, error) {
 	cli, err := etcdctl.NewClient()
