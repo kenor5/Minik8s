@@ -15,7 +15,7 @@ func PrintW(a ...any) {
 	pc, file, line, _ := runtime.Caller(1)
 	funcName := runtime.FuncForPC(pc).Name()
 	fmt.Printf("%c[1;1;33m", 0x1B)
-	fmt.Printf("[%s]\n%s:%d ",funcName, file, line)
+	fmt.Printf("[%s]\n%s:%d ", funcName, file, line)
 	fmt.Print(a...)
 	fmt.Printf("%c[0m\n", 0x1B)
 }
@@ -25,7 +25,7 @@ func PrintE(a ...any) {
 	pc, file, line, _ := runtime.Caller(1)
 	funcName := runtime.FuncForPC(pc).Name()
 	fmt.Printf("%c[1;1;31m", 0x1B)
-	fmt.Printf("[%s]\n%s:%d ",funcName, file, line)
+	fmt.Printf("[%s]\n%s:%d ", funcName, file, line)
 	fmt.Print(a...)
 	fmt.Printf("%c[0m\n", 0x1B)
 }
@@ -35,4 +35,8 @@ func PrintS(a ...any) {
 	fmt.Printf("%c[1;1;32m", 0x1B)
 	fmt.Print(a...)
 	fmt.Printf("%c[0m\n", 0x1B)
+}
+
+func Prinf(str string, a ...any) {
+	fmt.Printf(str, a...)
 }

@@ -18,6 +18,11 @@ service ApiServerKubectlService {
     rpc GetDeployment(share.GetDeploymentRequest) returns (share.GetDeploymentResponse);
     rpc DeleteDeployment(share.DeleteDeploymentRequest) returns (share.StatusResponse);
 
+    rpc ApplyHPA(share.ApplyHorizontalPodAutoscalerRequest) returns (share.StatusResponse);
+    rpc GetHPA(share.GetHorizontalPodAutoscalerRequest) returns (share.GetHorizontalPodAutoscalerResponse);
+    rpc UpdateHPA(share.UpdateHorizontalPodAutoscalerRequest) returns (share.StatusResponse);
+    rpc DeleteHPA(share.DeleteHorizontalPodAutoscaler) returns (share.StatusResponse);
+
     rpc ApplyService(share.ApplyServiceRequest) returns (share.StatusResponse);
     rpc GetService(share.GetServiceRequest) returns (share.GetServiceResponse);
     rpc DeleteService(share.DeleteServiceRequest) returns (share.StatusResponse);

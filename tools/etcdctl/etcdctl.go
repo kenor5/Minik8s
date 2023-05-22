@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"strings"
 	"os/exec"
+	"strings"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -39,6 +39,22 @@ func Put(cli *clientv3.Client, k string, v string) error {
 	}
 	return nil
 }
+func EtcdPut(cli *clientv3.Client, k string, v string) error {
+	client, _ := clientv3.New(
+		clientv3.Config{
+			Endpoints:   []string{"127.0.0.1:2379"},
+			DialTimeout: 5 * time.Second,
+		})
+	defer client.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	_, err := cli.Put(ctx, k, v)
+	cancel()
+	if err != nil {
+		return errors.New("etcd put error")
+	}
+	return nil
+}
 
 func Get(client *clientv3.Client, k string) (*clientv3.GetResponse, error) {
 	if client == nil {
@@ -55,10 +71,44 @@ func Get(client *clientv3.Client, k string) (*clientv3.GetResponse, error) {
 	return ret, nil
 }
 
+func EtcdGet(k string) (*clientv3.GetResponse, error) {
+	client, _ := clientv3.New(
+		clientv3.Config{
+			Endpoints:   []string{"127.0.0.1:2379"},
+			DialTimeout: 5 * time.Second,
+		})
+	defer client.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+	ret, err := client.Get(ctx, k)
+	cancel()
+	if err != nil {
+		return nil, errors.New("etcd get error")
+	}
+	return ret, nil
+}
+
 func GetWithPrefix(client *clientv3.Client, k string) (*clientv3.GetResponse, error) {
 	if client == nil {
 		return nil, errors.New("client is null")
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ret, err := client.Get(ctx, k, clientv3.WithPrefix())
+	cancel()
+	if err != nil {
+		return nil, errors.New("etcd get error")
+	}
+	return ret, nil
+}
+func EtcdGetWithPrefix(k string) (*clientv3.GetResponse, error) {
+	client, _ := clientv3.New(
+		clientv3.Config{
+			Endpoints:   []string{"127.0.0.1:2379"},
+			DialTimeout: 5 * time.Second,
+		})
+	defer client.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	ret, err := client.Get(ctx, k, clientv3.WithPrefix())
@@ -98,15 +148,15 @@ func Start(dirPath string) (*clientv3.Client, error) {
 	calledPath, err := os.Getwd()
 	rootPath := calledPath[:strings.LastIndex(calledPath, "minik8s")]
 	scriptPath := rootPath + "minik8s/tools/etcdctl/etcd_start.sh"
-	
+
 	cmd := exec.Command("sh", scriptPath)
 	err = cmd.Run()
 	if err != nil {
-        fmt.Println("try to start etcd using", scriptPath)
-    }else {
+		fmt.Println("try to start etcd using", scriptPath)
+	} else {
 		fmt.Println("if ", err, "is eq nil, just ignore it, or this may be an error")
 	}
-	
+
 	cli, err := clientv3.New(
 		clientv3.Config{
 			Endpoints:   []string{"127.0.0.1:2379"},
@@ -116,7 +166,7 @@ func Start(dirPath string) (*clientv3.Client, error) {
 	if err != nil {
 		fmt.Println("etcd connect error")
 		return nil, err
-	}else {
+	} else {
 		fmt.Println("connetced to etcd server")
 	}
 

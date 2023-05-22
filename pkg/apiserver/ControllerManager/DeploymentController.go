@@ -139,6 +139,11 @@ func DeleteDeployment(DeploymentName string) error {
 	return err
 }
 
+func GetPodsBydeployment(deployment string) []entity.Pod {
+
+	return nil
+}
+
 // MonitorDeployment 另开线程中运行，持续检查deployment运行状态，并进行扩缩
 func MonitorDeployment() error {
 	cli, err := etcdctl.NewClient()

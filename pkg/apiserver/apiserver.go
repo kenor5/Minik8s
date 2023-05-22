@@ -3,6 +3,8 @@ package apiserver
 import (
 	"encoding/json"
 	"fmt"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"minik8s/tools/etcdctl"
 
 	// "minik8s/configs"
 
@@ -10,8 +12,8 @@ import (
 	// "google.golang.org/grpc/credentials/insecure"
 
 	"minik8s/entity"
-	"minik8s/pkg/apiserver/ControllerManager/NodeController"
 	Controller "minik8s/pkg/apiserver/ControllerManager"
+	"minik8s/pkg/apiserver/ControllerManager/NodeController"
 	"minik8s/pkg/apiserver/client"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
@@ -58,11 +60,11 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 	//查询Pod对应的Node信息并获取conn
 	pod := &entity.Pod{}
 	err := json.Unmarshal(in.Data, pod)
-	if (in.Data == nil || pod.Status.Phase == entity.Succeed) {
-        return &pb.StatusResponse{Status: 0}, err
+	if in.Data == nil || pod.Status.Phase == entity.Succeed {
+		return &pb.StatusResponse{Status: 0}, err
 	}
 	// 根据Pod所在的节点的NodeName获得对应的grpc Conn
-    conn := master.NodeManager.GetNodeConnByName(pod.Spec.NodeName)
+	conn := master.NodeManager.GetNodeConnByName(pod.Spec.NodeName)
 	if conn == nil {
 		panic("UnKnown NodeName!\n")
 	}
@@ -70,7 +72,7 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 	err = client.KubeletDeletePod(conn, in)
 	if err != nil {
 		log.PrintE(err)
-	
+
 		return &pb.StatusResponse{Status: -1}, err
 	}
 
@@ -83,18 +85,18 @@ func (master *ApiServer) CreateService(in *pb.ApplyServiceRequest2) (*pb.StatusR
 	for _, node := range LivingNodes {
 		// 发送消息给Kubelet
 		conn := master.NodeManager.GetNodeConnByName(node.Name)
-	    err := client.KubeLetCreateService(conn, in)
-	    if err != nil {
+		err := client.KubeLetCreateService(conn, in)
+		if err != nil {
 			log.PrintE(err)
-		    return &pb.StatusResponse{Status: -1}, err
-	    }
+			return &pb.StatusResponse{Status: -1}, err
+		}
 
 	}
 	return &pb.StatusResponse{Status: 0}, nil
-	
+
 }
 
-// AddDeployment TODO 修改Controller的使用逻辑？？？
+// AddDeployment 增加新的deployment，先将元数据写入etcd,之后监控机制检查更新pod状态并启动
 func (master *ApiServer) AddDeployment(in *pb.ApplyDeploymentRequest) {
 	deployment := &entity.Deployment{}
 	err := json.Unmarshal(in.Data, deployment)
@@ -132,6 +134,34 @@ func (master *ApiServer) AddDeployment(in *pb.ApplyDeploymentRequest) {
 func (master *ApiServer) DeleteDeployment(in *pb.DeleteDeploymentRequest) {
 	deploymentname := in.DeploymentName
 	//从etcd中删除该deployment
-	Controller.DeleteDeployment(deploymentname)
+	err := Controller.DeleteDeployment(deploymentname)
+	if err != nil {
+		return
+	}
 }
 
+func (master *ApiServer) ApplyHPA(HPAbyte *pb.ApplyHorizontalPodAutoscalerRequest) {
+	HPA := &entity.Deployment{}
+	err := json.Unmarshal(HPAbyte.Data, HPA)
+	if err != nil {
+		fmt.Print("[ApiServer]ApplyHPA Unmarshal error!\n")
+		return
+	}
+	//写入etcd元数据
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		fmt.Println("etcd client connect error")
+	}
+	defer func(cli *clientv3.Client) {
+		err := cli.Close()
+		if err != nil {
+			fmt.Print("close etcdClient error!")
+		}
+	}(cli)
+	HPAData, err := json.Marshal(HPA)
+	err = etcdctl.Put(cli, "HPA/"+HPA.Metadata.Name, string(HPAData))
+	if err != nil {
+		log.PrintE("[ApiServer] Write HPAData fail")
+		return
+	}
+}

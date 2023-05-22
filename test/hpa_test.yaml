@@ -1,26 +1,37 @@
-apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: php-apache
+  name: auto-scale
 spec:
   scaleTargetRef:
-    apiVersion: apps/v1
     kind: Deployment
-    name: php-apache
+    name: auto-scale
+  scaleInterval: 30 #监控更新的时间间隔
   minReplicas: 1
-  maxReplicas: 10
+  maxReplicas: 10 #控制的 Pod 存在 1 到 10 个副本
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
-          type: Utilization
-          averageUtilization: 50
+          type: Utilization  #使用指标为百分比
+          averageUtilization: 50 #保持所有 Pod 的平均 CPU 利用率为 50%
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization  #使用指标为百分比
+          averageUtilization: 2M #保持所有 Pod 的平均Memory使用量
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: AverageValue #使用指标为绝对值，目前暂不支持
+          averageValue: 60
 status:
   observedGeneration: 1
-  lastScaleTime: <some-time>
-  currentReplicas: 1
-  desiredReplicas: 1
+  lastScaleTime:
+  currentReplicas: 0
+  desiredReplicas: 0
   currentMetrics:
     - type: Resource
       resource:
