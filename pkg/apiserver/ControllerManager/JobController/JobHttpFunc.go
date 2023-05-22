@@ -42,6 +42,7 @@ func Sbatch(PodIp string, module_name string) (string, string, error){
 
 	// 读取响应体的内容
 	body, err := ioutil.ReadAll(resp.Body)
+	fmt.Println(body)
 	if err != nil {
 		fmt.Println("ReadAll error:", err)
 		return "", "", err

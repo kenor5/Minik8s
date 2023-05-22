@@ -14,6 +14,7 @@ import (
 	"minik8s/pkg/apiserver/client"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
+	"minik8s/pkg/apiserver/ControllerManager/JobController"
 )
 
 /**************************************************************************
@@ -182,6 +183,8 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 		log.PrintE(err)
 		return &pb.StatusResponse{Status: -1}, err
 	}
+
+    JobController.SbatchAndQuery(job.Metadata.Name, conn)
 
 	return &pb.StatusResponse{Status: 0}, err
 }
