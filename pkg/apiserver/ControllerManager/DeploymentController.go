@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"log"
 	"minik8s/entity"
 	"minik8s/tools/etcdctl"
 	HASH "minik8s/tools/hash"
+	log "minik8s/tools/log"
 	UUID "minik8s/tools/uuid"
 	"strconv"
 	"time"
@@ -31,9 +31,10 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 		pod := &entity.Pod{}
 		pod.Kind = "Pod"
 		pod.Metadata = deployment.Spec.Template.Metadata
-		pod.Metadata.Uid = UUID.UUID()
+		uid := UUID.UUID()
+		pod.Metadata.Uid = uid
 		//组合产生Deployment pod的名字
-		pod.Metadata.Name = deployment.Metadata.Name + "-" + templateHash + "-" + pod.Metadata.Uid[:5]
+		pod.Metadata.Name = deployment.Metadata.Name + "-" + templateHash + "-" + uid[:5]
 
 		pod.Spec = deployment.Spec.Template.Spec
 		Pods[pod.Metadata.Name+pod.Metadata.Uid] = pod
@@ -126,7 +127,7 @@ func DeleteDeployment(DeploymentName string) error {
 	}
 	//TODO 通知Node删除Pod,利用hostip
 
-	log.Printf("Node删除成功后删除etcd信息")
+	log.Print("Node删除成功后删除etcd信息")
 	//Node删除成功后删除etcd信息
 	for _, pod := range Pods {
 		podpath := "Pod/" + pod.Metadata.Name
@@ -139,9 +140,21 @@ func DeleteDeployment(DeploymentName string) error {
 	return err
 }
 
+// GetPodsBydeployment Pod命名：deploymentname(nginx-deployment)+templet对应HASH(9594276)+PodUID前5位
 func GetPodsBydeployment(deployment string) []entity.Pod {
-
-	return nil
+	//TODO 默认了能在etcd中查询到的pod都是可用状态，属于replica，是否需要更新？
+	PodsData, _ := etcdctl.EtcdGetWithPrefix("Pod/" + deployment)
+	var Pods []entity.Pod
+	for _, PodData := range PodsData.Kvs {
+		var pod entity.Pod
+		err := json.Unmarshal(PodData.Value, &pod)
+		if err != nil {
+			log.PrintE("GetPodsBydeployment Unmarshal Pod error")
+			return nil
+		}
+		Pods = append(Pods, pod)
+	}
+	return Pods
 }
 
 // MonitorDeployment 另开线程中运行，持续检查deployment运行状态，并进行扩缩

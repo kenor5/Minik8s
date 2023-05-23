@@ -61,3 +61,33 @@ func TestStart(t *testing.T) {
 		}
 	}(start)
 }
+
+func TestEtcdGetWithPrefix(t *testing.T) {
+	type args struct {
+		k string
+	}
+	tests := []struct {
+		name string
+		args args
+		//want    *clientv3.GetResponse
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "test 前缀查询",
+			args: args{k: "Pod/nginx-deployment"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := EtcdGetWithPrefix(tt.args.k)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EtcdGetWithPrefix() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			//if !reflect.DeepEqual(got, tt.want) {
+			//	t.Errorf("EtcdGetWithPrefix() got = %v, want %v", got, tt.want)
+			//}
+		})
+	}
+}

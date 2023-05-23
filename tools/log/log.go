@@ -37,6 +37,6 @@ func PrintS(a ...any) {
 	fmt.Printf("%c[0m\n", 0x1B)
 }
 
-func Prinf(str string, a ...any) {
+func Printf(str string, a ...any) {
 	fmt.Printf(str, a...)
 }
