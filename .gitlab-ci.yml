@@ -19,8 +19,8 @@
 #     - cd test
 #     - go run operate_simple_docker.go
 
-#   tags:
-#     - minik8stest
+  # tags:
+  #   - minik8scicd
 
 # test:
 #   stage: test
@@ -36,11 +36,15 @@ stages:
   - test
 
 build:
+  tags:
+    - minik8scicd
   stage: build
   script:
     - cd src/minik8s && go build ./...
 
 test:
+  tags:
+    - minik8scicd
   stage: test
   script:
     - cd src/minik8s && go test -v ./...
