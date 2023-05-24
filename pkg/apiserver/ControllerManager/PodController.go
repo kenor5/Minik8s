@@ -44,6 +44,27 @@ func GetPodsByLabels(labels *map[string]string) *list.List {
 	return selectedPods
 }
 
+func GetPodByName(PodName string) (*entity.Pod, error) {
+		// 从etcd中拿出Pod
+		cli, err := etcdctl.NewClient()
+		if err != nil {
+			fmt.Println("etcd client connetc error")
+			return nil, err
+		}
+		defer cli.Close()
+		out, err := etcdctl.Get(cli, "Pod/"+PodName)
+		if err != nil {
+			fmt.Println("No such Pod!")
+		    return nil, err
+		}
+
+		// 解析Pod并返回
+		pod := &entity.Pod{}
+        json.Unmarshal(out.Kvs[0].Value, pod)
+		return pod, nil
+} 
+
+
 // for debug
 func PrintList(List *list.List) {
 	if List.Len() == 0 {

@@ -1,0 +1,5 @@
+kind: Job
+metadata:
+  name: helloworld
+cudaPath: ./tools/cuda/helloworld/helloworld.cuda
+slurmPath: ./tools/cuda/helloworld/helloworld.slurm
