@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"minik8s/configs"
 	"minik8s/entity"
@@ -33,10 +32,10 @@ func RegisterNode(c pb.ApiServerKubeletServiceClient, hostName string, hostIp st
 
 func UpdatePodStatus(c pb.ApiServerKubeletServiceClient, pod *entity.Pod) error {
 	ctx := context.Background()
-
 	podByte, err := json.Marshal(pod)
+	log.Println("Begin update Pod Status", string(podByte))
 	if err != nil {
-		fmt.Println("parse pod error")
+		log.Println("parse pod error")
 		return err
 	}
 
@@ -46,7 +45,7 @@ func UpdatePodStatus(c pb.ApiServerKubeletServiceClient, pod *entity.Pod) error 
 	// 调用服务端 UpdatePodStatus 并获取响应
 	reply, err := c.UpdatePodStatus(ctx, updatePodStatusRequest)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("UpdatePodStatus err!=nil", err)
 	}
 	log.Println(reply.Status)
 

@@ -18,6 +18,7 @@ func GetPodsByLabels(labels *map[string]string) *list.List {
 	if err != nil {
 		fmt.Println("etcd client connetc error")
 	}
+	defer cli.Close()
 
 	out, _ := etcdctl.GetWithPrefix(cli, "Pod/")
 
@@ -28,12 +29,12 @@ func GetPodsByLabels(labels *map[string]string) *list.List {
 		if err != nil {
 			fmt.Println("pod unmarshal error")
 		}
-		// fmt.Println("get etcd", pod)
-		// fmt.Println("lable1 ")
-		// fmt.Println(pod.Metadata.Labels)
-		// fmt.Println("label ")
-		// fmt.Println(*labels)
-		// fmt.Println(reflect.DeepEqual(pod.Metadata.Labels, *labels))
+		fmt.Println("get etcd", pod)
+		fmt.Println("lable1 ")
+		fmt.Println(pod.Metadata.Labels)
+		fmt.Println("label ")
+		fmt.Println(*labels)
+		fmt.Println(reflect.DeepEqual(pod.Metadata.Labels, *labels))
         // 判断Pod仍在运行(状态为Running)Selector和Label完全相等
 		if pod.Status.Phase == entity.Running && reflect.DeepEqual(pod.Metadata.Labels, *labels){
 			selectedPods.PushBack(pod)

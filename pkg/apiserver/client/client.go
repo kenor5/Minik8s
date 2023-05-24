@@ -57,3 +57,27 @@ func KubeLetDeleteService(c pb.KubeletApiServerServiceClient, in *pb.DeleteServi
 
 	return err
 }	
+
+func KubeLetCreateDns(c pb.KubeletApiServerServiceClient, in *pb.ApplyDnsRequest) error {
+	ctx := context.Background()
+	if c == nil {
+		log.PrintE("client is nil")
+	}
+	_, err := c.CreateDns(ctx, in)
+	if err != nil {
+		log.PrintE(err)
+	}
+	
+	return err
+}	
+
+func KubeLetDeleteDns(c pb.KubeletApiServerServiceClient, in *pb.DeleteDnsRequest) error {
+	ctx := context.Background()
+
+	_, err := c.DeleteDns(ctx, in)
+	if err != nil {
+		log.PrintE(err)
+	}
+
+	return err
+}	
