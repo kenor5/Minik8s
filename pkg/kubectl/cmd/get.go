@@ -38,6 +38,8 @@ func doGet(cmd *cobra.Command, args []string) {
 		getFunction(name)
 	case "deployment","deploy":
 		getDeployment(name)
+	case "Dns", "dns":
+		getDns(name)
 	}
 }
 
@@ -100,4 +102,21 @@ func getService(name string) {
 		log.PrintE(err)
 	}
 	fmt.Println("Get Serivce, response ", res)
+}
+
+func getDns(name string) {
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	res, err := cli.GetDns(ctx, &pb.GetDnsRequest{
+		DnsName: name,
+	})
+	if err != nil {
+		log.PrintE(err)
+	}
+	fmt.Println("Get Dns, response ", res)
 }

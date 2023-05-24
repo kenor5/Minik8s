@@ -96,3 +96,21 @@ message GetNodeRequest{
 message GetNodeResponse{
     bytes NodeData = 1;
 }
+
+//Dns
+message ApplyDnsRequest{
+    bytes Data = 1;
+}
+
+message GetDnsRequest{
+    string DnsName = 1;
+}
+
+message DeleteDnsRequest{
+    string DnsName = 1;
+}
+
+message GetDnsResponse{
+    bytes Data = 1;
+}
+

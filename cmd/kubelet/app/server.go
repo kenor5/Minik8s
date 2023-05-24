@@ -102,6 +102,33 @@ func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest2
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
+func (s *server) CreateDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.StatusResponse, error) {
+	dns := &entity.Dns{}
+	err := json.Unmarshal(in.Data, dns)
+	if err != nil {
+		log.PrintE("create dns: umarshal dns failed")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	err = kubelet.KubeletObject().ApplyDns(dns)
+	if err != nil {
+		log.PrintE("kubelet create dns failed")
+		return &pb.StatusResponse{Status: -1}, nil
+	}
+	
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (s *server) DeleteDns(ctx context.Context, in *pb.DeleteDnsRequest) (*pb.StatusResponse, error) {
+	err := kubelet.KubeletObject().DeleteDns(in.DnsName)
+	if err != nil {
+		log.PrintE("kubelet delete dns failed")
+		return &pb.StatusResponse{Status: -1}, nil
+	}
+	
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
 /*********************************************************
 **********************  Kubelet主程序   *************************
 **********************************************************/

@@ -8,6 +8,7 @@ import (
 	"minik8s/pkg/kubectl/utils"
 
 	// "minik8s/tools/log"
+	"minik8s/tools/log"
 	"minik8s/tools/yamlParser"
 	"strings"
 	"time"
@@ -84,16 +85,21 @@ func doApply(cmd *cobra.Command, args []string) {
 		}
 
 	case "Service", "service":
-		applyService(filename)
+		err := applyService(filename)
 		if err != nil {
 			fmt.Println(err)
 		}
 
 	case "Node", "node":
 	// TODO
-
+	
+	case "Dns", "dns":
+		err := applyDns(filename)
+		if err != nil {
+			log.PrintE(err)
+		}
 	default:
-		fmt.Println("there is no object named ")
+		log.PrintE("there is no object named "  + obj)
 	}
 }
 
@@ -189,3 +195,33 @@ func applyService(filename string) error {
 	fmt.Println("Create Service, response ", res)
 	return nil
 }
+
+func applyDns(filename string) error {
+	dns := &entity.Dns{}
+	_, err := yamlParser.ParseYaml(dns, filename)
+	if err != nil {
+		fmt.Println("parse dns failed")
+		return err
+	}
+
+	cli := NewClient()
+	if cli == nil {
+		return fmt.Errorf("fail to connect to apiserver")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+
+	dnsByte, err := json.Marshal(dns)
+	if err != nil {
+		fmt.Println("parse dns error")
+		return err
+	}
+
+	res, err := cli.ApplyDns(ctx, &pb.ApplyDnsRequest{
+		Data: dnsByte,
+	})
+
+	fmt.Println("Create Dns, response ", res)
+	return nil
+}	

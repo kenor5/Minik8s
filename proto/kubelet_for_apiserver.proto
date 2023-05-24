@@ -13,4 +13,7 @@ service kubeletApiServerService {
     rpc DeletePod(share.DeletePodRequest) returns (share.StatusResponse);
     rpc CreateService(share.ApplyServiceRequest2) returns (share.StatusResponse);
     rpc DeleteService(share.DeleteServiceRequest2) returns (share.StatusResponse);
+
+    rpc CreateDns(share.ApplyDnsRequest) returns (share.StatusResponse);
+    rpc DeleteDns(share.DeleteDnsRequest) returns (share.StatusResponse);
 }
