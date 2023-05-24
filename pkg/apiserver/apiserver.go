@@ -7,6 +7,7 @@ import (
 
 	// "google.golang.org/grpc"
 	// "google.golang.org/grpc/credentials/insecure"
+	"os"
 	"os/exec"
 	"minik8s/entity"
 	"minik8s/pkg/apiserver/ControllerManager/NodeController"
@@ -199,11 +200,28 @@ func (master *ApiServer) ApplyFunction(function *entity.Function) (*pb.StatusRes
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.PrintE("命令执行失败：%v\n%s", err, output)
-	}
+	} 
 	
 	// 打印输出结果
 	log.Print(string(output))
 	
+	// 
+	imageName := "luoshicai/hello_function"
+	dockerfilePath := "./tools/serverless/hello_function"
 	
+	cmd = exec.Command("docker", "build", "-t", imageName, dockerfilePath)
+
+	// 设置命令输出到标准输出和标准错误
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// 执行命令
+	err = cmd.Run()
+	if err != nil {
+		log.PrintE("执行命令失败：%v", err)
+	}
+
+	log.Print("镜像构建成功：%s\n", imageName)
+
 	return &pb.StatusResponse{Status: 0}, nil
 }

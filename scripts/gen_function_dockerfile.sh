@@ -9,14 +9,13 @@ MAINTAINER luoshicai <luoshicai@sjtu.edu.cn>
 
 RUN pip install flask
 
-RUN pip install -r ./requirement.txt
+COPY . /src
 
-ADD ../serverless_server.py /serverless_server.py
-ADD ./${function_name} /${function_name}.py
+RUN pip install -r /src/requirements.txt
 
 EXPOSE 8070
 
-CMD ["python3", "/serverless_server.py"]
+CMD ["python3", "/src/serverless_server.py"]
 EOF
 )
 

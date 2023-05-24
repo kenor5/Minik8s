@@ -19,4 +19,4 @@ def execute_function(function_name: str):
         return json.dumps(error_message), 500  # 返回错误信息并设置HTTP状态码为500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, threaded=True)
+    app.run(host='0.0.0.0', port=8070, threaded=True)
