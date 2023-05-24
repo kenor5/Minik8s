@@ -343,6 +343,11 @@ func Run() {
 	}
 
 	/**
+	*  创建Http Trigger
+	**/
+    
+
+	/**
 	**   创建gRPC服务器,接受来自Kubectl和ApiServer的请求
 	**/
 	svr := grpc.NewServer()

@@ -205,9 +205,9 @@ func (master *ApiServer) ApplyFunction(function *entity.Function) (*pb.StatusRes
 	// 打印输出结果
 	log.Print(string(output))
 	
-	// 
-	imageName := "luoshicai/hello_function"
-	dockerfilePath := "./tools/serverless/hello_function"
+	// 生成镜像
+	imageName := "luoshicai/" + function.Metadata.Name
+	dockerfilePath := "./tools/serverless/" + function.Metadata.Name
 	
 	cmd = exec.Command("docker", "build", "-t", imageName, dockerfilePath)
 
@@ -223,5 +223,6 @@ func (master *ApiServer) ApplyFunction(function *entity.Function) (*pb.StatusRes
 
 	log.Print("镜像构建成功：%s\n", imageName)
 
+	
 	return &pb.StatusResponse{Status: 0}, nil
 }
