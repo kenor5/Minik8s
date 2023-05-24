@@ -151,3 +151,19 @@ func (master *ApiServer) ApplyDns(in *pb.ApplyDnsRequest) (*pb.StatusResponse, e
 	}
 	return &pb.StatusResponse{Status: 0}, nil
 }
+
+func (master *ApiServer) DeleteDns(in *pb.DeleteDnsRequest) (*pb.StatusResponse, error) {
+	LivingNodes := master.NodeManager.GetAllLivingNodes()
+
+	for _, node := range LivingNodes {
+		// 发送消息给Kubelet
+		conn := master.NodeManager.GetNodeConnByName(node.Name)
+	    err := client.KubeLetDeleteDns(conn, in)
+	    if err != nil {
+			log.PrintE(err)
+		    return &pb.StatusResponse{Status: -1}, err
+	    }
+
+	}
+	return &pb.StatusResponse{Status: 0}, nil
+}

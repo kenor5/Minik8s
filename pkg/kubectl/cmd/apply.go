@@ -90,9 +90,6 @@ func doApply(cmd *cobra.Command, args []string) {
 			fmt.Println(err)
 		}
 
-	case "Node", "node":
-	// TODO
-	
 	case "Dns", "dns":
 		err := applyDns(filename)
 		if err != nil {

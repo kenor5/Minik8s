@@ -1,11 +1,9 @@
 package kubelet
 
 import (
-	"encoding/json"
 	"fmt"
 	"minik8s/configs"
 	"minik8s/entity"
-	"minik8s/tools/etcdctl"
 	"minik8s/tools/log"
 	"os"
 	"os/exec"
@@ -13,18 +11,9 @@ import (
 
 
 func CreateDns(dns *entity.Dns) error {
-	cli, err := etcdctl.NewClient()
-	if err != nil {
-		log.PrintE("etcd client connetc error")
-	}
-	defer cli.Close()
-
-	data, _ := json.Marshal(dns)
-	// 将Dns信息存入etcd
-	etcdctl.Put(cli, "Dns/"+dns.Metadata.Name, string(data))
 
 	// 修改nginx.conf
-	err = modifyNginxConf(dns)
+	err := modifyNginxConf(dns)
 	if err != nil {
 		log.PrintE("modify nginx.conf error")
 	}

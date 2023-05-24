@@ -91,11 +91,22 @@ func (s *server) GetPod(ctx context.Context, in *pb.GetPodRequest) (*pb.GetPodRe
 		log.PrintE("connect to etcd error")
 	}
 	defer cli.Close()
+
 	out, err := etcdctl.Get(cli, "Pod/"+string(in.PodName))
+	if in.PodName == "" {
+		out, err = etcdctl.GetWithPrefix(cli, "Pod/")
+	}
+
+	// conver []*mvccpb.KeyValue to []byte
+	var data [][]byte
+	for _, v := range out.Kvs {
+		data = append(data, v.Value)
+	}
+
 	if len(out.Kvs) == 0 {
 		return &pb.GetPodResponse{PodData: nil}, nil
 	} else {
-		return &pb.GetPodResponse{PodData: out.Kvs[0].Value}, nil
+		return &pb.GetPodResponse{PodData: data}, nil
 	}
 }
 
@@ -174,12 +185,22 @@ func (s *server) GetService(ctx context.Context, in *pb.GetServiceRequest) (*pb.
 		log.PrintE("connect to etcd error")
 	}
 	defer cli.Close()
+
 	out, _ := etcdctl.Get(cli, "Service/"+string(in.ServiceName))
-	fmt.Println(out.Kvs)
+	if in.ServiceName == "" {
+		out, _ = etcdctl.GetWithPrefix(cli, "Service/")
+	}
+
+	// conver []*mvccpb.KeyValue to []byte
+	var data [][]byte
+	for _, v := range out.Kvs {
+		data = append(data, v.Value)
+	}
+	
 	if len(out.Kvs) == 0 {
 		return &pb.GetServiceResponse{Data: nil}, nil
 	} else {
-		return &pb.GetServiceResponse{Data: out.Kvs[0].Value}, nil
+		return &pb.GetServiceResponse{Data: data}, nil
 	}
 
 }
@@ -280,13 +301,24 @@ func (s *server) ApplyDeployment(ctx context.Context, in *pb.ApplyDeploymentRequ
 
 // Dns
 func (s *server) GetDns(ctx context.Context, in *pb.GetDnsRequest) (*pb.GetDnsResponse, error) {
-	//TODO
-	return &pb.GetDnsResponse{Data: nil}, nil
+	// get dns info from etcd
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("etcd client connetc error")
+	}
+	defer cli.Close()
+	out, _ := etcdctl.Get(cli, "Dns/"+string(in.DnsName))
+	// fmt.Println(out.Kvs)
+	if len(out.Kvs) == 0 {
+		return &pb.GetDnsResponse{Data: nil}, nil
+	} else {
+		return &pb.GetDnsResponse{Data: out.Kvs[0].Value}, nil
+	}
+
 }
 
 func (s *server) DeleteDns(ctx context.Context, in *pb.DeleteDnsRequest) (*pb.StatusResponse, error) {
-	//TODO
-	return &pb.StatusResponse{Status: 0}, nil
+	return apiserver.ApiServerObject().DeleteDns(in)
 }
 
 func (s *server) ApplyDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.StatusResponse, error) {
@@ -296,6 +328,8 @@ func (s *server) ApplyDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.Stat
 		log.PrintE(err)
 		return &pb.StatusResponse{Status: -1}, err
 	}
+	
+	
 
 
 	// get all services from etcd
@@ -304,6 +338,10 @@ func (s *server) ApplyDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.Stat
 		log.PrintE("etcd client connetc error")
 	}
 	defer cli.Close()
+
+	// put dns info into etcd
+	etcdctl.Put(cli, "Dns/"+dns.Metadata.Name, string(in.Data))
+
 	out, _ := etcdctl.GetWithPrefix(cli, "Service/")
 	services := make([]*entity.Service, 0, len(out.Kvs))
 	if len(out.Kvs) == 0 {
@@ -334,8 +372,6 @@ func (s *server) ApplyDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.Stat
 			return &pb.StatusResponse{Status: -1}, err
 		}
 	}
-	log.Print("dns info:")
-	log.Print(dns)
 
 	data, err := json.Marshal(dns)
 	if err != nil {
