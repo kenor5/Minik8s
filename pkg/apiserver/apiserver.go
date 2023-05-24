@@ -7,7 +7,7 @@ import (
 
 	// "google.golang.org/grpc"
 	// "google.golang.org/grpc/credentials/insecure"
-
+	"os/exec"
 	"minik8s/entity"
 	"minik8s/pkg/apiserver/ControllerManager/NodeController"
 	Controller "minik8s/pkg/apiserver/ControllerManager"
@@ -187,4 +187,23 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
     go JobController.SbatchAndQuery(job.Metadata.Name, conn)
 
 	return &pb.StatusResponse{Status: 0}, err
+}
+
+func (master *ApiServer) ApplyFunction(function *entity.Function) (*pb.StatusResponse, error) {
+    // 生成Dockerfile
+    // 命令和参数
+	cmd := exec.Command("./scripts/gen_function_dockerfile.sh", function.Metadata.Name)
+    // 设置工作目录
+	cmd.Dir = "./"
+	// 执行命令并捕获输出
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.PrintE("命令执行失败：%v\n%s", err, output)
+	}
+	
+	// 打印输出结果
+	log.Print(string(output))
+	
+	
+	return &pb.StatusResponse{Status: 0}, nil
 }

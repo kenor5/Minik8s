@@ -109,3 +109,8 @@ message GetJobRequest {
 message GetJobResponse {
     bytes Data = 1;
 }
+
+// function
+message ApplyFunctionRequest {
+    bytes Data = 1;
+}
