@@ -72,7 +72,6 @@ func TestEtcdGetWithPrefix(t *testing.T) {
 		//want    *clientv3.GetResponse
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "test 前缀查询",
 			args: args{k: "Pod/nginx-deployment"},

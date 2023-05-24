@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"minik8s/tools/log"
 	"os"
 
 	"os/exec"
@@ -77,7 +78,12 @@ func EtcdGet(k string) (*clientv3.GetResponse, error) {
 			Endpoints:   []string{"127.0.0.1:2379"},
 			DialTimeout: 5 * time.Second,
 		})
-	defer client.Close()
+	defer func(client *clientv3.Client) {
+		err := client.Close()
+		if err != nil {
+			log.PrintE(err)
+		}
+	}(client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -108,7 +114,12 @@ func EtcdGetWithPrefix(k string) (*clientv3.GetResponse, error) {
 			Endpoints:   []string{"127.0.0.1:2379"},
 			DialTimeout: 5 * time.Second,
 		})
-	defer client.Close()
+	defer func(client *clientv3.Client) {
+		err := client.Close()
+		if err != nil {
+			log.PrintE(err)
+		}
+	}(client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	ret, err := client.Get(ctx, k, clientv3.WithPrefix())
@@ -120,6 +131,33 @@ func EtcdGetWithPrefix(k string) (*clientv3.GetResponse, error) {
 }
 
 func Delete(client *clientv3.Client, k string) error {
+	if client == nil {
+		return errors.New("client is null")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+	_, err1 := client.Delete(ctx, k)
+	cancel()
+
+	if err1 != nil {
+		return errors.New("etcd delete error")
+	}
+	return nil
+}
+
+func EtcdDelete(k string) error {
+	client, _ := clientv3.New(
+		clientv3.Config{
+			Endpoints:   []string{"127.0.0.1:2379"},
+			DialTimeout: 5 * time.Second,
+		})
+	defer func(client *clientv3.Client) {
+		err := client.Close()
+		if err != nil {
+			log.PrintE(err)
+		}
+	}(client)
 	if client == nil {
 		return errors.New("client is null")
 	}

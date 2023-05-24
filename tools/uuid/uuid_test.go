@@ -16,7 +16,6 @@ func TestUUID1(t *testing.T) {
 		name string
 		want string
 	}{
-		// TODO: Add test cases.
 		{
 			name: "UUID",
 		},

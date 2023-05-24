@@ -100,7 +100,7 @@ func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNod
 	cli, err := etcdctl.NewClient()
 	if err != nil {
 		log.PrintE("connect to etcd error")
-	} 
+	}
 	out, _ := etcdctl.Get(cli, "Node/"+string(in.NodeName))
 	fmt.Println(out.Kvs)
 	if len(out.Kvs) == 0 {
@@ -109,7 +109,6 @@ func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNod
 		return &pb.GetNodeResponse{NodeData: out.Kvs[0].Value}, nil
 	}
 }
-
 
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
@@ -135,6 +134,12 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 		fmt.Println("etcd client connect error")
 	}
 	defer cli.Close()
+
+	//检查本地etcd中是否有此Pod，没有说明已经是一个删除的Pod，将其etcd端信息写为succeed,下一次Pod更新通知删除
+	response, err := etcdctl.Get(cli, "Pod/"+pod.Metadata.Name)
+	if len(response.Kvs) == 0 {
+		pod.Status.Phase = entity.Succeed
+	}
 
 	log.Print("Update Pod Status: put etcd:", string(in.Data))
 	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
@@ -188,8 +193,7 @@ func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest)
 	fmt.Println(out.Kvs)
 	if len(out.Kvs) == 0 {
 		return &pb.StatusResponse{Status: 0}, nil
-	} 
-
+	}
 
 	err = kubelet.KubeProxyObject().RemoveService(in.ServiceName)
 	if err != nil {
@@ -207,8 +211,6 @@ func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest)
 	// 		break;
 	// 	}
 	// }
-
-
 
 	return &pb.StatusResponse{Status: 0}, nil
 }
@@ -233,13 +235,13 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 	ControllerManager.PrintList(selectedPods)
 
 	// 组装信息
-     podNames := make([]string, 0, selectedPods.Len())
-	 podIps := make([]string, 0, selectedPods.Len())
-	 for it:= selectedPods.Front(); it != nil; it = it.Next() {
+	podNames := make([]string, 0, selectedPods.Len())
+	podIps := make([]string, 0, selectedPods.Len())
+	for it := selectedPods.Front(); it != nil; it = it.Next() {
 		pod := it.Value.(*entity.Pod)
 		podNames = append(podNames, pod.Metadata.Name)
 		podIps = append(podIps, pod.Status.PodIp)
-	 }
+	}
 
 	if in.Data == nil || podNames == nil || podIps == nil {
 		log.PrintE("service data or pod is <nil>")
@@ -248,9 +250,9 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 		log.Print(podIps)
 	}
 	return apiserver.ApiServerObject().CreateService(&pb.ApplyServiceRequest2{
-		Data: in.Data,
+		Data:     in.Data,
 		PodNames: podNames,
-		PodIps: podIps,
+		PodIps:   podIps,
 	})
 }
 
@@ -294,6 +296,14 @@ func Run() {
 		return
 	}
 
+	//启动Pod监控
+	go apiserver.ApiServerObject().BeginMonitorPod()
+	log.PrintS("Apiserver For PodMonitor Server starts running...")
+
+	//启动deployment监控
+	go ControllerManager.BeginMonitorDeployment()
+	log.PrintS("Apiserver For DeploymentMonitor Server starts running...")
+
 	/**
 	**   创建gRPC服务器,接受来自Kubectl和ApiServer的请求
 	**/
@@ -311,4 +321,5 @@ func Run() {
 		log.PrintE(err)
 		return
 	}
+
 }

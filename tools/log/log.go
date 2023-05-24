@@ -30,6 +30,16 @@ func PrintE(a ...any) {
 	fmt.Printf("%c[0m\n", 0x1B)
 }
 
+// PrintfE 打印错误，文字为红色加粗
+func PrintfE(str string, a ...any) {
+	pc, file, line, _ := runtime.Caller(1)
+	funcName := runtime.FuncForPC(pc).Name()
+	fmt.Printf("%c[1;1;31m", 0x1B)
+	fmt.Printf("[%s]\n%s:%d ", funcName, file, line)
+	fmt.Printf(str, a...)
+	fmt.Printf("%c[0m\n", 0x1B)
+}
+
 // PrintS 打印成功信息，文字为绿色加粗
 func PrintS(a ...any) {
 	fmt.Printf("%c[1;1;32m", 0x1B)

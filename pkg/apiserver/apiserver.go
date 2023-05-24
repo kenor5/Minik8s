@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"minik8s/configs"
 	"minik8s/tools/etcdctl"
+	"time"
 
 	// "minik8s/configs"
 
@@ -164,4 +166,63 @@ func (master *ApiServer) ApplyHPA(HPAbyte *pb.ApplyHorizontalPodAutoscalerReques
 		log.PrintE("[ApiServer] Write HPAData fail")
 		return
 	}
+}
+
+// BeginMonitorPod TODO 根据etcd中存储的信息，监控和更新Pod的状态
+func (master *ApiServer) BeginMonitorPod() {
+
+	//检查pending状态的Pod，指定一个Node创建
+	ticker := time.NewTicker(configs.MonitorPodTime * time.Second) //每5s检查一次etcd信息
+	for range ticker.C {
+		master.CheckEtcdAndUpdate()
+	}
+}
+func (master *ApiServer) CheckEtcdAndUpdate() {
+	PodsData, _ := etcdctl.EtcdGetWithPrefix("Pod/")
+	//读取所有的Pod信息
+	var Pods []entity.Pod
+	for _, PodData := range PodsData.Kvs {
+		var pod entity.Pod
+		err := json.Unmarshal(PodData.Value, &pod)
+		if err != nil {
+			log.PrintE("[CheckEtcdAndUpdate]GetPods Unmarshal Pod error")
+			return
+		}
+		Pods = append(Pods, pod)
+	}
+	//根据不同的Pod状态，进行不同处理
+	/*
+		1. Pending 为创建后还为指定Node实际创建
+		2. Failed  为Node上Pod运行已经监控到fail或者Node无法连接
+		3. Running 不用处理
+		4. Succeed 应该极少出现，因为先删除本地etcd才通知Node删除
+	*/
+	for _, pod := range Pods {
+		podstate := pod.Status.Phase
+		switch podstate {
+		case entity.Running:
+			continue
+		case entity.Failed:
+			//TODO: 利用hostIP通知Node检查状态或者重新创建
+			//一种简单通用实现：直接发送一次DeletePod 到Node，再为Pod重新指定Node创建
+			hostIP := pod.Status.HostIp
+			if hostIP == "" {
+				//需要分配新的Node
+				hostIP = "127.0.0.1"
+			}
+
+		case entity.Pending:
+		//TODO: 此类为已经写入etcd但还未指定Node创建的Pod，如新的replica
+		//根据调度策略选择合适Node分配
+
+		case entity.Succeed:
+			//TODO: 通知Node删除Pod后，删除本地信息
+			err := etcdctl.EtcdDelete("Pod/" + pod.Metadata.Name)
+			if err != nil {
+				log.PrintfE("[CheckEtcdAndUpdate]Delete Pod %s error", pod.Metadata.Name)
+				continue
+			}
+		}
+	}
+
 }

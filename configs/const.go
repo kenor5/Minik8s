@@ -7,4 +7,7 @@ const (
 
 	GrpcPort        = ":5678"
 	KubeletGrpcPort = ":5679"
+
+	MonitorDeploymentTime = 10
+	MonitorPodTime        = 5
 )
