@@ -13,7 +13,7 @@ import (
 )
 
 func SbatchAndQuery(JobName string, conn pb.KubeletApiServerServiceClient) {
-	time.Sleep(2 * time.Second) // 休眠 2 秒,等待Pod可用
+	time.Sleep(5 * time.Second) // 休眠 2 秒,等待Pod可用
 	// Job ServerPod的名字
 	PodName := JobName + "-ServerPod"
 	fmt.Println(PodName)

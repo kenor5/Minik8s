@@ -24,6 +24,9 @@ service ApiServerKubectlService {
 
     rpc GetNode(share.GetNodeRequest) returns (share.GetNodeResponse);
 
+    rpc ApplyDns(share.ApplyDnsRequest) returns (share.StatusResponse);
+    rpc GetDns(share.GetDnsRequest) returns (share.GetDnsResponse);
+    rpc DeleteDns(share.DeleteDnsRequest) returns (share.StatusResponse);
     rpc ApplyJob(share.ApplyJobRequest) returns (share.StatusResponse);
     rpc GetJob(share.GetJobRequest) returns (share.GetJobResponse);
 }

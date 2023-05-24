@@ -297,3 +297,17 @@ func (kl *Kubelet) beginMonitor() {
 	}
 	}()*/
 }
+
+
+func (kl *Kubelet) ApplyDns(dns *entity.Dns) error {
+	err := CreateDns(dns)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (kl *Kubelet) DeleteDns(dnsName string) error {
+	//TODO
+	return nil
+}
