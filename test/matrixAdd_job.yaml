@@ -1,0 +1,5 @@
+kind: Job
+metadata:
+  name: matrixAdd
+cudaPath: ./tools/cuda/matrixAdd/matrixAdd.cuda
+slurmPath: ./tools/cuda/matrixAdd/matrixAdd.slurm

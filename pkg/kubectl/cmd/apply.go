@@ -95,6 +95,12 @@ func doApply(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.PrintE(err)
 		}
+	case "Job", "job":
+	    applyJob(filename)
+		if err != nil {
+			fmt.Println(err)
+		}
+
 	default:
 		log.PrintE("there is no object named "  + obj)
 	}
@@ -222,3 +228,37 @@ func applyDns(filename string) error {
 	fmt.Println("Create Dns, response ", res)
 	return nil
 }	
+
+
+func applyJob(filename string) error {
+	// 先 parse yaml 文件
+	job := &entity.Job{}
+	_, err := yamlParser.ParseYaml(job, filename)
+	if err != nil {
+		fmt.Println("parse pod failed")
+		return err
+	}
+	fmt.Println(job)
+
+	// 通过 rpc 连接 apiserver
+	cli := NewClient()
+	if cli == nil {
+		return fmt.Errorf("fail to connect to apiserver")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 把 pod 序列化成 string 传给 apiserver
+	jobByte, err := json.Marshal(job)
+	if err != nil {
+		fmt.Println("parse job error")
+		return err
+	}
+
+	res, err := cli.ApplyJob(ctx, &pb.ApplyJobRequest{
+		Data: jobByte,
+	})
+
+	fmt.Println("Create Job, response ", res)
+	return nil
+}
