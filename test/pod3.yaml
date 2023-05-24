@@ -26,5 +26,4 @@ spec:
           mountPath: /data
   volumes:
     - name: volume
-      hostPath:
-        path: /pod
+      hostPath: /pod
