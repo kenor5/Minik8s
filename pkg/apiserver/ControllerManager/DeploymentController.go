@@ -36,6 +36,7 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 		//组合产生Deployment pod的名字
 		pod.Metadata.Name = deployment.Metadata.Name + "-" + templateHash + "-" + uid[:5]
 
+		pod.Status.Phase = entity.Pending
 		pod.Spec = deployment.Spec.Template.Spec
 		Pods[pod.Metadata.Name+pod.Metadata.Uid] = pod
 
@@ -92,14 +93,15 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 
 // DeleteDeployment kubectl调用后删除etcd中的deployment信息
 func DeleteDeployment(DeploymentName string) error {
+	log.Printf("[DeleteDeployment]Beging delete Deployment:%s", DeploymentName)
 	cli, err := etcdctl.NewClient()
 	if err != nil {
-		fmt.Println("etcd client connect error")
+		log.PrintE("etcd client connect error")
 	}
 	defer func(cli *clientv3.Client) {
 		err := cli.Close()
 		if err != nil {
-			fmt.Print("close etcdClient error!")
+			log.PrintE("close etcdClient error!")
 		}
 	}(cli)
 	//删除deployment
@@ -115,7 +117,7 @@ func DeleteDeployment(DeploymentName string) error {
 	//查询etcd中和deployment相关的pod
 	PodsData, err := cli.Get(context.Background(), "Pod/"+deploymentDetail.Metadata.Name, clientv3.WithPrefix())
 	if err != nil {
-		fmt.Println("get from etcd failed, err:", err)
+		log.PrintE("get from etcd failed, err:", err)
 		return err
 	}
 	//通知Node删除和deployment相关的pod，更新etcd
@@ -133,7 +135,7 @@ func DeleteDeployment(DeploymentName string) error {
 		podpath := "Pod/" + pod.Metadata.Name
 		err := etcdctl.Delete(cli, podpath)
 		if err != nil {
-			log.Print("delete " + podpath + "failed!")
+			log.PrintE("delete " + podpath + "failed!")
 			return err
 		}
 	}

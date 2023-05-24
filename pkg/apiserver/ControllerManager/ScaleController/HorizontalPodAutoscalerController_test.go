@@ -29,7 +29,7 @@ func TestAutoscalerManager_startAutoscalerMonitor(t *testing.T) {
 	}
 	tests[0].fields.metricsManager = scale.NewMetricsManager()
 	hpa := &entity.HorizontalPodAutoscaler{}
-	_, _ = yamlParser.ParseYaml(hpa, "/home/zhaoxi/go/src/minik8s/test/hpa_test.yaml")
+	_, _ = yamlParser.ParseYaml(hpa, "/home/zhaoxi/go/src/minik8s/test/hpaAutoScaleTest.yaml")
 	tests[0].args.autoscaler = hpa
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

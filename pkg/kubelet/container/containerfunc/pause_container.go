@@ -6,8 +6,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"log"
 	"minik8s/entity"
+	"minik8s/tools/log"
 )
 
 func CreatePauseContainer(pod *entity.Pod) (string, string, error) {
@@ -47,7 +47,7 @@ func CreatePauseContainer(pod *entity.Pod) (string, string, error) {
 		println(err)
 		fmt.Printf("start pause_container failed!")
 	} else {
-		fmt.Printf("start pause_container success!")
+		log.PrintS("start pause_container success!")
 	}
 	StartContainer(body.ID)
 
@@ -63,7 +63,7 @@ func generatePorts(cons []entity.Container) (nat.PortSet, nat.PortMap) {
 			if ports.ContainerPort != "" {
 				port, err := nat.NewPort(ports.Protocol, ports.ContainerPort)
 				if err != nil {
-					log.Fatal(err)
+					log.PrintE(err)
 				}
 				exportPorts[port] = struct{}{}
 

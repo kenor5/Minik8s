@@ -1,3 +1,5 @@
+nginx_deployment:
+  yaml:
 kind: Deployment
 metadata:
   name: nginx-deployment

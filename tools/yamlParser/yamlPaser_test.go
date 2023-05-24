@@ -11,11 +11,12 @@ var yamlPath = "../../test/pod2.yaml"
 var yamlPath2 = "../../test/service_test.yaml"
 var yamlPath3 = "../../test/nginx_deployment.yaml"
 var yamlPath4 = "../../test/hpa_test.yaml"
+var yamlPath5 = "../../test/pod4_zx.yaml"
 
 func TestParser(t *testing.T) {
 
 	pod := &entity.Pod{}
-	b, _ := ParseYaml(pod, yamlPath)
+	b, _ := ParseYaml(pod, yamlPath5)
 
 	service := &entity.Service{}
 	s, _ := ParseYaml(service, yamlPath2)

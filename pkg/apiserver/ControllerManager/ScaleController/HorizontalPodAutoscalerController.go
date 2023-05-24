@@ -50,9 +50,9 @@ func (AM *AutoscalerManager) CreateAutoscaler(autoscaler *entity.HorizontalPodAu
 func (AM *AutoscalerManager) startAutoscalerMonitor(autoscaler *entity.HorizontalPodAutoscaler) {
 	deploymentName := autoscaler.Spec.ScaleTargetRef.Name
 	monitorInterval := time.Second * time.Duration(autoscaler.Spec.ScaleInterval)
-	ticker := time.NewTicker(monitorInterval)
+	ticker := time.NewTicker(monitorInterval) //每30s使用
 	for range ticker.C {
-		deploymentdata, _ := etcdctl.EtcdGet(deploymentName)
+		deploymentdata, _ := etcdctl.EtcdGet("Deployment/" + deploymentName)
 		if len(deploymentdata.Kvs) == 0 {
 			// Deployment 已经被删除
 			delete(AM.autoscalers, autoscaler.Metadata.Name)
@@ -115,7 +115,7 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 				if err != nil {
 					log.PrintW("[monitorAndScaleDeployment]Get cpuUsage fail", pod.Metadata.Name)
 				}
-				deploymentCPUUsage += cpuUsagePerPod
+				deploymentCPUUsage += cpuUsagePerPod * 100 //百分比*100
 			}
 			cpuUsageAvgPod = deploymentCPUUsage / float64(NowPodNums)
 			autoscaler.Status.CurrentMetrics[0].ResourceStatus.Current.AverageUtilization = fmt.Sprintf("%f", cpuUsageAvgPod)

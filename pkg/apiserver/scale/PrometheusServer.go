@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	prometheusConatinerName = "prometheus"
+	prometheusConatinerName = "minik8s_prometheus"
 	prometheusName          = "prom/prometheus"
 	prometheusPort          = 9090
 	prometheusConfig        = "prometheus.yml"
