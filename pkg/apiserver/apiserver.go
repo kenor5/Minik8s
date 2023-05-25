@@ -192,7 +192,7 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 			Volumes : []entity.Volume{
 			    {
 				    Name : "volume1",
-				    HostPath: "/home/luoshicai/go/src/minik8s/tools/cuda/"+job.Metadata.Name,
+				    HostPath: "/root/go/src/minik8s/tools/cuda/"+job.Metadata.Name,
 			    },
 			},
 		},
