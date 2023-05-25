@@ -14,10 +14,10 @@ import (
 **/
 func RegisterNode(c pb.ApiServerKubeletServiceClient, hostName string, hostIp string) error {
 	ctx := context.Background()
-    // 组装消息
+	// 组装消息
 	in := &pb.RegisterNodeRequest{
-		NodeName: hostName,
-		NodeIp : hostIp,
+		NodeName:   hostName,
+		NodeIp:     hostIp,
 		KubeletUrl: hostIp + configs.KubeletGrpcPort,
 	}
 	// 调用服务端 RegisterNode 并获取响应

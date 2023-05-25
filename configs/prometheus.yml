@@ -1,0 +1,20 @@
+global:
+    scrape_interval: 15s
+    evaluation_interval: 15s
+rule_files:
+    - rule/record/*.yml
+scrape_configs:
+    - job_name: prometheus
+      static_configs:
+        - targets:
+            - localhost:9090
+    - job_name: cadvisor
+      static_configs:
+        - targets:
+            - localhost:8080
+        - targets:
+            - 10.119.11.24:8080
+        - targets:
+            - 192.168.1.5:8080
+        # - targets:
+        #     - 192.168.2.0:8080

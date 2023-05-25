@@ -1,0 +1,9 @@
+kind: Dns
+metadata:
+  name: dns-example
+spec: 
+  host: example2.com 
+  paths:
+  - path: /aa
+    serviceName: fileserver-service
+    servicePort: 8080
