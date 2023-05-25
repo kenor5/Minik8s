@@ -146,7 +146,6 @@ func (s *server) ApplyJob(ctx context.Context, in *pb.ApplyJobRequest) (*pb.Stat
 	return apiserver.ApiServerObject().ApplyJob(job)
 }
 
-<<<<<<< HEAD
 func (s *server)ApplyFunction(ctx context.Context, in *pb.ApplyFunctionRequest) (*pb.StatusResponse, error) {
 	// 解析Function
 	function := &entity.Function{}
@@ -159,8 +158,6 @@ func (s *server)ApplyFunction(ctx context.Context, in *pb.ApplyFunctionRequest) 
 	return apiserver.ApiServerObject().ApplyFunction(function)
 }
 
-=======
->>>>>>> master
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
 	newNode := &entity.Node{}
