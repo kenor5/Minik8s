@@ -17,7 +17,7 @@ import (
 
 	"minik8s/pkg/apiserver"
 
-	clientv3 "go.etcd.io/etcd/client/v3"
+	//clientv3 "go.etcd.io/etcd/client/v3"
 
 	"minik8s/pkg/apiserver/ControllerManager"
 
@@ -422,16 +422,16 @@ func Run() {
 	/**
 	**   开启etcd
 	**/
-	cli, err := etcdctl.Start(configs.EtcdStartPath)
-	if err != nil {
-		return
-	}
-	defer func(cli *clientv3.Client) {
-		err := cli.Close()
-		if err != nil {
-			log.PrintE("etcd close error")
-		}
-	}(cli)
+	// cli, err := etcdctl.Start(configs.EtcdStartPath)
+	// if err != nil {
+	// 	return
+	// }
+	// defer func(cli *clientv3.Client) {
+	// 	err := cli.Close()
+	// 	if err != nil {
+	// 		log.PrintE("etcd close error")
+	// 	}
+	// }(cli)
 
 	// 注册请求处理接口
 	listen, err := net.Listen("tcp", configs.GrpcPort)
