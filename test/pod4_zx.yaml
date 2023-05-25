@@ -19,12 +19,12 @@ spec:
         - name: volume
           mountPath: /usr/share/nginx/html/files
       resources:
-        limits:
-          memory: "200Mi"
-          cpu: "700m"
-        requests:
-          memory: "200Mi"
-          cpu: "700m"
+        - limits:
+          - memory: 200Mi
+            cpu: 700m
+        - requests:
+          - memory: 200Mi
+            cpu: 700m
   volumes: #定义一组挂载设备
     - name: volume #定义一个挂载设备的名字
       #emptyDir: {}
@@ -34,16 +34,3 @@ spec:
     host_ip: 192.168.1.0
     Phase: "Pending"
     pod_ip: 192.168.2.0
-
-  #   - name: my-http-server
-  #     image: my-http-server:latest
-  #     ports:
-  #       - containerPort: 6800
-  #         hostPort: 6800
-  #     volumeMounts:
-  #       - name: volume
-  #         mountPath: /data
-  # volumes:
-  #   - name: volume
-  #     hostPath:
-  #       path: /pod

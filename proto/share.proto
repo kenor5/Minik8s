@@ -60,6 +60,28 @@ message GetDeploymentResponse{
     bytes Data = 1;
 }
 
+//HorizontalPodAutoscaler
+message ApplyHorizontalPodAutoscalerRequest{
+    bytes Data = 1;
+}
+
+message GetHorizontalPodAutoscalerRequest{
+    string Data = 1;
+}
+message GetHorizontalPodAutoscalerResponse{
+    bytes Data = 1;
+}
+message UpdateHorizontalPodAutoscalerRequest{
+    bytes Data=1;
+}
+message UpdateHorizontalPodAutoscalerResponse{
+    string Data=1;
+}
+
+message DeleteHorizontalPodAutoscaler{
+    string Data = 1;
+}
+
 // service
 message ApplyServiceRequest{
     bytes Data = 1;

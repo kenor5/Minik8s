@@ -1,0 +1,23 @@
+nginx_deployment:
+  yaml:
+kind: Deployment
+metadata:
+  name: autoscale-deployment
+  labels:
+    app: autoscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: autoscale
+  template:
+    metadata:
+      labels:
+        app: autoscale
+    spec:
+      containers:
+        - name: autoscaleContainer
+          image: fly0307/auroscale:v1
+          ports:
+            - containerPort: 80
+#          command: ['/bin/bash','chmod +x ./autoScale']

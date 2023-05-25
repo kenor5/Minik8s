@@ -3,6 +3,7 @@ package PodManager
 import (
 	"fmt"
 	"minik8s/entity"
+	"minik8s/pkg/kubelet/pod/podfunc"
 	"sync"
 )
 
@@ -57,8 +58,8 @@ type basicManager struct {
 // NewPodManager returns a functional Manager.
 func NewPodManager() PodManager {
 	return &basicManager{
-		podByFullName:   map[string]*entity.Pod{},
-		podByUID:        map[string]*entity.Pod{},
+		podByFullName: map[string]*entity.Pod{},
+		//podByUID:        map[string]*entity.Pod{},
 		ContainersByPod: map[string][]string{},
 	}
 }
@@ -101,8 +102,8 @@ func (pm *basicManager) DeletePod(pod *entity.Pod) {
 func (pm *basicManager) GetPods() []*entity.Pod {
 	pm.lock.RLock()
 	defer pm.lock.RUnlock()
-	pods := make([]*entity.Pod, 0, len(pm.podByUID))
-	for _, pod := range pm.podByUID {
+	pods := make([]*entity.Pod, 0, len(pm.podByFullName))
+	for _, pod := range pm.podByFullName {
 		pods = append(pods, pod)
 	}
 	return pods
@@ -145,6 +146,8 @@ func (pm *basicManager) DeleteContainersByPod(pod *entity.Pod) {
 	pm.lock.RLock()
 	defer pm.lock.RUnlock()
 	fullname := pod.Metadata.Namespace + pod.Metadata.Name
+	//删除其中的Container
+	podfunc.DeletePod(pm.ContainersByPod[fullname])
 	pm.ContainersByPod[fullname] = pm.ContainersByPod[fullname][:0]
 	return
 }

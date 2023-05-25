@@ -23,6 +23,6 @@ func StartContainer(containerID string) {
 	err := cli.ContainerStart(context.Background(), containerID, types.ContainerStartOptions{})
 
 	if err == nil {
-		log.PrintS("container", containerID, "start successfully")
+		log.PrintS("container ", containerID, " start successfully")
 	}
 }
