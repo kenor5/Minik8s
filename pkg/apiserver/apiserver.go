@@ -23,6 +23,7 @@ import (
 type ApiServer struct {
 	// conn pb.KubeletApiServerServiceClient
 	NodeManager NodeController.NodeController
+	
 }
 
 var apiServer *ApiServer
