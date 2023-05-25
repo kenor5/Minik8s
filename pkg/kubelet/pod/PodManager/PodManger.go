@@ -3,6 +3,8 @@ package PodManager
 import (
 	"fmt"
 	"minik8s/entity"
+	"minik8s/pkg/kubelet/pod/podfunc"
+	"minik8s/tools/log"
 	"sync"
 )
 
@@ -57,21 +59,25 @@ type basicManager struct {
 // NewPodManager returns a functional Manager.
 func NewPodManager() PodManager {
 	return &basicManager{
-		podByFullName:   map[string]*entity.Pod{},
+		podByFullName: map[string]*entity.Pod{},
 		podByUID:        map[string]*entity.Pod{},
 		ContainersByPod: map[string][]string{},
 	}
 }
 
 func (pm *basicManager) AddPod(pod *entity.Pod) {
+	log.PrintS("a")
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	if _, ok := pm.GetPodByName(pod.Metadata.Namespace, pod.Metadata.Name); ok {
 		fmt.Printf("pod %v already exist\n", pod.Metadata.Name)
 	}
+	log.PrintS("e")
 	fullName := pod.Metadata.Namespace + pod.Metadata.Name
 	pm.podByFullName[fullName] = pod
+	log.PrintS("f")
 	pm.podByUID[pod.Metadata.Uid] = pod
+	log.PrintS("g")
 }
 
 func (pm *basicManager) UpdatePod(pod *entity.Pod) {
@@ -101,8 +107,8 @@ func (pm *basicManager) DeletePod(pod *entity.Pod) {
 func (pm *basicManager) GetPods() []*entity.Pod {
 	pm.lock.RLock()
 	defer pm.lock.RUnlock()
-	pods := make([]*entity.Pod, 0, len(pm.podByUID))
-	for _, pod := range pm.podByUID {
+	pods := make([]*entity.Pod, 0, len(pm.podByFullName))
+	for _, pod := range pm.podByFullName {
 		pods = append(pods, pod)
 	}
 	return pods
@@ -121,9 +127,12 @@ func (pm *basicManager) GetPodByName(namespace string, name string) (*entity.Pod
 }
 
 func (pm *basicManager) GetPodByFullName(podFullName string) (*entity.Pod, bool) {
-	pm.lock.RLock()
-	defer pm.lock.RUnlock()
+	// log.PrintS("b")
+	// pm.lock.RLock()
+	// log.PrintS("c")
+	// defer pm.lock.RUnlock()
 	pod, ok := pm.podByFullName[podFullName]
+	log.PrintS("d")
 	return pod, ok
 }
 
@@ -145,6 +154,8 @@ func (pm *basicManager) DeleteContainersByPod(pod *entity.Pod) {
 	pm.lock.RLock()
 	defer pm.lock.RUnlock()
 	fullname := pod.Metadata.Namespace + pod.Metadata.Name
+	//删除其中的Container
+	podfunc.DeletePod(pm.ContainersByPod[fullname])
 	pm.ContainersByPod[fullname] = pm.ContainersByPod[fullname][:0]
 	return
 }

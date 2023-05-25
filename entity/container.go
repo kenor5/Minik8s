@@ -11,16 +11,17 @@ type Container struct {
 	Resources ResourceRequirements `json:"resources,omitempty" yaml:"resources,omitempty"`
 
 	Command []string `json:"command,omitempty" yaml:"command,omitempty"`
+	Args    []string `json:"args,omitempty" yaml:"args,omitempty"`
 }
 
 type ResourceRequirements struct {
-	Limit   map[string]Quantity `json:"limits,omitempty" yaml:"limits,omitempty"`
-	Request map[string]Quantity `json:"requests,omitempty" yaml:"requests,omitempty"`
+	Limit   Quantity `json:"limits,omitempty" yaml:"limits,omitempty"`
+	Request Quantity `json:"requests,omitempty" yaml:"requests,omitempty"`
 }
 
 type Quantity struct {
-	Cpu    string `json:"cpu,omitempty" yaml:"cpu,omitempty"`
-	Memory string `json:"memory,omitempty" yaml:"memory,omitempty"`
+	Memory []string `json:"memory,omitempty" yaml:"memory,omitempty"`
+	Cpu    []string `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 }
 
 type ContainerPort struct {

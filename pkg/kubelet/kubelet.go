@@ -104,19 +104,29 @@ func (kl *Kubelet) CreatePod(pod *entity.Pod) error {
 	pod.Spec.NodeName = kl.hostName
 	ContainerIds, err := podfunc.CreatePod(pod)
 	if err != nil {
+		log.PrintE(err)
 		return err
 	}
 
+	log.PrintS("1")
 	// 维护ContainerRuntimeManager
-	// kl.AddPod(pod)
+	kl.podManger.AddPod(pod)
+
+	log.PrintS("2")
+
 	for _, ContainerId := range ContainerIds {
+		log.PrintS(ContainerId)
 		kubelet.podManger.AddContainerToPod(ContainerId, pod)
 	}
 	kl.containerManager.SetContainerIDsByPodName(pod, ContainerIds)
 
+	log.PrintS("3")
+
 	// 更新PodStatus
-	log.Print("[Kubelet] CreatePod success,Begin update Pod")
+	log.PrintS("[Kubelet] CreatePod success,Begin update Pod")
 	client.UpdatePodStatus(kubelet.connToApiServer, pod)
+
+	log.PrintS("4")
 	return nil
 }
 
@@ -131,7 +141,7 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 	//kl.podManger.DeletePod(pod)
 	// 更新Pod的状态
 	pod.Status.Phase = entity.Succeed
-	//kl.DeletePod(pod)
+	kl.podManger.DeletePod(pod)
 	log.Print("[Kubelet] DeletePod success,Begin update Pod")
 	//client.UpdatePodStatus(kubelet.connToApiServer, pod)
 	return nil
@@ -179,10 +189,10 @@ func ConnectToApiServer(apiserver_url string) (pb.ApiServerKubeletServiceClient,
 
 // 在一个单独的线程中运行，监控pod状态
 func (kl *Kubelet) monitorPods() {
-	kl.lock.Lock()
-	defer kl.lock.Unlock()
-	FailedPods := []*entity.Pod{}
-	SucceedPods := []*entity.Pod{}
+	//kl.lock.Lock()
+	//defer kl.lock.Unlock()
+	var FailedPods []*entity.Pod
+	var SucceedPods []*entity.Pod
 	cli, _ := dockerclient.NewClientWithOpts(
 		dockerclient.FromEnv,
 		dockerclient.WithAPIVersionNegotiation(),
@@ -263,15 +273,20 @@ func (kl *Kubelet) monitorPods() {
 
 	//删除FailedPod的其余container，并重新创建Pod
 	for _, pod := range FailedPods {
+		err := client.UpdatePodStatus(kubelet.connToApiServer, pod)
+		if err != nil {
+			log.PrintfE("[monitorPods]Update Pod %s status erroe", pod.Metadata.Name)
+			continue
+		}
 		conatainers := kl.podManger.GetContainersByPod(pod)
-		err := podfunc.DeletePod(conatainers)
+		err = podfunc.DeletePod(conatainers)
 		if err != nil {
 			fmt.Printf("delete container of Pod %v error", pod.Metadata.Name)
 			return
 		}
 		kl.podManger.DeleteContainersByPod(pod)
 	}
-	kl.lock.Unlock()
+	//kl.lock.Unlock()
 	//重新创建FailedPod
 	for _, pod := range FailedPods {
 		err := kl.CreatePod(pod)
@@ -286,14 +301,29 @@ func (kl *Kubelet) monitorPods() {
 
 // 每30s检查一次本地运行Pod状态
 // 使用 go beginMonitor()开始执行
-func (kl *Kubelet) beginMonitor() {
-	for {
+func (kl *Kubelet) BeginMonitor() {
+
+	ticker := time.NewTicker(30 * time.Second) //每30s使用
+	for range ticker.C {
 		kl.monitorPods()
-		time.Sleep(30 * time.Second)
 	}
 	/*go func() {
 	for range time.Tick(time.Second * monitorInterval) {
 	kubelet.monitorPods()
 	}
 	}()*/
+}
+
+
+func (kl *Kubelet) ApplyDns(dns *entity.Dns) error {
+	err := CreateDns(dns)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (kl *Kubelet) DeleteDns(dnsName string) error {
+	//TODO
+	return nil
 }

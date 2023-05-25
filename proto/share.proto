@@ -26,7 +26,7 @@ message GetPodRequest {
 }
 
 message GetPodResponse {
-    bytes PodData = 1;
+    repeated bytes PodData = 1;
 }
 
 message StatusResponse {
@@ -60,6 +60,28 @@ message GetDeploymentResponse{
     bytes Data = 1;
 }
 
+//HorizontalPodAutoscaler
+message ApplyHorizontalPodAutoscalerRequest{
+    bytes Data = 1;
+}
+
+message GetHorizontalPodAutoscalerRequest{
+    string Data = 1;
+}
+message GetHorizontalPodAutoscalerResponse{
+    bytes Data = 1;
+}
+message UpdateHorizontalPodAutoscalerRequest{
+    bytes Data=1;
+}
+message UpdateHorizontalPodAutoscalerResponse{
+    string Data=1;
+}
+
+message DeleteHorizontalPodAutoscaler{
+    string Data = 1;
+}
+
 // service
 message ApplyServiceRequest{
     bytes Data = 1;
@@ -74,7 +96,7 @@ message DeleteServiceRequest{
 }
 
 message GetServiceResponse{
-    bytes Data = 1;
+    repeated bytes Data = 1;
 }
 
 // apiserver -> kubelet
@@ -97,6 +119,22 @@ message GetNodeResponse{
     bytes NodeData = 1;
 }
 
+//Dns
+message ApplyDnsRequest{
+    bytes Data = 1;
+}
+
+message GetDnsRequest{
+    string DnsName = 1;
+}
+
+message DeleteDnsRequest{
+    string DnsName = 1;
+}
+
+message GetDnsResponse{
+    bytes Data = 1;
+}
 // Job
 message ApplyJobRequest {
     bytes Data = 1;

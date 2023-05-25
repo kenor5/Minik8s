@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"log"
+	"minik8s/configs"
 	"minik8s/entity"
 	"minik8s/tools/etcdctl"
 	HASH "minik8s/tools/hash"
+	log "minik8s/tools/log"
 	UUID "minik8s/tools/uuid"
 	"strconv"
 	"time"
@@ -31,10 +32,12 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 		pod := &entity.Pod{}
 		pod.Kind = "Pod"
 		pod.Metadata = deployment.Spec.Template.Metadata
-		pod.Metadata.Uid = UUID.UUID()
+		uid := UUID.UUID()
+		pod.Metadata.Uid = uid
 		//组合产生Deployment pod的名字
-		pod.Metadata.Name = deployment.Metadata.Name + "-" + templateHash + "-" + pod.Metadata.Uid[:5]
+		pod.Metadata.Name = deployment.Metadata.Name + "-" + templateHash + "-" + uid[:5]
 
+		pod.Status.Phase = entity.Pending
 		pod.Spec = deployment.Spec.Template.Spec
 		Pods[pod.Metadata.Name+pod.Metadata.Uid] = pod
 
@@ -91,19 +94,20 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 
 // DeleteDeployment kubectl调用后删除etcd中的deployment信息
 func DeleteDeployment(DeploymentName string) error {
+	log.Printf("[DeleteDeployment]Beging delete Deployment:%s", DeploymentName)
 	cli, err := etcdctl.NewClient()
 	if err != nil {
-		fmt.Println("etcd client connect error")
+		log.PrintE("etcd client connect error")
 	}
 	defer func(cli *clientv3.Client) {
 		err := cli.Close()
 		if err != nil {
-			fmt.Print("close etcdClient error!")
+			log.PrintE("close etcdClient error!")
 		}
 	}(cli)
 	//删除deployment
 	//解析deployment的内容
-	deploymentDetail := entity.Deployment{}
+	deploymentDetail := &entity.Deployment{}
 	deployment := make([]byte, 0)
 	deployments, _ := etcdctl.Get(cli, "Deployment/"+DeploymentName)
 	if len(deployments.Kvs) != 0 {
@@ -114,7 +118,7 @@ func DeleteDeployment(DeploymentName string) error {
 	//查询etcd中和deployment相关的pod
 	PodsData, err := cli.Get(context.Background(), "Pod/"+deploymentDetail.Metadata.Name, clientv3.WithPrefix())
 	if err != nil {
-		fmt.Println("get from etcd failed, err:", err)
+		log.PrintE("get from etcd failed, err:", err)
 		return err
 	}
 	//通知Node删除和deployment相关的pod，更新etcd
@@ -124,19 +128,56 @@ func DeleteDeployment(DeploymentName string) error {
 		err = json.Unmarshal(value.Value, &pod)
 		Pods[pod.Metadata.Name] = pod
 	}
-	//TODO 通知Node删除Pod,利用hostip
 
-	log.Printf("Node删除成功后删除etcd信息")
-	//Node删除成功后删除etcd信息
+	log.Print("Node删除成功后删除etcd信息")
+	//TODO: Node删除成功后删除etcd信息,借助Pod更新机制
 	for _, pod := range Pods {
 		podpath := "Pod/" + pod.Metadata.Name
-		err := etcdctl.Delete(cli, podpath)
+		pod.Status.Phase = entity.Succeed
+		podData, _ := json.Marshal(pod)
+		err := etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(podData))
 		if err != nil {
-			log.Print("delete " + podpath + "failed!")
+			log.PrintE("delete " + podpath + " failed!")
 			return err
 		}
 	}
+	//for _, pod := range Pods {
+	//	podpath := "Pod/" + pod.Metadata.Name
+	//	err := etcdctl.Delete(cli, podpath)
+	//	if err != nil {
+	//		log.PrintE("delete " + podpath + "failed!")
+	//		return err
+	//	}
+	//}
 	return err
+}
+
+// GetPodsBydeployment Pod命名：deploymentname(nginx-deployment)+templet对应HASH(9594276)+PodUID前5位
+func GetPodsBydeployment(deployment string) []entity.Pod {
+	//TODO 默认了能在etcd中查询到的pod都是可用状态，属于replica，是否需要更新？
+	PodsData, _ := etcdctl.EtcdGetWithPrefix("Pod/" + deployment)
+	var Pods []entity.Pod
+	for _, PodData := range PodsData.Kvs {
+		var pod entity.Pod
+		err := json.Unmarshal(PodData.Value, &pod)
+		if err != nil {
+			log.PrintE("GetPodsBydeployment Unmarshal Pod error")
+			return nil
+		}
+		Pods = append(Pods, pod)
+	}
+	return Pods
+}
+
+func BeginMonitorDeployment() {
+	ticker := time.NewTicker(configs.MonitorDeploymentTime * time.Second) //每10s使用
+	for range ticker.C {
+		err := MonitorDeployment()
+		if err != nil {
+			log.PrintE(err)
+			continue
+		}
+	}
 }
 
 // MonitorDeployment 另开线程中运行，持续检查deployment运行状态，并进行扩缩
@@ -184,8 +225,10 @@ func MonitorDeployment() error {
 			pod := entity.Pod{}
 			err = json.Unmarshal(value.Value, &pod)
 			if fewerNum != 0 {
-				//删除failed pod
-				_, err := cli.Delete(context.Background(), "Pod/"+pod.Metadata.Name)
+				//TODO：删除failed pod，改为succeed，借助Pod更新机制
+				pod.Status.Phase = entity.Succeed
+				PodsData, _ := json.Marshal(pod)
+				_, err := cli.Put(context.Background(), "Pod/"+pod.Metadata.Name, string(PodsData))
 				if err != nil {
 					fmt.Println("[MonitorDeployment]delete failed pod fail!")
 					return err
@@ -199,7 +242,7 @@ func MonitorDeployment() error {
 			}
 		}
 		//deployment.replica有更新，需要增加moreNum个 pod
-		//TODO 新增etcd的pod信息后，如何通知Node的kubelet更新？
+		//TODO 新增etcd的pod信息后，如何通知Node的kubelet更新？借助Pod更新机制
 		if moreNum != 0 {
 			for i := 0; i <= moreNum; i++ {
 				//创建replicas份Pod
@@ -211,17 +254,18 @@ func MonitorDeployment() error {
 				//组合产生Deployment pod的名字
 				pod.Metadata.Name = deployment.Metadata.Name + "-" + templateHash + "-" + pod.Metadata.Uid[:5]
 				pod.Spec = deployment.Spec.Template.Spec
+				pod.Status.Phase = entity.Pending
 				PodData, err := json.Marshal(pod)
 				err = etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(PodData))
 				if err != nil {
-					fmt.Println("[MonitorDeployment]write more PodData to etcd error!")
+					fmt.Println("[MonitorDepployment]write more PodData to etcd error!")
 					return err
 				}
 			}
 		}
 	}
 	cli.Close()
-	//TODO 通知Node补充更新所有的FailedPod
+	//TODO:通知Node补充更新所有的FailedPod,借助Pod更新机制
 
 	return nil
 }

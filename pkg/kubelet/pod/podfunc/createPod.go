@@ -40,7 +40,7 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 	pod.Metadata.Uid = UUID.UUID()
 
 	for _, con := range pod.Spec.Containers {
-		log.Print("create common container: %s\n", con.Name)
+		log.Printf("create common container: %s\n", con.Name)
 		docker.EnsureImage(con.Image)
 
 		//TODO：待明确Pod中将哪一个目录供Container挂载使用 emptydir?
@@ -67,17 +67,17 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 		// fmt.Println(con.Resources.Limit["cpu"])
 		//if bytes, ok := con.Resources.Limit["CPU"]; ok {
 		//}
-		// 容器的限制：128MB 的内存，相当于 134217728 字节，和 1 个 CPU 核
+		// 容器的限制：128MB 的内存，相当于 134217728 字节，和 0.1 个 CPU 核
 		resources := container.Resources{
 			Memory:   134217728,
-			NanoCPUs: 1000000000, // 相当于 1 个 CPU 核
+			NanoCPUs: 100000000, // 1000000000相当于 1 个 CPU 核,分配0.1
 		}
 
 		config := &container.Config{
 			Image: con.Image,
 			Cmd:   con.Command,
 		}
-
+		config.Tty = true //保持容器運行
 		HostConfig := &container.HostConfig{
 			PidMode:     container.PidMode(pauseContainerMode),
 			IpcMode:     container.IpcMode(pauseContainerMode),
@@ -90,6 +90,7 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 
 		body, err := cli.ContainerCreate(context.Background(), config, HostConfig, nil, nil, containerName)
 		if err != nil {
+			log.PrintE("ContainerCreate error")
 			DeletePod(ContainerIDMap)
 			return nil, err
 		}
@@ -113,6 +114,6 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 	pod.Status.PodIp = containerIP
 	pod.Status.Phase = entity.Running
 
-	log.PrintS("Create Pod success! Pod IP: %s\n", containerIP)
+	log.Printf("Create Pod success! Pod IP: %s\n", containerIP)
 	return ContainerIDMap, nil
 }

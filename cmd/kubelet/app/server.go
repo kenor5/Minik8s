@@ -3,13 +3,12 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"minik8s/tools/log"
 	"minik8s/configs"
 	"minik8s/entity"
 	"minik8s/pkg/kubelet"
 	pb "minik8s/pkg/proto"
+	"minik8s/tools/log"
 	"net"
-
 
 	"google.golang.org/grpc"
 )
@@ -69,7 +68,7 @@ func (s *server) DeletePod(ctx context.Context, in *pb.DeletePodRequest) (*pb.St
 		log.PrintE("delete pod error")
 		return &pb.StatusResponse{Status: -1}, err
 	}
-	
+
 	log.PrintS("[Kubelet] delete Pod Success")
 	return &pb.StatusResponse{Status: 0}, err
 }
@@ -88,7 +87,6 @@ func (s *server) CreateService(ctx context.Context, in *pb.ApplyServiceRequest2)
 		return &pb.StatusResponse{Status: -1}, err
 	}
 
-	
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
@@ -96,6 +94,33 @@ func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest2
 	err := kubelet.KubeProxyObject().RemoveService(in.ServiceName)
 	if err != nil {
 		log.PrintE("kubelet delete service failed")
+		return &pb.StatusResponse{Status: -1}, nil
+	}
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (s *server) CreateDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.StatusResponse, error) {
+	dns := &entity.Dns{}
+	err := json.Unmarshal(in.Data, dns)
+	if err != nil {
+		log.PrintE("create dns: umarshal dns failed")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	err = kubelet.KubeletObject().ApplyDns(dns)
+	if err != nil {
+		log.PrintE("kubelet create dns failed")
+		return &pb.StatusResponse{Status: -1}, nil
+	}
+	
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (s *server) DeleteDns(ctx context.Context, in *pb.DeleteDnsRequest) (*pb.StatusResponse, error) {
+	err := kubelet.KubeletObject().DeleteDns(in.DnsName)
+	if err != nil {
+		log.PrintE("kubelet delete dns failed")
 		return &pb.StatusResponse{Status: -1}, nil
 	}
 	
@@ -122,6 +147,10 @@ func Run() {
 	if err != nil {
 		log.PrintE(err)
 	}
+	// ////开启Pod状态监控和更新
+	// log.PrintS("[kubelet]Begin Monitor Deployment")
+	// go kubelet.KubeletObject().BeginMonitor()
+
 	//Kubelet启动监控检查本地的Pod运行状态
 	//go kubelet.KubeletObject().beginMonitor()
 	// 创建gRPC服务器
@@ -135,4 +164,5 @@ func Run() {
 		log.PrintE(err)
 		return
 	}
+
 }

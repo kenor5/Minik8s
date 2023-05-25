@@ -1,7 +1,13 @@
 package uuid
 
-import "github.com/google/uuid"
+import (
+	"fmt"
+	"github.com/google/uuid"
+)
 
-func UUID() string{
-	return uuid.NewString()
+func UUID() string {
+	uid := uuid.NewString()
+	uid5 := uid[:5]
+	fmt.Print(uid5)
+	return uid
 }

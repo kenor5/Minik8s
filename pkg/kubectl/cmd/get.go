@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"minik8s/entity"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
 	"time"
-
+	"minik8s/tools/prettyprint"
 	"github.com/spf13/cobra"
 )
 
@@ -22,11 +24,13 @@ var getCmd = &cobra.Command{
 }
 
 func doGet(cmd *cobra.Command, args []string) {
-	if len(args) != 2 {
-		log.PrintE("get err must have 2 args")
-		return
+	var name string
+	if len(args) == 1 {
+		name = ""
+	} else {
+		name = args[1]
 	}
-	name := args[1]
+	
 	switch args[0] {
 	case "po","pod","pods":
 		getPod(name)
@@ -38,6 +42,8 @@ func doGet(cmd *cobra.Command, args []string) {
 		getFunction(name)
 	case "deployment","deploy":
 		getDeployment(name)
+	case "Dns", "dns":
+		getDns(name)
 	case "job":
 		getJob(name)
 	}
@@ -52,14 +58,32 @@ func getPod(name string) {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-	
+		
 		res, err := cli.GetPod(ctx, &pb.GetPodRequest{
 			PodName: name,
 		})
 		if err != nil {
 			log.PrintE(err)
 		}
-		fmt.Println("Get Pod, response ", res)
+
+		title := []string{"Name", "Status", "IP", "Age"}
+
+		data := [][]string{}
+		for _, onePod := range res.PodData {
+		// prettyprint
+			pod := &entity.Pod{}
+			fmt.Println("Get Pod, response ", res)
+			err = json.Unmarshal(onePod, pod)
+			if err != nil {
+				log.PrintE(err)
+			}
+			// 计算age,精确到秒
+
+			age := time.Now().Sub(pod.Status.StartTime).Round(time.Second)
+			data = append(data, []string{pod.Metadata.Name, pod.Status.Phase, pod.Status.PodIp, age.String()})
+		}
+
+		prettyprint.PrettyPrint(title, data)
 }
 
 func getNode(name string) {
@@ -102,7 +126,51 @@ func getService(name string) {
 	if err != nil {
 		log.PrintE(err)
 	}
-	fmt.Println("Get Serivce, response ", res)
+	
+	title := []string{"Name", "Type", "ClusterIP"}
+	data := [][]string{}
+	for _, oneService := range res.Data{
+		service := &entity.Service{}
+		err = json.Unmarshal(oneService, service)
+		if err != nil {
+			log.PrintE(err)
+		}
+		data = append(data, []string{service.Metadata.Name, service.Spec.Type, service.Spec.ClusterIP})
+	}
+	prettyprint.PrettyPrint(title, data)
+
+}
+
+func getDns(name string) {
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	res, err := cli.GetDns(ctx, &pb.GetDnsRequest{
+		DnsName: name,
+	})
+	if err != nil {
+		log.PrintE(err)
+	}
+	// prettyprint
+	title := []string{"Name", "Host", "Subpath", "ServiceName"}
+
+	dns := &entity.Dns{}
+	err = json.Unmarshal(res.Data, dns)
+	if err != nil {
+		log.PrintE(err)
+	}
+	data := [][]string{
+		
+	}
+	for _, v := range dns.Spec.Paths {
+		data = append(data, []string{dns.Metadata.Name, dns.Spec.Host, v.Path, v.ServiceName})
+	}
+	prettyprint.PrettyPrint(title, data)
+	
 }
 
 func getJob(name string) {

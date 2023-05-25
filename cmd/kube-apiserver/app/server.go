@@ -17,7 +17,7 @@ import (
 
 	"minik8s/pkg/apiserver"
 
-	clientv3 "go.etcd.io/etcd/client/v3"
+	//clientv3 "go.etcd.io/etcd/client/v3"
 
 	"minik8s/pkg/apiserver/ControllerManager"
 
@@ -69,6 +69,7 @@ func (s *server) DeletePod(ctx context.Context, in *pb.DeletePodRequest) (*pb.St
 	if err != nil {
 		log.PrintE("connect to etcd error")
 	}
+	defer cli.Close()
 	out, err := etcdctl.Get(cli, "Pod/"+string(in.Data))
 
 	if len(out.Kvs) == 0 {
@@ -88,11 +89,23 @@ func (s *server) GetPod(ctx context.Context, in *pb.GetPodRequest) (*pb.GetPodRe
 	if err != nil {
 		log.PrintE("connect to etcd error")
 	}
+	defer cli.Close()
+
 	out, err := etcdctl.Get(cli, "Pod/"+string(in.PodName))
+	if in.PodName == "" {
+		out, err = etcdctl.GetWithPrefix(cli, "Pod/")
+	}
+
+	// conver []*mvccpb.KeyValue to []byte
+	var data [][]byte
+	for _, v := range out.Kvs {
+		data = append(data, v.Value)
+	}
+
 	if len(out.Kvs) == 0 {
 		return &pb.GetPodResponse{PodData: nil}, nil
 	} else {
-		return &pb.GetPodResponse{PodData: out.Kvs[0].Value}, nil
+		return &pb.GetPodResponse{PodData: data}, nil
 	}
 }
 
@@ -100,7 +113,9 @@ func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNod
 	cli, err := etcdctl.NewClient()
 	if err != nil {
 		log.PrintE("connect to etcd error")
-	} 
+	}
+
+	defer cli.Close()
 	out, _ := etcdctl.Get(cli, "Node/"+string(in.NodeName))
 	fmt.Println(out.Kvs)
 	if len(out.Kvs) == 0 {
@@ -110,8 +125,7 @@ func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNod
 	}
 }
 
-
-func (s *server)ApplyJob(ctx context.Context, in *pb.ApplyJobRequest) (*pb.StatusResponse, error) {
+func (s *server) ApplyJob(ctx context.Context, in *pb.ApplyJobRequest) (*pb.StatusResponse, error) {
 	// 解析Job
 	job := &entity.Job{}
 	err := json.Unmarshal(in.Data, job)
@@ -127,11 +141,12 @@ func (s *server)ApplyJob(ctx context.Context, in *pb.ApplyJobRequest) (*pb.Statu
 		log.PrintE("etcd client connetc error")
 	}
 	log.Print("put etcd")
-	etcdctl.Put(cli, "Job/"+job.Metadata.Name ,string(in.Data))	
-    
+	etcdctl.Put(cli, "Job/"+job.Metadata.Name, string(in.Data))
+
 	return apiserver.ApiServerObject().ApplyJob(job)
 }
 
+<<<<<<< HEAD
 func (s *server)ApplyFunction(ctx context.Context, in *pb.ApplyFunctionRequest) (*pb.StatusResponse, error) {
 	// 解析Function
 	function := &entity.Function{}
@@ -144,6 +159,8 @@ func (s *server)ApplyFunction(ctx context.Context, in *pb.ApplyFunctionRequest) 
 	return apiserver.ApiServerObject().ApplyFunction(function)
 }
 
+=======
+>>>>>>> master
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
 	newNode := &entity.Node{}
@@ -169,7 +186,13 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 	}
 	defer cli.Close()
 
-	log.Print("Update Pod Status: put etcd:", string(in.Data))
+	//检查本地etcd中是否有此Pod，没有说明已经是一个删除的Pod，将其etcd端信息写为succeed,下一次Pod更新通知删除
+	response, err := etcdctl.Get(cli, "Pod/"+pod.Metadata.Name)
+	if len(response.Kvs) == 0 {
+		pod.Status.Phase = entity.Succeed
+	}
+
+	log.PrintS("Update Pod Status: put etcd:", string(in.Data))
 	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
 	//更新deployment replica
 	if strings.Contains(pod.Metadata.Name, "deployment") {
@@ -202,12 +225,23 @@ func (s *server) GetService(ctx context.Context, in *pb.GetServiceRequest) (*pb.
 	if err != nil {
 		log.PrintE("connect to etcd error")
 	}
+	defer cli.Close()
+
 	out, _ := etcdctl.Get(cli, "Service/"+string(in.ServiceName))
-	fmt.Println(out.Kvs)
+	if in.ServiceName == "" {
+		out, _ = etcdctl.GetWithPrefix(cli, "Service/")
+	}
+
+	// conver []*mvccpb.KeyValue to []byte
+	var data [][]byte
+	for _, v := range out.Kvs {
+		data = append(data, v.Value)
+	}
+
 	if len(out.Kvs) == 0 {
 		return &pb.GetServiceResponse{Data: nil}, nil
 	} else {
-		return &pb.GetServiceResponse{Data: out.Kvs[0].Value}, nil
+		return &pb.GetServiceResponse{Data: data}, nil
 	}
 }
 
@@ -226,18 +260,17 @@ func (s *server) GetJob(ctx context.Context, in *pb.GetJobRequest) (*pb.GetJobRe
 	}
 }
 
-
 func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest) (*pb.StatusResponse, error) {
 	cli, err := etcdctl.NewClient()
 	if err != nil {
 		log.PrintE("connect to etcd error")
 	}
+	defer cli.Close()
 	out, _ := etcdctl.Get(cli, "Service/"+string(in.ServiceName))
 	fmt.Println(out.Kvs)
 	if len(out.Kvs) == 0 {
 		return &pb.StatusResponse{Status: 0}, nil
-	} 
-
+	}
 
 	err = kubelet.KubeProxyObject().RemoveService(in.ServiceName)
 	if err != nil {
@@ -256,8 +289,6 @@ func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest)
 	// 	}
 	// }
 
-
-
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
@@ -273,7 +304,7 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 	if err != nil {
 		log.PrintE("etcd client connetc error")
 	}
-	log.Print("put etcd")
+	defer cli.Close()
 	etcdctl.Put(cli, "Service/"+service.Metadata.Name, string(in.Data))
 
 	// 获取符合条件的Pod
@@ -281,13 +312,13 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 	ControllerManager.PrintList(selectedPods)
 
 	// 组装信息
-     podNames := make([]string, 0, selectedPods.Len())
-	 podIps := make([]string, 0, selectedPods.Len())
-	 for it:= selectedPods.Front(); it != nil; it = it.Next() {
+	podNames := make([]string, 0, selectedPods.Len())
+	podIps := make([]string, 0, selectedPods.Len())
+	for it := selectedPods.Front(); it != nil; it = it.Next() {
 		pod := it.Value.(*entity.Pod)
 		podNames = append(podNames, pod.Metadata.Name)
 		podIps = append(podIps, pod.Status.PodIp)
-	 }
+	}
 
 	if in.Data == nil || podNames == nil || podIps == nil {
 		log.PrintE("service data or pod is <nil>")
@@ -296,9 +327,9 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 		log.Print(podIps)
 	}
 	return apiserver.ApiServerObject().CreateService(&pb.ApplyServiceRequest2{
-		Data: in.Data,
+		Data:     in.Data,
 		PodNames: podNames,
-		PodIps: podIps,
+		PodIps:   podIps,
 	})
 }
 
@@ -320,20 +351,102 @@ func (s *server) ApplyDeployment(ctx context.Context, in *pb.ApplyDeploymentRequ
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
+// Dns
+func (s *server) GetDns(ctx context.Context, in *pb.GetDnsRequest) (*pb.GetDnsResponse, error) {
+	// get dns info from etcd
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("etcd client connetc error")
+	}
+	defer cli.Close()
+	out, _ := etcdctl.Get(cli, "Dns/"+string(in.DnsName))
+	// fmt.Println(out.Kvs)
+	if len(out.Kvs) == 0 {
+		return &pb.GetDnsResponse{Data: nil}, nil
+	} else {
+		return &pb.GetDnsResponse{Data: out.Kvs[0].Value}, nil
+	}
+
+}
+
+func (s *server) DeleteDns(ctx context.Context, in *pb.DeleteDnsRequest) (*pb.StatusResponse, error) {
+	return apiserver.ApiServerObject().DeleteDns(in)
+}
+
+func (s *server) ApplyDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.StatusResponse, error) {
+	dns := &entity.Dns{}
+	err := json.Unmarshal(in.Data, dns)
+	if err != nil {
+		log.PrintE(err)
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	// get all services from etcd
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("etcd client connetc error")
+	}
+	defer cli.Close()
+
+	// put dns info into etcd
+	etcdctl.Put(cli, "Dns/"+dns.Metadata.Name, string(in.Data))
+
+	out, _ := etcdctl.GetWithPrefix(cli, "Service/")
+	services := make([]*entity.Service, 0, len(out.Kvs))
+	if len(out.Kvs) == 0 {
+		log.PrintE("no service found")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+	for _, data := range out.Kvs {
+		service := &entity.Service{}
+		err := json.Unmarshal(data.Value, service)
+		if err != nil {
+			log.PrintE("service unmarshal error")
+		}
+		services = append(services, service)
+	}
+
+	// 将dns的serviceName字段换成对应service的clusterIP
+	for i, serviceName := range dns.Spec.Paths {
+		flag := false
+		for _, service := range services {
+			if service.Metadata.Name == serviceName.ServiceName {
+				dns.Spec.Paths[i].ServiceName = service.Spec.ClusterIP
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			log.PrintE("service not found")
+			return &pb.StatusResponse{Status: -1}, err
+		}
+	}
+
+	data, err := json.Marshal(dns)
+	if err != nil {
+		log.PrintE(err)
+		return &pb.StatusResponse{Status: -1}, err
+	}
+	return apiserver.ApiServerObject().ApplyDns(&pb.ApplyDnsRequest{
+		Data: data,
+	})
+
+}
+
 func Run() {
 	/**
 	**   开启etcd
 	**/
-	cli, err := etcdctl.Start(configs.EtcdStartPath)
-	if err != nil {
-		return
-	}
-	defer func(cli *clientv3.Client) {
-		err := cli.Close()
-		if err != nil {
-			log.PrintE("etcd close error")
-		}
-	}(cli)
+	// cli, err := etcdctl.Start(configs.EtcdStartPath)
+	// if err != nil {
+	// 	return
+	// }
+	// defer func(cli *clientv3.Client) {
+	// 	err := cli.Close()
+	// 	if err != nil {
+	// 		log.PrintE("etcd close error")
+	// 	}
+	// }(cli)
 
 	// 注册请求处理接口
 	listen, err := net.Listen("tcp", configs.GrpcPort)
@@ -341,6 +454,14 @@ func Run() {
 		log.PrintE(err)
 		return
 	}
+
+	//启动Pod监控
+	//go apiserver.ApiServerObject().BeginMonitorPod()
+	//log.PrintS("Apiserver For PodMonitor Server starts running...")
+	//
+	////启动deployment监控
+	//go ControllerManager.BeginMonitorDeployment()
+	//log.PrintS("Apiserver For DeploymentMonitor Server starts running...")
 
 	/**
 	*  创建Http Trigger
@@ -364,4 +485,5 @@ func Run() {
 		log.PrintE(err)
 		return
 	}
+
 }

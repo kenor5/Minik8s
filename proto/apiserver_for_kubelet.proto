@@ -7,6 +7,7 @@ option go_package = "minik8s/pkg/proto";
 
 import "proto/share.proto";
 
+
 service ApiServerKubeletService {
     rpc SayHello(share.HelloRequest) returns (share.HelloResponse);
     rpc RegisterNode(share.RegisterNodeRequest) returns (share.StatusResponse);

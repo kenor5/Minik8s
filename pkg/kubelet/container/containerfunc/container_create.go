@@ -2,7 +2,6 @@ package containerfunc
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"minik8s/entity"
 	"minik8s/tools/log"
@@ -67,7 +66,7 @@ func EnsureImage(targetImage string) error {
 		return nil
 	}
 
-	log.PrintW("image %s doesn't exist, automatically pulling\n", targetImage)
+	log.Printf("[EnsureImage]image %s doesn't exist, automatically pulling\n", targetImage)
 
 	reader, err := cli.ImagePull(context.Background(), targetImage, types.ImagePullOptions{})
 	io.Copy(os.Stdout, reader)
@@ -75,8 +74,8 @@ func EnsureImage(targetImage string) error {
 	if err == nil {
 		return nil
 	}
-
-	return fmt.Errorf("failed to ensure image %s", targetImage)
+	log.PrintE("failed to ensure image:", targetImage)
+	return err
 }
 
 /**

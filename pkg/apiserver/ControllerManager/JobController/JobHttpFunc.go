@@ -3,6 +3,7 @@ package JobController
 import (
 	"fmt"
 	"bytes"
+	"minik8s/tools/log"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -13,6 +14,8 @@ func Sbatch(PodIp string, module_name string) (string, string, error){
 	// 获取url
 	url := "http://"+ PodIp + ":8090/sbatch"
     fmt.Println(url)
+    
+	log.PrintS("1")
 
 	// 组装消息
 	data := map[string]interface{}{
@@ -24,6 +27,8 @@ func Sbatch(PodIp string, module_name string) (string, string, error){
 		return "", "", err
 	}
 	
+	log.PrintS("2")
+
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println("NewRequest error:", err)
@@ -31,6 +36,8 @@ func Sbatch(PodIp string, module_name string) (string, string, error){
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+
+	log.PrintS("3")
 
 	// 发送请求
 	client := &http.Client{}
@@ -40,6 +47,8 @@ func Sbatch(PodIp string, module_name string) (string, string, error){
 		return "", "", err
 	}	
 
+	log.PrintS("4")
+
 	// 读取响应体的内容
 	body, err := ioutil.ReadAll(resp.Body)
 	fmt.Println(body)
@@ -48,6 +57,8 @@ func Sbatch(PodIp string, module_name string) (string, string, error){
 		return "", "", err
 	}
 	
+	log.PrintS("5")
+
 	// 提取指定字段的原始 JSON 数据
 	var result map[string]json.RawMessage
 	err = json.Unmarshal(body, &result)
@@ -55,6 +66,8 @@ func Sbatch(PodIp string, module_name string) (string, string, error){
 		fmt.Println("JSON unmarshal error:", err)
 		return "", "", err
 	}
+
+	log.PrintS("6")
 
 	// 从原始 JSON 数据中提取指定字段的值
 	var status, info string
