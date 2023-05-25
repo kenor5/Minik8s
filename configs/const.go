@@ -3,8 +3,8 @@ package configs
 
 const (
 	EtcdStartPath = "/usr/local/bin"
-	ApiServerUrl = "192.168.163.132"
-	NetInterface = "ens33"
+	ApiServerUrl = "192.168.1.5"
+	NetInterface = "ens3"
 
 	GrpcPort = ":5678"
 	KubeletGrpcPort = ":5679"

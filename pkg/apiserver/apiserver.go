@@ -13,6 +13,7 @@ import (
 
 	// "google.golang.org/grpc"
 	// "google.golang.org/grpc/credentials/insecure"
+	"minik8s/pkg/kubelet/container/containerfunc"
 	"os"
 	"os/exec"
 	"minik8s/entity"
@@ -315,37 +316,43 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 }
 
 func (master *ApiServer) ApplyFunction(function *entity.Function) (*pb.StatusResponse, error) {
-    // 生成Dockerfile
-    // 命令和参数
-	cmd := exec.Command("./scripts/gen_function_dockerfile.sh", function.Metadata.Name)
-    // 设置工作目录
-	cmd.Dir = "./"
-	// 执行命令并捕获输出
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.PrintE("命令执行失败：%v\n%s", err, output)
-	} 
-	
-	// 打印输出结果
-	log.Print(string(output))
-	
-	// 生成镜像
 	imageName := "luoshicai/" + function.Metadata.Name
-	dockerfilePath := "./tools/serverless/" + function.Metadata.Name
+    exist, _ := containerfunc.ImageExist(imageName)
+	if exist == false {
+		log.Print("function image doesn't exist, create function image...")
+    	// 生成Dockerfile
+    	// 命令和参数
+		cmd := exec.Command("./scripts/gen_function_dockerfile.sh", function.Metadata.Name)
+   	 	// 设置工作目录
+		cmd.Dir = "./"
+		// 执行命令并捕获输出
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			log.PrintE("命令执行失败：%v\n%s", err, output)
+		} 
 	
-	cmd = exec.Command("docker", "build", "-t", imageName, dockerfilePath)
+		// 打印输出结果
+		log.Print(string(output))
+	
+		// 生成镜像
+		dockerfilePath := "./tools/serverless/" + function.Metadata.Name
+	
+		cmd = exec.Command("docker", "build", "-t", imageName, dockerfilePath)
 
-	// 设置命令输出到标准输出和标准错误
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+		// 设置命令输出到标准输出和标准错误
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 
-	// 执行命令
-	err = cmd.Run()
-	if err != nil {
-		log.PrintE("执行命令失败：%v", err)
+		// 执行命令
+		err = cmd.Run()
+		if err != nil {
+			log.PrintE("执行命令失败：%v", err)
+		}
+
+		log.Print("镜像构建成功：%s\n", imageName)
 	}
-
-	log.Print("镜像构建成功：%s\n", imageName)
+    
+	
 
 	
 	return &pb.StatusResponse{Status: 0}, nil
