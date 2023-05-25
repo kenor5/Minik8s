@@ -147,9 +147,9 @@ func Run() {
 	if err != nil {
 		log.PrintE(err)
 	}
-	////开启Pod状态监控和更新
-	log.PrintS("[kubelet]Begin Monitor Deployment")
-	go kubelet.KubeletObject().BeginMonitor()
+	// ////开启Pod状态监控和更新
+	// log.PrintS("[kubelet]Begin Monitor Deployment")
+	// go kubelet.KubeletObject().BeginMonitor()
 
 	//Kubelet启动监控检查本地的Pod运行状态
 	//go kubelet.KubeletObject().beginMonitor()

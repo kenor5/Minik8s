@@ -177,7 +177,7 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 		pod.Status.Phase = entity.Succeed
 	}
 
-	log.Print("Update Pod Status: put etcd:", string(in.Data))
+	log.PrintS("Update Pod Status: put etcd:", string(in.Data))
 	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
 	//更新deployment replica
 	if strings.Contains(pod.Metadata.Name, "deployment") {
