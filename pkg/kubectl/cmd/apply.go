@@ -7,7 +7,6 @@ import (
 	"minik8s/entity"
 	"minik8s/pkg/kubectl/utils"
 
-	// "minik8s/tools/log"
 	"minik8s/tools/log"
 	"minik8s/tools/yamlParser"
 	"strings"
@@ -100,6 +99,12 @@ func doApply(cmd *cobra.Command, args []string) {
 		if err != nil {
 			fmt.Println(err)
 		}
+
+	case "HPA", "hpa":
+		applyHPA(filename)
+
+	case "Node", "node":
+	// TODO
 
 	default:
 		log.PrintE("there is no object named "  + obj)
@@ -199,6 +204,36 @@ func applyService(filename string) error {
 	return nil
 }
 
+func applyHPA(filename string) error {
+	hpa := &entity.HorizontalPodAutoscaler{}
+	_, err := yamlParser.ParseYaml(hpa, filename)
+	if err != nil {
+		fmt.Println("parse hpa failed")
+		return err
+	}
+
+	cli := NewClient()
+	if cli == nil {
+		return fmt.Errorf("fail to connect to apiserver")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 把 deployment 序列化成 string 传给 apiserver
+	hpaByte, err := json.Marshal(hpa)
+	if err != nil {
+		fmt.Println("parse hpa error")
+		return err
+	}
+
+	res, err := cli.ApplyHPA(ctx, &pb.ApplyHorizontalPodAutoscalerRequest{
+		Data: hpaByte,
+	})
+
+	fmt.Printf("Create HPA for %s, response %v,error %v\n", hpa.Spec.ScaleTargetRef.Name, res, err)
+	return nil
+}
+
 func applyDns(filename string) error {
 	dns := &entity.Dns{}
 	_, err := yamlParser.ParseYaml(dns, filename)
@@ -227,7 +262,7 @@ func applyDns(filename string) error {
 
 	fmt.Println("Create Dns, response ", res)
 	return nil
-}	
+}
 
 
 func applyJob(filename string) error {

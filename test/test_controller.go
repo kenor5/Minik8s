@@ -5,7 +5,7 @@ import (
 	"minik8s/pkg/apiserver/ControllerManager"
 )
 
-func main() {
+func main_3() {
 	Labels := map[string]string{
 		"app": "myApp",
 	}

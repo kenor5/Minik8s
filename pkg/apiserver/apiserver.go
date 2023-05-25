@@ -3,18 +3,23 @@ package apiserver
 import (
 	"encoding/json"
 	"fmt"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"minik8s/configs"
+	"minik8s/pkg/apiserver/ControllerManager/JobController"
+	"minik8s/tools/etcdctl"
+	"time"
+
 	// "minik8s/configs"
 
 	// "google.golang.org/grpc"
 	// "google.golang.org/grpc/credentials/insecure"
 
 	"minik8s/entity"
-	"minik8s/pkg/apiserver/ControllerManager/NodeController"
 	Controller "minik8s/pkg/apiserver/ControllerManager"
+	"minik8s/pkg/apiserver/ControllerManager/NodeController"
 	"minik8s/pkg/apiserver/client"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
-	"minik8s/pkg/apiserver/ControllerManager/JobController"
 )
 
 /**************************************************************************
@@ -58,11 +63,11 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 	//查询Pod对应的Node信息并获取conn
 	pod := &entity.Pod{}
 	err := json.Unmarshal(in.Data, pod)
-	if (in.Data == nil || pod.Status.Phase == entity.Succeed) {
-        return &pb.StatusResponse{Status: 0}, err
+	if in.Data == nil || pod.Status.Phase == entity.Succeed {
+		return &pb.StatusResponse{Status: 0}, err
 	}
 	// 根据Pod所在的节点的NodeName获得对应的grpc Conn
-    conn := master.NodeManager.GetNodeConnByName(pod.Spec.NodeName)
+	conn := master.NodeManager.GetNodeConnByName(pod.Spec.NodeName)
 	if conn == nil {
 		panic("UnKnown NodeName!\n")
 	}
@@ -70,7 +75,7 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 	err = client.KubeletDeletePod(conn, in)
 	if err != nil {
 		log.PrintE(err)
-	
+
 		return &pb.StatusResponse{Status: -1}, err
 	}
 
@@ -83,18 +88,18 @@ func (master *ApiServer) CreateService(in *pb.ApplyServiceRequest2) (*pb.StatusR
 	for _, node := range LivingNodes {
 		// 发送消息给Kubelet
 		conn := master.NodeManager.GetNodeConnByName(node.Name)
-	    err := client.KubeLetCreateService(conn, in)
-	    if err != nil {
+		err := client.KubeLetCreateService(conn, in)
+		if err != nil {
 			log.PrintE(err)
-		    return &pb.StatusResponse{Status: -1}, err
-	    }
+			return &pb.StatusResponse{Status: -1}, err
+		}
 
 	}
 	return &pb.StatusResponse{Status: 0}, nil
-	
+
 }
 
-// AddDeployment TODO 修改Controller的使用逻辑？？？
+// AddDeployment 增加新的deployment，先将元数据写入etcd,之后监控机制检查更新pod状态并启动
 func (master *ApiServer) AddDeployment(in *pb.ApplyDeploymentRequest) {
 	deployment := &entity.Deployment{}
 	err := json.Unmarshal(in.Data, deployment)
@@ -132,9 +137,95 @@ func (master *ApiServer) AddDeployment(in *pb.ApplyDeploymentRequest) {
 func (master *ApiServer) DeleteDeployment(in *pb.DeleteDeploymentRequest) {
 	deploymentname := in.DeploymentName
 	//从etcd中删除该deployment
-	Controller.DeleteDeployment(deploymentname)
+	err := Controller.DeleteDeployment(deploymentname)
+	if err != nil {
+		return
+	}
 }
 
+func (master *ApiServer) ApplyHPA(HPAbyte *pb.ApplyHorizontalPodAutoscalerRequest) {
+	HPA := &entity.Deployment{}
+	err := json.Unmarshal(HPAbyte.Data, HPA)
+	if err != nil {
+		fmt.Print("[ApiServer]ApplyHPA Unmarshal error!\n")
+		return
+	}
+	//写入etcd元数据
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		fmt.Println("etcd client connect error")
+	}
+	defer func(cli *clientv3.Client) {
+		err := cli.Close()
+		if err != nil {
+			fmt.Print("close etcdClient error!")
+		}
+	}(cli)
+	HPAData, err := json.Marshal(HPA)
+	err = etcdctl.Put(cli, "HPA/"+HPA.Metadata.Name, string(HPAData))
+	if err != nil {
+		log.PrintE("[ApiServer] Write HPAData fail")
+		return
+	}
+}
+
+// BeginMonitorPod TODO 根据etcd中存储的信息，监控和更新Pod的状态
+func (master *ApiServer) BeginMonitorPod() {
+
+	//检查pending状态的Pod，指定一个Node创建
+	ticker := time.NewTicker(configs.MonitorPodTime * time.Second) //每5s检查一次etcd信息
+	for range ticker.C {
+		master.CheckEtcdAndUpdate()
+	}
+}
+func (master *ApiServer) CheckEtcdAndUpdate() {
+	PodsData, _ := etcdctl.EtcdGetWithPrefix("Pod/")
+	//读取所有的Pod信息
+	var Pods []entity.Pod
+	for _, PodData := range PodsData.Kvs {
+		var pod entity.Pod
+		err := json.Unmarshal(PodData.Value, &pod)
+		if err != nil {
+			log.PrintE("[CheckEtcdAndUpdate]GetPods Unmarshal Pod error")
+			return
+		}
+		Pods = append(Pods, pod)
+	}
+	//根据不同的Pod状态，进行不同处理
+	/*
+		1. Pending 为创建后还为指定Node实际创建
+		2. Failed  为Node上Pod运行已经监控到fail或者Node无法连接
+		3. Running 不用处理
+		4. Succeed 应该极少出现，因为先删除本地etcd才通知Node删除
+	*/
+	for _, pod := range Pods {
+		podstate := pod.Status.Phase
+		switch podstate {
+		case entity.Running:
+			continue
+		case entity.Failed:
+			//TODO: 利用hostIP通知Node检查状态或者重新创建
+			//一种简单通用实现：直接发送一次DeletePod 到Node，再为Pod重新指定Node创建
+			hostIP := pod.Status.HostIp
+			if hostIP == "" {
+				//需要分配新的Node
+				hostIP = "127.0.0.1"
+			}
+
+		case entity.Pending:
+		//TODO: 此类为已经写入etcd但还未指定Node创建的Pod，如新的replica
+		//根据调度策略选择合适Node分配
+
+		case entity.Succeed:
+			//TODO: 通知Node删除Pod后，删除本地信息
+			err := etcdctl.EtcdDelete("Pod/" + pod.Metadata.Name)
+			if err != nil {
+				log.PrintfE("[CheckEtcdAndUpdate]Delete Pod %s error", pod.Metadata.Name)
+				continue
+			}
+		}
+	}
+}
 
 func (master *ApiServer) ApplyDns(in *pb.ApplyDnsRequest) (*pb.StatusResponse, error) {
 	LivingNodes := master.NodeManager.GetAllLivingNodes()
@@ -142,11 +233,11 @@ func (master *ApiServer) ApplyDns(in *pb.ApplyDnsRequest) (*pb.StatusResponse, e
 	for _, node := range LivingNodes {
 		// 发送消息给Kubelet
 		conn := master.NodeManager.GetNodeConnByName(node.Name)
-	    err := client.KubeLetCreateDns(conn, in)
-	    if err != nil {
+		err := client.KubeLetCreateDns(conn, in)
+		if err != nil {
 			log.PrintE(err)
-		    return &pb.StatusResponse{Status: -1}, err
-	    }
+			return &pb.StatusResponse{Status: -1}, err
+		}
 
 	}
 	return &pb.StatusResponse{Status: 0}, nil
@@ -158,20 +249,20 @@ func (master *ApiServer) DeleteDns(in *pb.DeleteDnsRequest) (*pb.StatusResponse,
 	for _, node := range LivingNodes {
 		// 发送消息给Kubelet
 		conn := master.NodeManager.GetNodeConnByName(node.Name)
-	    err := client.KubeLetDeleteDns(conn, in)
-	    if err != nil {
+		err := client.KubeLetDeleteDns(conn, in)
+		if err != nil {
 			log.PrintE(err)
-		    return &pb.StatusResponse{Status: -1}, err
-	    }
+			return &pb.StatusResponse{Status: -1}, err
+		}
 
 	}
 	return &pb.StatusResponse{Status: 0}, nil
 }
 func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
-    pod := &entity.Pod{
-		Kind : "pod",
-		Metadata : entity.ObjectMeta{
-			Name : job.Metadata.Name + "-ServerPod", 
+	pod := &entity.Pod{
+		Kind: "pod",
+		Metadata: entity.ObjectMeta{
+			Name: job.Metadata.Name + "-ServerPod",
 			Labels: map[string]string{
 				"app": "Job",
 			},
@@ -189,11 +280,11 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 					},
 				},
 			},
-			Volumes : []entity.Volume{
-			    {
-				    Name : "volume1",
-				    HostPath: "/root/go/src/minik8s/tools/cuda/"+job.Metadata.Name,
-			    },
+			Volumes: []entity.Volume{
+				{
+					Name:     "volume1",
+					HostPath: "/root/go/src/minik8s/tools/cuda/" + job.Metadata.Name,
+				},
 			},
 		},
 	}
@@ -205,7 +296,7 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 		return &pb.StatusResponse{Status: -1}, err
 	}
 	in := &pb.ApplyPodRequest{
-		Data : podByte,
+		Data: podByte,
 	}
 	// 调度(获取conn)
 	conn := master.NodeManager.RoundRobin()
@@ -216,7 +307,7 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 		return &pb.StatusResponse{Status: -1}, err
 	}
 
-    go JobController.SbatchAndQuery(job.Metadata.Name, conn)
+	go JobController.SbatchAndQuery(job.Metadata.Name, conn)
 
 	return &pb.StatusResponse{Status: 0}, err
 }
