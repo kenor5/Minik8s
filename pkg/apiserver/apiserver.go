@@ -3,11 +3,6 @@ package apiserver
 import (
 	"encoding/json"
 	"fmt"
-	clientv3 "go.etcd.io/etcd/client/v3"
-	"minik8s/configs"
-	"minik8s/tools/etcdctl"
-	"time"
-
 	// "minik8s/configs"
 
 	// "google.golang.org/grpc"
@@ -224,5 +219,89 @@ func (master *ApiServer) CheckEtcdAndUpdate() {
 			}
 		}
 	}
+}
 
+func (master *ApiServer) ApplyDns(in *pb.ApplyDnsRequest) (*pb.StatusResponse, error) {
+	LivingNodes := master.NodeManager.GetAllLivingNodes()
+
+	for _, node := range LivingNodes {
+		// 发送消息给Kubelet
+		conn := master.NodeManager.GetNodeConnByName(node.Name)
+	    err := client.KubeLetCreateDns(conn, in)
+	    if err != nil {
+			log.PrintE(err)
+		    return &pb.StatusResponse{Status: -1}, err
+	    }
+
+	}
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (master *ApiServer) DeleteDns(in *pb.DeleteDnsRequest) (*pb.StatusResponse, error) {
+	LivingNodes := master.NodeManager.GetAllLivingNodes()
+
+	for _, node := range LivingNodes {
+		// 发送消息给Kubelet
+		conn := master.NodeManager.GetNodeConnByName(node.Name)
+	    err := client.KubeLetDeleteDns(conn, in)
+	    if err != nil {
+			log.PrintE(err)
+		    return &pb.StatusResponse{Status: -1}, err
+	    }
+
+	}
+	return &pb.StatusResponse{Status: 0}, nil
+}
+func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
+    pod := &entity.Pod{
+		Kind : "pod",
+		Metadata : entity.ObjectMeta{
+			Name : job.Metadata.Name + "-ServerPod",
+			Labels: map[string]string{
+				"app": "Job",
+			},
+		},
+		Spec: entity.PodSpec{
+			Containers: []entity.Container{
+				{
+					Name:  "slurm-server",
+					Image: "luoshicai/slurm-server:latest",
+					VolumeMounts: []entity.VolumeMount{
+						{
+							Name:      "volume1",
+							MountPath: "/tryData",
+						},
+					},
+				},
+			},
+			Volumes : []entity.Volume{
+			    {
+				    Name : "volume1",
+				    HostPath: "/root/go/src/minik8s/tools/cuda/"+job.Metadata.Name,
+			    },
+			},
+		},
+	}
+
+	// 组装消息
+	podByte, err := json.Marshal(pod)
+	if err != nil {
+		fmt.Println("parse pod error")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+	in := &pb.ApplyPodRequest{
+		Data : podByte,
+	}
+	// 调度(获取conn)
+	conn := master.NodeManager.RoundRobin()
+	// 发送消息给Kubelet
+	err = client.KubeletCreatePod(conn, in)
+	if err != nil {
+		log.PrintE(err)
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+    go JobController.SbatchAndQuery(job.Metadata.Name, conn)
+
+	return &pb.StatusResponse{Status: 0}, err
 }

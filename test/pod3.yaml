@@ -13,18 +13,19 @@ spec:
       ports:
         - containerPort: 80
           hostPort: 8888
-      volumeMounts:
-        - name: volume
-          mountPath: /usr/share/nginx/html/files
+      # volumeMounts:
+        # - name: volume1
+        #   mountPath: /usr/share/nginx/html/files
     - name: my-http-server
       image: luoshicai/my-http-server:latest
       ports:
         - containerPort: 6800
           hostPort: 6800
-      volumeMounts:
-        - name: volume
-          mountPath: /data
-  volumes:
-    - name: volume
-      hostPath:
-        path: /pod
+  #     volumeMounts:
+  #       - name: volume2
+  #         mountPath: /usr/share/nginx/html/files
+  # volumes:
+  #   - name: volume1
+  #     hostPath: /home/luoshicai/volume/Volume1
+  #   - name: volume2
+  #     hostPath: /home/luoshicai/volume/Volume2

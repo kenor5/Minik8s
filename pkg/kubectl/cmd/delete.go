@@ -36,6 +36,8 @@ func doDelete(cmd *cobra.Command, args []string) {
 		deleteFunction(name)
 	case "deployment","deploy":
 		deleteDeployment(name)
+	case "Dns", "dns":
+		deleteDns(name)
 	}
 }
 
@@ -104,4 +106,23 @@ func deleteService(name string) {
 	}
 
 	fmt.Println("Delete service, response ", res)
+}
+
+func deleteDns(name string) {
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	res, err := cli.DeleteDns(ctx, &pb.DeleteDnsRequest{
+		DnsName: name,
+	})
+
+	if err != nil {
+		log.PrintE(err)
+	}
+
+	fmt.Println("Delete dns, response ", res)
 }

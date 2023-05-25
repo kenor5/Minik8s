@@ -107,7 +107,7 @@ func DeleteDeployment(DeploymentName string) error {
 	}(cli)
 	//删除deployment
 	//解析deployment的内容
-	deploymentDetail := entity.Deployment{}
+	deploymentDetail := &entity.Deployment{}
 	deployment := make([]byte, 0)
 	deployments, _ := etcdctl.Get(cli, "Deployment/"+DeploymentName)
 	if len(deployments.Kvs) != 0 {

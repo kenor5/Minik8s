@@ -41,3 +41,5 @@ cmd/kube-proxy
 /build/go_build_kubelet_go
 /build/go_build_create_deployment_go
 /bin/*
+
+.VSCode*
