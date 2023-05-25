@@ -86,6 +86,7 @@ func (master *ApiServer) CreateService(in *pb.ApplyServiceRequest2) (*pb.StatusR
 	    err := client.KubeLetCreateService(conn, in)
 	    if err != nil {
 			log.PrintE(err)
+			log.PrintE(in)
 		    return &pb.StatusResponse{Status: -1}, err
 	    }
 

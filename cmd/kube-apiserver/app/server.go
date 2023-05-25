@@ -268,7 +268,7 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 		podIps = append(podIps, pod.Status.PodIp)
 	 }
 
-	if in.Data == nil || podNames == nil || podIps == nil {
+	if in.Data == nil || podNames == nil || podIps == nil  {
 		log.PrintE("service data or pod is <nil>")
 		log.Print(in.Data)
 		log.Print(podNames)

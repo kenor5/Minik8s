@@ -101,6 +101,8 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 	// Get the container's IP address
 	fmt.Printf("Kubelet create Pod and begin Update Status\n")
 	containerIP := containerJSON.NetworkSettings.IPAddress
+	log.PrintE("containerIP: %s\n", containerIP)
+	log.PrintE("CONTAINERjson: %v\n", containerJSON)
 	pod.Status.StartTime = time.Now()
 	pod.Status.PodIp = containerIP
 	pod.Status.Phase = entity.Running
