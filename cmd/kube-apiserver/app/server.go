@@ -114,7 +114,7 @@ func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNod
 	if err != nil {
 		log.PrintE("connect to etcd error")
 	}
-	}
+
 	defer cli.Close()
 	out, _ := etcdctl.Get(cli, "Node/"+string(in.NodeName))
 	fmt.Println(out.Kvs)
@@ -125,8 +125,7 @@ func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNod
 	}
 }
 
-
-func (s *server)ApplyJob(ctx context.Context, in *pb.ApplyJobRequest) (*pb.StatusResponse, error) {
+func (s *server) ApplyJob(ctx context.Context, in *pb.ApplyJobRequest) (*pb.StatusResponse, error) {
 	// 解析Job
 	job := &entity.Job{}
 	err := json.Unmarshal(in.Data, job)
@@ -142,11 +141,10 @@ func (s *server)ApplyJob(ctx context.Context, in *pb.ApplyJobRequest) (*pb.Statu
 		log.PrintE("etcd client connetc error")
 	}
 	log.Print("put etcd")
-	etcdctl.Put(cli, "Job/"+job.Metadata.Name ,string(in.Data))
+	etcdctl.Put(cli, "Job/"+job.Metadata.Name, string(in.Data))
 
 	return apiserver.ApiServerObject().ApplyJob(job)
 }
-
 
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
@@ -247,7 +245,6 @@ func (s *server) GetJob(ctx context.Context, in *pb.GetJobRequest) (*pb.GetJobRe
 	}
 }
 
-
 func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest) (*pb.StatusResponse, error) {
 	cli, err := etcdctl.NewClient()
 	if err != nil {
@@ -258,8 +255,7 @@ func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest)
 	fmt.Println(out.Kvs)
 	if len(out.Kvs) == 0 {
 		return &pb.StatusResponse{Status: 0}, nil
-	} 
-
+	}
 
 	err = kubelet.KubeProxyObject().RemoveService(in.ServiceName)
 	if err != nil {
@@ -277,8 +273,6 @@ func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest)
 	// 		break;
 	// 	}
 	// }
-
-
 
 	return &pb.StatusResponse{Status: 0}, nil
 }
@@ -372,9 +366,6 @@ func (s *server) ApplyDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.Stat
 		return &pb.StatusResponse{Status: -1}, err
 	}
 
-
-
-
 	// get all services from etcd
 	cli, err := etcdctl.NewClient()
 	if err != nil {
@@ -407,7 +398,7 @@ func (s *server) ApplyDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.Stat
 			if service.Metadata.Name == serviceName.ServiceName {
 				dns.Spec.Paths[i].ServiceName = service.Spec.ClusterIP
 				flag = true
-				break;
+				break
 			}
 		}
 		if !flag {
