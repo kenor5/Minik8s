@@ -466,6 +466,11 @@ func Run() {
     go apiserver.ApiServerObject().FunctionManager.FunctionServer()
 
 	/**
+	*  Serverless: 启动对Function的监控
+	**/
+    go apiserver.ApiServerObject().MonitorFunction()
+
+	/**
 	**   创建gRPC服务器,接受来自Kubectl和ApiServer的请求
 	**/
 	svr := grpc.NewServer()

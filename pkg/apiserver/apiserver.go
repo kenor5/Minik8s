@@ -361,7 +361,7 @@ func (master *ApiServer) ApplyFunction(function *entity.Function) (*pb.StatusRes
 		Metadata: entity.ObjectMeta{
 			Name: function.Metadata.Name + "-pod",
 			Labels: map[string]string{
-				"app": "Function",
+				"app": function.Metadata.Name,
 			},
 		},
 		Spec: entity.PodSpec{
