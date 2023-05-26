@@ -461,9 +461,9 @@ func Run() {
 	//log.PrintS("Apiserver For DeploymentMonitor Server starts running...")
 
 	/**
-	*  创建Http Trigger
+	*  Serverless: 创建Http Trigger
 	**/
-    
+    go apiserver.ApiServerObject().FunctionManager.FunctionServer()
 
 	/**
 	**   创建gRPC服务器,接受来自Kubectl和ApiServer的请求

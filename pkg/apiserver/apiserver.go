@@ -19,6 +19,7 @@ import (
 	"minik8s/entity"
 	Controller "minik8s/pkg/apiserver/ControllerManager"
 	"minik8s/pkg/apiserver/ControllerManager/NodeController"
+	"minik8s/pkg/apiserver/ControllerManager/FunctionController"
 	"minik8s/pkg/apiserver/client"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
@@ -30,7 +31,7 @@ import (
 type ApiServer struct {
 	// conn pb.KubeletApiServerServiceClient
 	NodeManager NodeController.NodeController
-	
+	FunctionManager functioncontroller.FunctionController
 }
 
 var apiServer *ApiServer
@@ -38,6 +39,7 @@ var apiServer *ApiServer
 func newApiServer() *ApiServer {
 	newServer := &ApiServer{
 		NodeManager: *NodeController.NewNodeController(),
+	    FunctionManager: *functioncontroller.NewFunctionController(),
 	}
 	return newServer
 }
@@ -316,7 +318,7 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 }
 
 func (master *ApiServer) ApplyFunction(function *entity.Function) (*pb.StatusResponse, error) {
-	imageName := "luoshicai/" + function.Metadata.Name
+	imageName := "luoshicai/" + function.Metadata.Name + ":latest"
     exist, _ := containerfunc.ImageExist(imageName)
 	if exist == false {
 		log.Print("function image doesn't exist, create function image...")
@@ -352,8 +354,33 @@ func (master *ApiServer) ApplyFunction(function *entity.Function) (*pb.StatusRes
 		log.Print("镜像构建成功：%s\n", imageName)
 	}
     
-	
 
-	
+	// 存入etcd
+	PodTemplate := &entity.Pod{
+		Kind: "pod",
+		Metadata: entity.ObjectMeta{
+			Name: function.Metadata.Name + "-pod",
+			Labels: map[string]string{
+				"app": "Function",
+			},
+		},
+		Spec: entity.PodSpec{
+			Containers: []entity.Container{
+				{
+					Name:  "serverless-server",
+					Image: imageName,
+				},
+			},
+		},		
+	}
+	function.FunctionStatus.AccessTimes = 0
+	function.FunctionStatus.Status = entity.Running
+	function.FunctionStatus.PodTemplate = *PodTemplate
+	functioncontroller.SetFunction(function)
+
+	// 加入路由
+    master.AddRouter(function.Metadata.Name)
+
 	return &pb.StatusResponse{Status: 0}, nil
 }
+
