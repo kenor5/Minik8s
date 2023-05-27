@@ -46,6 +46,8 @@ func doGet(cmd *cobra.Command, args []string) {
 		getDns(name)
 	case "job":
 		getJob(name)
+	default:
+		log.PrintE("get err, no such object")
 	}
 
 }
@@ -72,7 +74,7 @@ func getPod(name string) {
 		for _, onePod := range res.PodData {
 		// prettyprint
 			pod := &entity.Pod{}
-			fmt.Println("Get Pod, response ", res)
+			// fmt.Println("Get Pod, response ", res)
 			err = json.Unmarshal(onePod, pod)
 			if err != nil {
 				log.PrintE(err)
@@ -101,14 +103,78 @@ func getNode(name string) {
 	if err != nil {
 		log.PrintE(err)
 	}
-	fmt.Println("Get Node, response ", res)
+	
+	title := []string{"Name", "Ip", "Status"}
+	data := [][]string{}
+	for _, oneNode := range res.NodeData{
+		node := &entity.Node{}
+		err = json.Unmarshal(oneNode, node)
+		if err != nil {
+			log.PrintE(err)
+		}
+		data = append(data, []string{node.Name, node.Ip, node.Status})
+	}
+
+	prettyprint.PrettyPrint(title, data)
 }
 
 func getDeployment(name string) {
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	res, err := cli.GetDeployment(ctx, &pb.GetDeploymentRequest{
+		DeploymentName: name,
+	})
+	if err != nil {
+		log.PrintE(err)
+	}
+	
+	title := []string{"Name", "Replicas"}
+	data := [][]string{}
+	for _, oneDeployment := range res.Data{
+		deployment := &entity.Deployment{}
+		err = json.Unmarshal(oneDeployment, deployment)
+		if err != nil {
+			log.PrintE(err)
+		}
+		
+		data = append(data, []string{deployment.Metadata.Name, fmt.Sprintf("%d", deployment.Status.Replicas)})
+	}
+	prettyprint.PrettyPrint(title, data)
 
 }
 
 func getFunction(name string) {
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	res, err := cli.GetFunction(ctx, &pb.GetFunctionRequest{
+		FunctionName: name,
+	})
+	if err != nil {
+		log.PrintE(err)
+	}
+	
+	title := []string{"Name", "Path"}
+	data := [][]string{}
+	for _, oneFunction := range res.Data{
+		function := &entity.Function{}
+		err = json.Unmarshal(oneFunction, function)
+		if err != nil {
+			log.PrintE(err)
+		}
+		data = append(data, []string{function.Metadata.Name, function.FunctionPath})
+	}
+	prettyprint.PrettyPrint(title, data)
+
 
 }
 
@@ -158,16 +224,22 @@ func getDns(name string) {
 	// prettyprint
 	title := []string{"Name", "Host", "Subpath", "ServiceName"}
 
-	dns := &entity.Dns{}
-	err = json.Unmarshal(res.Data, dns)
-	if err != nil {
-		log.PrintE(err)
-	}
-	data := [][]string{
+	data := [][]string{}
+	for _, oneDns := range res.Data{
+
+		dns := &entity.Dns{}
+		err = json.Unmarshal(oneDns, dns)
+		if err != nil {
+			log.PrintE(err)
+		}
 		
-	}
-	for _, v := range dns.Spec.Paths {
-		data = append(data, []string{dns.Metadata.Name, dns.Spec.Host, v.Path, v.ServiceName})
+		for i, v := range dns.Spec.Paths {
+			if i == 0 {
+				data = append(data, []string{dns.Metadata.Name, dns.Spec.Host, v.Path, v.ServiceName})
+			} else {
+				data = append(data, []string{"", "", v.Path, v.ServiceName})
+			}
+		}
 	}
 	prettyprint.PrettyPrint(title, data)
 	

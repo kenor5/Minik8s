@@ -8,6 +8,7 @@ import (
 	"minik8s/entity"
 	"minik8s/pkg/apiserver/ControllerManager"
 	fc "minik8s/pkg/apiserver/ControllerManager/FunctionController"
+	wc "minik8s/pkg/apiserver/ControllerManager/WorkflowController"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
 	"net/http"
@@ -191,3 +192,34 @@ func (master *ApiServer)MonitorFunction() {
 		time.Sleep(30 * time.Second) // 每30秒轮询一次
 	}
 }	
+
+func (master *ApiServer)AddWorkflowRouter(workflowName string) error {
+	log.PrintS("Add Workflow:", workflowName)
+	// 处理函数
+	workflowHandler := func(w http.ResponseWriter, r *http.Request){
+		// 查找workflow
+        workflow, _:= wc.GetWorkflow(workflowName)
+        
+		Next := workflow.StartAt
+
+	    // 创建一个空的JSON对象，将返回值传给下个函数
+	    // data := ""
+		for Next != "End" {
+            workflowNode, _ := wc.GetWorkflowNodeByName(Next, workflow)
+		
+			if (workflowNode.Type == "Task") {
+                // 如果是Task，转发给对应的函数
+                data := fc.SendFunction(Next, r)
+				log.PrintS("Response from workflow: ", data)
+				Next = workflowNode.Next
+			} else if (workflowNode.Type == "Choice") {
+                // 如果是Choice，进行相应的判断
+                Next = wc.SelectChoice(90, workflowNode.Choices)
+		    }
+	    }
+	}
+
+    master.FunctionManager.Mux.HandleFunc("/workflow/"+workflowName, workflowHandler)
+
+	return nil	
+}

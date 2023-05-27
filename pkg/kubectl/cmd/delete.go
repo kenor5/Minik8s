@@ -38,6 +38,8 @@ func doDelete(cmd *cobra.Command, args []string) {
 		deleteDeployment(name)
 	case "Dns", "dns":
 		deleteDns(name)
+	default:
+		log.PrintE("delete err, no such object")
 	}
 }
 

@@ -108,8 +108,8 @@ func doApply(cmd *cobra.Command, args []string) {
 	case "HPA", "hpa":
 		applyHPA(filename)
 
-	case "Node", "node":
-	// TODO
+	case "Workflow", "workflow":
+	    applyWorkflow(filename)
 
 	default:
 		log.PrintE("there is no object named "  + obj)
@@ -333,5 +333,38 @@ func applyFunction(filename string) error {
 	})
 
 	fmt.Println("Create Job, response ", res)
+	return nil
+}
+
+func applyWorkflow(filename string) error {
+	// 先 parse yaml 文件
+	workflow := &entity.Workflow{}
+	_, err := yamlParser.ParseYaml(workflow, filename)
+	if err != nil {
+		fmt.Println("parse workflow failed")
+		return err
+	}
+	fmt.Println(workflow)
+
+	// 通过 rpc 连接 apiserver
+	cli := NewClient()
+	if cli == nil {
+		return fmt.Errorf("fail to connect to apiserver")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 把 pod 序列化成 string 传给 apiserver
+	workflowByte, err := json.Marshal(workflow)
+	if err != nil {
+		fmt.Println("parse workflow error")
+		return err
+	}
+
+	res, err := cli.ApplyWorkflow(ctx, &pb.ApplyWorkflowRequest{
+		Data: workflowByte,
+	})
+
+	fmt.Println("Create Workflow, response ", res)
 	return nil
 }

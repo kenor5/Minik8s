@@ -48,7 +48,7 @@ func (s *server) ApplyPod(ctx context.Context, in *pb.ApplyPodRequest) (*pb.Stat
 	pod := &entity.Pod{}
 	err := json.Unmarshal(in.Data, pod)
 	if err != nil {
-		log.PrintE("pod unmarshel err")
+		log.PrintE("pod unmarshel err %v", err)
 		return &pb.StatusResponse{Status: -1}, err
 	}
 
@@ -83,7 +83,7 @@ func (s *server) DeletePod(ctx context.Context, in *pb.DeletePodRequest) (*pb.St
 	}
 }
 
-// GetPod TODO: get pods后不跟PodName返回所有的Pod
+// GetPod: get pods后不跟PodName返回所有的Pod
 func (s *server) GetPod(ctx context.Context, in *pb.GetPodRequest) (*pb.GetPodResponse, error) {
 	cli, err := etcdctl.NewClient()
 	if err != nil {
@@ -117,11 +117,19 @@ func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNod
 
 	defer cli.Close()
 	out, _ := etcdctl.Get(cli, "Node/"+string(in.NodeName))
-	fmt.Println(out.Kvs)
+	if in.NodeName == "" {
+		out, _ = etcdctl.GetWithPrefix(cli, "Node/")
+	}
+	// fmt.Println(out.Kvs)
+
+	var data [][]byte
+	for _, v := range out.Kvs {
+		data = append(data, v.Value)
+	}
 	if len(out.Kvs) == 0 {
 		return &pb.GetNodeResponse{NodeData: nil}, nil
 	} else {
-		return &pb.GetNodeResponse{NodeData: out.Kvs[0].Value}, nil
+		return &pb.GetNodeResponse{NodeData:data}, nil
 	}
 }
 
@@ -151,11 +159,48 @@ func (s *server)ApplyFunction(ctx context.Context, in *pb.ApplyFunctionRequest) 
 	function := &entity.Function{}
 	err := json.Unmarshal(in.Data, function)
 	if err != nil {
-		log.PrintE("pod unmarshel err")
+		log.PrintE("function unmarshel err")
 		return &pb.StatusResponse{Status: -1}, err
 	}
     
 	return apiserver.ApiServerObject().ApplyFunction(function)
+}
+
+func (s *server)GetFunction(ctx context.Context, in *pb.GetFunctionRequest) (*pb.GetFunctionResponse, error) {
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("connect to etcd error")
+	}
+
+	defer cli.Close()
+	out, _ := etcdctl.Get(cli, "Function/"+string(in.FunctionName))
+	if in.FunctionName == "" {
+		out, _ = etcdctl.GetWithPrefix(cli, "Function/")
+	}
+	// fmt.Println(out.Kvs)
+
+	var data [][]byte
+	for _, v := range out.Kvs {
+		data = append(data, v.Value)
+	}
+	if len(out.Kvs) == 0 {
+		return &pb.GetFunctionResponse{Data: nil}, nil
+	} else {
+		return &pb.GetFunctionResponse{Data:data}, nil
+	}
+}
+
+
+func (s *server)ApplyWorkflow(ctx context.Context, in *pb.ApplyWorkflowRequest) (*pb.StatusResponse, error) {
+	// 解析Wokflow
+	workflow := &entity.Workflow{}
+	err := json.Unmarshal(in.Data, workflow)
+	if err != nil {
+		log.PrintE("workflow unmarshel err")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+    
+	return apiserver.ApiServerObject().ApplyWorkflow(workflow)
 }
 
 // 客户端为Kubelet
@@ -332,8 +377,25 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 
 // Deployment
 func (s *server) GetDeployment(ctx context.Context, in *pb.GetDeploymentRequest) (*pb.GetDeploymentResponse, error) {
-	//TODO
-	return &pb.GetDeploymentResponse{Data: nil}, nil
+	
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("connect to etcd error")
+	}
+	defer cli.Close()
+	out, _ := etcdctl.Get(cli, "Deployment/"+string(in.DeploymentName))
+	if in.DeploymentName == "" {
+		out, _ = etcdctl.GetWithPrefix(cli, "Deployment/")
+	}
+	var data [][]byte
+	for _, v := range out.Kvs {
+		data = append(data, v.Value)
+	}
+	if len(out.Kvs) != 0 {
+		return &pb.GetDeploymentResponse{Data: data}, nil
+	} else {
+		return &pb.GetDeploymentResponse{Data: nil}, nil
+	}
 }
 
 func (s *server) DeleteDeployment(ctx context.Context, in *pb.DeleteDeploymentRequest) (*pb.StatusResponse, error) {
@@ -357,11 +419,20 @@ func (s *server) GetDns(ctx context.Context, in *pb.GetDnsRequest) (*pb.GetDnsRe
 	}
 	defer cli.Close()
 	out, _ := etcdctl.Get(cli, "Dns/"+string(in.DnsName))
+	if in.DnsName == "" {
+		out, _ = etcdctl.GetWithPrefix(cli, "Dns/")
+	}
 	// fmt.Println(out.Kvs)
+
+	var data [][]byte
+	for _, v := range out.Kvs {
+		data = append(data, v.Value)
+	}
+
 	if len(out.Kvs) == 0 {
 		return &pb.GetDnsResponse{Data: nil}, nil
 	} else {
-		return &pb.GetDnsResponse{Data: out.Kvs[0].Value}, nil
+		return &pb.GetDnsResponse{Data: data}, nil
 	}
 
 }

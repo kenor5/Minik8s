@@ -384,3 +384,20 @@ func (master *ApiServer) ApplyFunction(function *entity.Function) (*pb.StatusRes
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
+func (master *ApiServer) ApplyWorkflow(workflow *entity.Workflow) (*pb.StatusResponse, error) {
+    // TODO: 判断etcd中是否有Workflow对应的function
+
+	// 存入etcd
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("etcd client connetc error")
+	}
+	defer cli.Close()    
+	workflowByte, err := json.Marshal(workflow)
+	etcdctl.Put(cli, "Workflow/"+workflow.Name, string(workflowByte))
+
+	// 加入路由
+    master.AddWorkflowRouter(workflow.Name)
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
