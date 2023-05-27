@@ -1,0 +1,5 @@
+kind: Function
+metadata:
+  name: pass_function
+functionPath: ./tools/serverless/pass_function/pass_function.py
+requirementPath: ./tools/serverless/pass_function/requirement.txt

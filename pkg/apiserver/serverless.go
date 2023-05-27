@@ -18,6 +18,7 @@ import (
 
 // serverless:添加路由和处理函数
 func (master *ApiServer)AddRouter(functionName string) error {
+	log.PrintS("Add Router:", functionName)
 	// 处理函数
 	functionHandler := func(w http.ResponseWriter, r *http.Request){
 		// 查找function
@@ -59,11 +60,11 @@ func (master *ApiServer)AddRouter(functionName string) error {
 
 			// 更新function
 			function.FunctionStatus.FunctionPods = append(function.FunctionStatus.FunctionPods, functionPod)
-            
+            fc.SetFunction(function)
 			podIp = pod.Status.PodIp
-
+            
 		} else {
-			log.PrintS("podNum!=0, send to pod")
+			log.PrintS("podNum != 0, send to pod")
 			// 否则随机选取一个Pod转发请求
 			rand.Seed(time.Now().UnixNano())
 			randomNumber := rand.Intn(podNum)

@@ -1,0 +1,5 @@
+kind: Function
+metadata:
+  name: fail_function
+functionPath: ./tools/serverless/fail_function/fail_function.py
+requirementPath: ./tools/serverless/fail_function/requirement.txt
