@@ -203,20 +203,29 @@ func (master *ApiServer)AddWorkflowRouter(workflowName string) error {
 		Next := workflow.StartAt
 
 	    // 创建一个空的JSON对象，将返回值传给下个函数
-	    // data := ""
+	    data := new(bytes.Buffer)
+		data.ReadFrom(r.Body)
 		for Next != "End" {
+			log.PrintS("Next Function:", Next)
             workflowNode, _ := wc.GetWorkflowNodeByName(Next, workflow)
-		
+		    
 			if (workflowNode.Type == "Task") {
                 // 如果是Task，转发给对应的函数
-                data := fc.SendFunction(Next, r)
+                data = fc.SendFunction(Next, data)
 				log.PrintS("Response from workflow: ", data)
 				Next = workflowNode.Next
+				// 判断End是否为True
+				if (workflowNode.End == "True") {
+					Next = "End"
+				}
 			} else if (workflowNode.Type == "Choice") {
                 // 如果是Choice，进行相应的判断
-                Next = wc.SelectChoice(90, workflowNode.Choices)
+                Next = wc.SelectChoice(data.String(), workflowNode.Choices)
 		    }
 	    }
+        
+		// 返回结果
+		fmt.Fprintf(w, "%v\n", data.String())
 	}
 
     master.FunctionManager.Mux.HandleFunc("/workflow/"+workflowName, workflowHandler)

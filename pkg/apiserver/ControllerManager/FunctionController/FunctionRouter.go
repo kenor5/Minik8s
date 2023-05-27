@@ -3,6 +3,8 @@ package functioncontroller
 import (
 	"bytes"
 	"fmt"
+
+	// "minik8s/tools/log"
 	"net/http"
 	// "minik8s/pkg/apiserver/ControllerManager"
 )
@@ -39,35 +41,27 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // 给Function发消息
-func SendFunction(functionName string, r *http.Request) (string){
+func SendFunction(functionName string, body *bytes.Buffer) (*bytes.Buffer){
 		// 发消息
 		url := "http://127.0.0.1:8070/function/"+functionName
 	
-		req, err := http.NewRequest("POST", url, r.Body)
+		req, err := http.NewRequest("POST", url, body)
 		if err != nil {
 			fmt.Println("NewRequest error:", err)
-			return "NewRequest error"
+			return nil
 		}
-	
+
 		req.Header.Set("Content-Type", "application/json")
 	
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Println("Request error:", err)
-			return "Request error"
+			return nil
 		}
-		defer resp.Body.Close()
-	
-		fmt.Println("Response Status:", resp.Status)
-		fmt.Println("Response Body:")
+		defer resp.Body.Close()	
 		buf := new(bytes.Buffer)
 		_, err = buf.ReadFrom(resp.Body)
-		if err != nil {
-			fmt.Println("Error reading response body:", err)
-			return "Error reading response body"
-		}
-		fmt.Println(buf.String())	
 
-		return buf.String()
+		return buf
 }

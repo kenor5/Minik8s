@@ -6,6 +6,8 @@ import (
 	"minik8s/entity"
 	"minik8s/tools/etcdctl"
 	"minik8s/tools/log"
+	"strconv"
+	"strings"
 )
 
 func GetWorkflow(workflowName string) (*entity.Workflow, error) {
@@ -37,8 +39,9 @@ func GetWorkflowNodeByName(Name string, workflow *entity.Workflow) (*entity.Work
 	return nil, errors.New("No such Node!")
 } 
 
-func SelectChoice(Number int64, choices []entity.Choice) string {
+func SelectChoice(data string, choices []entity.Choice) string {
 	for _, choice := range choices {
+		Number := GetVariable(data, choice.Variable)
 		match := false
 		switch choice.Condition {
 		case "NumericEquals":
@@ -67,4 +70,40 @@ func SelectChoice(Number int64, choices []entity.Choice) string {
 		} 
 	}
 	return "End"
+}
+
+func GetVariable(data string, variable string) int64 {
+	// 查找 "finalGrade" 的起始索引位置
+	startIndex := strings.Index(data, variable)
+	if startIndex == -1 {
+		log.PrintE("未找到 \"finalGrade\"")
+		return -1
+	}
+
+	// 截取 "finalGrade" 后的部分
+	substring := data[startIndex+len(`"finalGrade"`):]
+
+	// 移除不需要的字符
+	substring = strings.Trim(substring, ` :`)
+
+	// 提取数字字符串
+	endIndex := strings.IndexFunc(substring, func(r rune) bool {
+		return r < '0' || r > '9'
+	})
+	if endIndex == -1 {
+		endIndex = len(substring)
+	}
+	numberString := substring[:endIndex]
+
+	// 转换为int64类型
+	finalGradeInt, err := strconv.ParseInt(numberString, 10, 64)
+	if err != nil {
+		log.PrintE("转换为int64类型失败:", err)
+		return -1
+	}
+
+	// 打印结果
+	log.Print(finalGradeInt)
+
+	return finalGradeInt
 }

@@ -9,13 +9,13 @@ WorkflowNodes:
     Name: JudgeGrade
     Choices:
       - variable: finalGrade
-        Condition: numericGreaterThan
+        Condition: "NumericGreaterThanOrEqual"
         Number: 60
-        next: pass_function
+        Next: pass_function
       - variable: finalGrade
-        Condition: numericLessThan
+        Condition: NumericLessThan
         Number: 60
-        next: fail_function
+        Next: fail_function
   - Type: Task
     Name: pass_function
     End: True

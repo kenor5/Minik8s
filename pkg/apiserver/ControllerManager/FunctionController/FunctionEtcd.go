@@ -33,6 +33,7 @@ func SetFunction(function *entity.Function) error {
 		log.PrintE("etcd client connetc error")
 		return err
 	}	
+	defer cli.Close()
 	functionByte, err := json.Marshal(function)
 	etcdctl.Put(cli, "Function/"+function.Metadata.Name, string(functionByte))
     return nil
@@ -46,7 +47,7 @@ func GetRunningFunction() []*entity.Function {
 	if err != nil {
 		log.PrintE("etcd client connetc error")
 	}
-
+	defer cli.Close()
 	out, _ := etcdctl.GetWithPrefix(cli, "Function/")
 
 	// 筛选出状态为Running的Function

@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func main() {
+func main_5() {
 	url := "http://10.0.17.2:8070/function/hello_function"
 	data := map[string]interface{}{
 		"name": "John",

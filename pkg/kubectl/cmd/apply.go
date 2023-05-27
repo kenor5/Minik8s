@@ -95,24 +95,36 @@ func doApply(cmd *cobra.Command, args []string) {
 			log.PrintE(err)
 		}
 	case "Job", "job":
-	    applyJob(filename)
+		err := applyJob(filename)
+		if err != nil {
+			return
+		}
 		if err != nil {
 			fmt.Println(err)
 		}
 
 	case "Function", "function":
-	    applyFunction(filename)
+		err := applyFunction(filename)
+		if err != nil {
+			return
+		}
 		if err != nil {
 			fmt.Println(err)
-		}	
+		}
 	case "HPA", "hpa":
-		applyHPA(filename)
+		err := applyHPA(filename)
+		if err != nil {
+			return
+		}
 
 	case "Workflow", "workflow":
-	    applyWorkflow(filename)
+		err := applyWorkflow(filename)
+		if err != nil {
+			return
+		}
 
 	default:
-		log.PrintE("there is no object named "  + obj)
+		log.PrintE("there is no object named " + obj)
 	}
 }
 
@@ -254,7 +266,6 @@ func applyDns(filename string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-
 	dnsByte, err := json.Marshal(dns)
 	if err != nil {
 		fmt.Println("parse dns error")
@@ -268,7 +279,6 @@ func applyDns(filename string) error {
 	fmt.Println("Create Dns, response ", res)
 	return nil
 }
-
 
 func applyJob(filename string) error {
 	// 先 parse yaml 文件
