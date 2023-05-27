@@ -46,6 +46,8 @@ func doGet(cmd *cobra.Command, args []string) {
 		getDns(name)
 	case "job":
 		getJob(name)
+	case "jobResult":
+		getJobResult(name)
 	default:
 		log.PrintE("get err, no such object")
 	}
@@ -259,5 +261,51 @@ func getJob(name string) {
 	if err != nil {
 		log.PrintE(err)
 	}
-	fmt.Println("Get Job, response ", res)
+	
+	
+	title := []string{"Id", "Name", "Status"}
+	data := [][]string{}
+	for _, oneJob := range res.Data{
+		job := &entity.Job{}
+		err = json.Unmarshal(oneJob, job)
+		if err != nil {
+			log.PrintE(err)
+		}
+
+		data = append(data, []string{job.JobStatus.JobID, job.Metadata.Name,job.JobStatus.Status})
+	}
+
+	prettyprint.PrettyPrint(title, data)
+}
+
+func getJobResult(jobId string) {
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	res, err := cli.GetJob(ctx, &pb.GetJobRequest{
+		JobName: jobId,
+	})
+	if err != nil {
+		log.PrintE(err)
+	}
+	
+	title := []string{"Id", "Name"}
+	data := [][]string{}
+	// for _, oneJob := range res.Data{
+		job := &entity.Job{}
+		err = json.Unmarshal(res.Data[0], job)
+		if err != nil {
+			log.PrintE(err)
+		}
+
+		data = append(data, []string{job.JobStatus.JobID, job.Metadata.Name})
+	// }
+
+	prettyprint.PrettyPrint(title, data)
+
+	fmt.Print(job.JobStatus.Result)
 }

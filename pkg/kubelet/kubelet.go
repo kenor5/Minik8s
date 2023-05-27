@@ -143,7 +143,7 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 	pod.Status.Phase = entity.Succeed
 	kl.podManger.DeletePod(pod)
 	log.Print("[Kubelet] DeletePod success,Begin update Pod")
-	//client.UpdatePodStatus(kubelet.connToApiServer, pod)
+	client.UpdatePodStatus(kubelet.connToApiServer, pod)
 	return nil
 }
 

@@ -145,7 +145,7 @@ message GetJobRequest {
 }
 
 message GetJobResponse {
-    bytes Data = 1;
+    repeated bytes Data = 1;
 }
 
 // function

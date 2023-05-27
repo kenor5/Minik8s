@@ -294,11 +294,19 @@ func (s *server) GetJob(ctx context.Context, in *pb.GetJobRequest) (*pb.GetJobRe
 		log.PrintE("connect to etcd error")
 	}
 	out, _ := etcdctl.Get(cli, "Job/"+string(in.JobName))
-	fmt.Println(out.Kvs)
+	if in.JobName == "" {
+		out, _ = etcdctl.GetWithPrefix(cli, "Job/")
+	}
+
+	// conver []*mvccpb.KeyValue to []byte
+	var data [][]byte
+	for _, v := range out.Kvs {
+		data = append(data, v.Value)
+	}
 	if len(out.Kvs) == 0 {
 		return &pb.GetJobResponse{Data: nil}, nil
 	} else {
-		return &pb.GetJobResponse{Data: out.Kvs[0].Value}, nil
+		return &pb.GetJobResponse{Data: data}, nil
 	}
 }
 
