@@ -95,19 +95,36 @@ func doApply(cmd *cobra.Command, args []string) {
 			log.PrintE(err)
 		}
 	case "Job", "job":
-	    applyJob(filename)
+		err := applyJob(filename)
+		if err != nil {
+			return
+		}
 		if err != nil {
 			fmt.Println(err)
 		}
 
+	case "Function", "function":
+		err := applyFunction(filename)
+		if err != nil {
+			return
+		}
+		if err != nil {
+			fmt.Println(err)
+		}
 	case "HPA", "hpa":
-		applyHPA(filename)
+		err := applyHPA(filename)
+		if err != nil {
+			return
+		}
 
-	case "Node", "node":
-	// TODO
+	case "Workflow", "workflow":
+		err := applyWorkflow(filename)
+		if err != nil {
+			return
+		}
 
 	default:
-		log.PrintE("there is no object named "  + obj)
+		log.PrintE("there is no object named " + obj)
 	}
 }
 
@@ -249,7 +266,6 @@ func applyDns(filename string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-
 	dnsByte, err := json.Marshal(dns)
 	if err != nil {
 		fmt.Println("parse dns error")
@@ -263,7 +279,6 @@ func applyDns(filename string) error {
 	fmt.Println("Create Dns, response ", res)
 	return nil
 }
-
 
 func applyJob(filename string) error {
 	// 先 parse yaml 文件
@@ -295,5 +310,71 @@ func applyJob(filename string) error {
 	})
 
 	fmt.Println("Create Job, response ", res)
+	return nil
+}
+
+func applyFunction(filename string) error {
+	// 先 parse yaml 文件
+	function := &entity.Function{}
+	_, err := yamlParser.ParseYaml(function, filename)
+	if err != nil {
+		fmt.Println("parse pod failed")
+		return err
+	}
+	fmt.Println(function)
+
+	// 通过 rpc 连接 apiserver
+	cli := NewClient()
+	if cli == nil {
+		return fmt.Errorf("fail to connect to apiserver")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 把 pod 序列化成 string 传给 apiserver
+	functionByte, err := json.Marshal(function)
+	if err != nil {
+		fmt.Println("parse job error")
+		return err
+	}
+
+	res, err := cli.ApplyFunction(ctx, &pb.ApplyFunctionRequest{
+		Data: functionByte,
+	})
+
+	fmt.Println("Create Job, response ", res)
+	return nil
+}
+
+func applyWorkflow(filename string) error {
+	// 先 parse yaml 文件
+	workflow := &entity.Workflow{}
+	_, err := yamlParser.ParseYaml(workflow, filename)
+	if err != nil {
+		fmt.Println("parse workflow failed")
+		return err
+	}
+	fmt.Println(workflow)
+
+	// 通过 rpc 连接 apiserver
+	cli := NewClient()
+	if cli == nil {
+		return fmt.Errorf("fail to connect to apiserver")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 把 pod 序列化成 string 传给 apiserver
+	workflowByte, err := json.Marshal(workflow)
+	if err != nil {
+		fmt.Println("parse workflow error")
+		return err
+	}
+
+	res, err := cli.ApplyWorkflow(ctx, &pb.ApplyWorkflowRequest{
+		Data: workflowByte,
+	})
+
+	fmt.Println("Create Workflow, response ", res)
 	return nil
 }

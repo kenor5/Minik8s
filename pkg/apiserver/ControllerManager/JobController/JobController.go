@@ -1,19 +1,21 @@
 package JobController
 
 import (
-	"fmt"
-	"time"
-    "minik8s/entity"
-	"minik8s/tools/log"
-	"minik8s/tools/etcdctl"
 	"encoding/json"
-	"minik8s/pkg/apiserver/client"
+	"fmt"
+	"minik8s/entity"
 	"minik8s/pkg/apiserver/ControllerManager"
+	"minik8s/pkg/apiserver/client"
 	pb "minik8s/pkg/proto"
+	"minik8s/tools/etcdctl"
+	"minik8s/tools/log"
+	"time"
+
+	// "google.golang.org/genproto/googleapis/rpc/status"
 )
 
 func SbatchAndQuery(JobName string, conn pb.KubeletApiServerServiceClient) {
-	time.Sleep(5 * time.Second) // 休眠 2 秒,等待Pod可用
+	time.Sleep(2 * time.Second) // 休眠 2 秒,等待Pod可用
 	// Job ServerPod的名字
 	PodName := JobName + "-ServerPod"
 	fmt.Println(PodName)
@@ -26,15 +28,27 @@ func SbatchAndQuery(JobName string, conn pb.KubeletApiServerServiceClient) {
 	PodIp := Pod.Status.PodIp
 
 	// 提交任务
-    status, info, err := Sbatch(PodIp, JobName)
-    if err != nil {
-		log.PrintE("sbatch job error!")
-		return
+	info := ""
+	status := ""
+	var err error
+	for i := 0; i < 3; i++ {
+	    status, info, err = Sbatch(PodIp, JobName)
+    	if err != nil {
+			log.PrintW("sbatch job error!")
+			time.Sleep(2*time.Second)
+			continue
+		}
+		if status != "Success" {
+			log.PrintE("sbatch job error, status not success!")
+			time.Sleep(2*time.Second)
+			continue
+	    }
+		if status == "Success" {
+			log.PrintS("Sabtch Success!")
+			break
+	    }
 	}
-	if status != "Success" {
-		log.PrintE("sbatch job error, status not success!")
-		return
-	}
+
 
 	// 更新etcd中Job的状态
     job, err := GetJobByName(JobName)
