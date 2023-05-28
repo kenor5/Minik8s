@@ -214,10 +214,10 @@ func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (
 }
 
 func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequest) (*pb.StatusResponse, error) {
-	pod := &entity.Pod{}
-	err := json.Unmarshal(in.Data, pod)
+	podNew := &entity.Pod{}
+	err := json.Unmarshal(in.Data, podNew)
 	if err != nil {
-		log.PrintE("pod unmarshel err")
+		log.PrintE("podNew unmarshel err")
 		return &pb.StatusResponse{Status: -1}, err
 	}
 
@@ -228,17 +228,30 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 	defer cli.Close()
 
 	//检查本地etcd中是否有此Pod，没有说明已经是一个删除的Pod，将其etcd端信息写为succeed,下一次Pod更新通知删除
-	response, err := etcdctl.Get(cli, "Pod/"+pod.Metadata.Name)
+	response, err := etcdctl.Get(cli, "Pod/"+podNew.Metadata.Name)
 	if len(response.Kvs) == 0 {
-		pod.Status.Phase = entity.Succeed
+		log.Print("[UpdatePodStatus]更新一个没有的Pod")
+		podNew.Status.Phase = entity.Succeed
+		podNew.Status.HostIp = ""
 	}
+	podOld := &entity.Pod{}
+	//仅更新Phase和PodIP
+	err = json.Unmarshal(response.Kvs[0].Value, podOld)
+	podOld.Status.Phase = podNew.Status.Phase
+	podOld.Status.PodIp = podNew.Status.PodIp
+	podOld.Status.StartTime = podNew.Status.StartTime
+	if podNew.Status.Phase == entity.Succeed {
+		podOld.Status.HostIp = ""
+	}
+	podData, _ := json.Marshal(podOld)
+	log.PrintS("Update Pod Status: put etcd:", string(podData))
+	//podNew:=&entity.Pod{}
 
-	log.PrintS("Update Pod Status: put etcd:", string(in.Data))
-	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
+	etcdctl.Put(cli, "Pod/"+podNew.Metadata.Name, string(podData))
 	//更新deployment replica
-	if strings.Contains(pod.Metadata.Name, "deployment") {
+	if strings.Contains(podNew.Metadata.Name, "deployment") {
 
-		str := pod.Metadata.Name
+		str := podNew.Metadata.Name
 		index := strings.Index(str, "deployment")
 		deploymentName := ""
 		if index != -1 {
@@ -249,10 +262,15 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 		out, err := etcdctl.Get(cli, "Deployment/"+deploymentName)
 		if err != nil {
 			log.Print("deployment %s not exist", deploymentName)
+			return nil, err
 		}
 		deployment := &entity.Deployment{}
 		err = json.Unmarshal(out.Kvs[0].Value, deployment)
-		deployment.Status.Replicas += 1
+		if podNew.Status.Phase == entity.Running {
+			deployment.Status.Replicas += 1
+		} else if podNew.Status.Phase == entity.Succeed {
+			deployment.Status.Replicas -= 1
+		}
 		deploymentByte, err := json.Marshal(deployment)
 		etcdctl.Put(cli, "Deployment/"+deploymentName, string(deploymentByte))
 	}
@@ -523,8 +541,8 @@ func Run() {
 	}
 
 	//启动Pod监控
-	//go apiserver.ApiServerObject().BeginMonitorPod()
-	//log.PrintS("Apiserver For PodMonitor Server starts running...")
+	go apiserver.ApiServerObject().BeginMonitorPod()
+	log.PrintS("Apiserver For PodMonitor Server starts running...")
 
 	//启动deployment监控
 	go ControllerManager.BeginMonitorDeployment()

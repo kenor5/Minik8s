@@ -143,7 +143,7 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 	pod.Status.Phase = entity.Succeed
 	kl.podManger.DeletePod(pod)
 	log.Print("[Kubelet] DeletePod success,Begin update Pod")
-	//client.UpdatePodStatus(kubelet.connToApiServer, pod)
+	client.UpdatePodStatus(kubelet.connToApiServer, pod)
 	return nil
 }
 
@@ -191,6 +191,7 @@ func ConnectToApiServer(apiserver_url string) (pb.ApiServerKubeletServiceClient,
 func (kl *Kubelet) monitorPods() {
 	//kl.lock.Lock()
 	//defer kl.lock.Unlock()
+	log.Printf("[Kubelet]Begin Monitor Pod")
 	var FailedPods []*entity.Pod
 	var SucceedPods []*entity.Pod
 	cli, _ := dockerclient.NewClientWithOpts(

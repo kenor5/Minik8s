@@ -53,9 +53,16 @@ func ApiServerObject() *ApiServer {
 
 func (master *ApiServer) ApplyPod(in *pb.ApplyPodRequest) (*pb.StatusResponse, error) {
 	// 调度(获取conn)
-	conn := master.NodeManager.RoundRobin()
+	conn, hostip := master.NodeManager.RoundRobin()
+	//更新hostip信息
+	pod := &entity.Pod{}
+	err := json.Unmarshal(in.Data, pod)
+	pod.Status.HostIp = hostip
 	// 发送消息给Kubelet
-	err := client.KubeletCreatePod(conn, in)
+	poddata, _ := json.Marshal(pod)
+	in.Data = poddata
+
+	err = client.KubeletCreatePod(conn, in)
 	if err != nil {
 		log.PrintE(err)
 		return &pb.StatusResponse{Status: -1}, err
@@ -115,29 +122,29 @@ func (master *ApiServer) AddDeployment(in *pb.ApplyDeploymentRequest) {
 		return
 	}
 	//写入etcd元数据
-	podList, err := Controller.ApplyDeployment(deployment)
+	_, err = Controller.ApplyDeployment(deployment)
 	if err != nil {
 		return
 	}
 	//依次创建deployment 中的pod
-	for _, pod := range podList {
-		podByte, err := json.Marshal(pod)
-		if err != nil {
-			fmt.Println("parse pod error")
-			return
-		}
-		_, err = master.ApplyPod(&pb.ApplyPodRequest{
-			Data: podByte,
-		})
-		if err != nil {
-			fmt.Printf("create Pod of Deployment error:%s", err)
-			return
-		}
-		//err = client.KubeletCreatePod(apiServer.conn)
-		//if err != nil {
-		//	return
-		//}
-	}
+	//for _, pod := range podList {
+	//	podByte, err := json.Marshal(pod)
+	//	if err != nil {
+	//		fmt.Println("parse pod error")
+	//		return
+	//	}
+	//	_, err = master.ApplyPod(&pb.ApplyPodRequest{
+	//		Data: podByte,
+	//	})
+	//	if err != nil {
+	//		fmt.Printf("create Pod of Deployment error:%s", err)
+	//		return
+	//	}
+	//	//err = client.KubeletCreatePod(apiServer.conn)
+	//	//if err != nil {
+	//	//	return
+	//	//}
+	//}
 }
 
 // DeleteDeployment  使用Controller删除deployment
@@ -186,6 +193,7 @@ func (master *ApiServer) BeginMonitorPod() {
 	}
 }
 func (master *ApiServer) CheckEtcdAndUpdate() {
+	log.Printf("[Apiserver]CheckEtcdAndUpdate begin monitor")
 	PodsData, _ := etcdctl.EtcdGetWithPrefix("Pod/")
 	//读取所有的Pod信息
 	var Pods []entity.Pod
@@ -198,6 +206,7 @@ func (master *ApiServer) CheckEtcdAndUpdate() {
 		}
 		Pods = append(Pods, pod)
 	}
+	log.Print("[CheckEtcdAndUpdate]读取所有的Pod信息")
 	//根据不同的Pod状态，进行不同处理
 	/*
 		1. Pending 为创建后还为指定Node实际创建
@@ -222,31 +231,63 @@ func (master *ApiServer) CheckEtcdAndUpdate() {
 			//TODO: 此类为已经写入etcd但还未指定Node创建的Pod，如新的replica
 			//根据调度策略选择合适Node分配
 			// 组装消息
-			podByte, err := json.Marshal(pod)
-			if err != nil {
-				fmt.Println("parse pod error")
-				continue
-			}
-			in := &pb.ApplyPodRequest{
-				Data: podByte,
-			}
+			log.Print("[CheckEtcdAndUpdate]处理Pod:Pending")
+
 			// 调度(获取conn)
-			conn := master.NodeManager.RoundRobin()
+			conn, hostip := master.NodeManager.RoundRobin()
 			if conn == nil {
 				KubeletUrl := "127.0.0.1:5679"
 				conn, err := NodeController.ConnectToKubelet("127.0.0.1:5679")
 				if err != nil {
 					panic("fail to connect kubelet: " + KubeletUrl)
 				}
+				pod.Status.HostIp = "127.0.0.1"
+				podByte, err := json.Marshal(pod)
+				if err != nil {
+					fmt.Println("parse pod error")
+					continue
+				}
+				in := &pb.ApplyPodRequest{
+					Data: podByte,
+				}
+				err = etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(podByte))
+				if err != nil {
+					log.PrintE("Put Pod error")
+				}
 				err = client.KubeletCreatePod(conn, in)
 			} else {
 				// 发送消息给Kubelet
+				if hostip == "" {
+					log.PrintE("Host ip is nil")
+					panic(hostip)
+					//hostip = "127.0.0.1"
+				}
+				pod.Status.HostIp = hostip
+				podByte, err := json.Marshal(pod)
+				if err != nil {
+					fmt.Println("parse pod error")
+					continue
+				}
+				in := &pb.ApplyPodRequest{
+					Data: podByte,
+				}
+				err = etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(podByte))
+				if err != nil {
+					log.PrintE("Put Pod error")
+				}
 				err = client.KubeletCreatePod(conn, in)
 			}
 
 		case entity.Succeed:
 			//TODO: 通知Node删除Pod后，更新本地信息
-			conn := master.NodeManager.GetNodeConnByIP(pod.Status.PodIp)
+			if pod.Status.HostIp == "" {
+				//已经完全删除退出的Pod
+				continue
+			}
+			log.Print("[CheckEtcdAndUpdate]处理Pod:Succeed")
+			conn := master.NodeManager.GetNodeConnByIP(pod.Status.HostIp)
+			pod.Status.HostIp = ""
+			pod.Status.PodIp = ""
 			podByte, _ := json.Marshal(pod)
 			err := client.KubeletDeletePod(conn, &pb.DeletePodRequest{
 				Data: podByte,
@@ -254,6 +295,7 @@ func (master *ApiServer) CheckEtcdAndUpdate() {
 			if err != nil {
 				log.PrintfE("[CheckEtcdAndUpdate]Delete Pod %s error", pod.Metadata.Name)
 			}
+
 			//err = etcdctl.EtcdDelete("Pod/" + pod.Metadata.Name)
 			//if err != nil {
 			//	log.PrintfE("[CheckEtcdAndUpdate]Delete Pod %s error", pod.Metadata.Name)
@@ -325,6 +367,10 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 		},
 	}
 
+	// 调度(获取conn)
+	conn, hostip := master.NodeManager.RoundRobin()
+	//更新hostip信息
+	pod.Status.HostIp = hostip
 	// 组装消息
 	podByte, err := json.Marshal(pod)
 	if err != nil {
@@ -334,8 +380,6 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 	in := &pb.ApplyPodRequest{
 		Data: podByte,
 	}
-	// 调度(获取conn)
-	conn := master.NodeManager.RoundRobin()
 	// 发送消息给Kubelet
 	err = client.KubeletCreatePod(conn, in)
 	if err != nil {

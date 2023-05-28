@@ -51,7 +51,7 @@ func (mm *MetricsManager) PodCPUUsage(pod *entity.Pod) (float64, error) {
 	var queryBuilder strings.Builder
 
 	// Pause container
-	pauseName := pod.Metadata.Name + "_pause"
+	pauseName := pod.Metadata.Name + "_pauseContainer"
 	containerQuery := containerCPUUsageQuery(pauseName)
 	queryBuilder.WriteString(containerQuery)
 

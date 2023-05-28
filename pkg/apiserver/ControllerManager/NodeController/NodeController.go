@@ -54,12 +54,12 @@ func (nodeController *NodeController) RegiseterNode(node *entity.Node) error {
 }
 
 // RoundRobin调度策略
-func (nodeController *NodeController) RoundRobin() pb.KubeletApiServerServiceClient {
+func (nodeController *NodeController) RoundRobin() (pb.KubeletApiServerServiceClient, string) {
 	LivingNodes := nodeController.GetAllLivingNodes()
 	LivingNodesNum := len(LivingNodes)
 
 	selectedNode := LivingNodes[nodeController.FetchAndAdd()%LivingNodesNum]
-	return nodeController.NodeNameToConn[selectedNode.Name]
+	return nodeController.NodeNameToConn[selectedNode.Name], selectedNode.Ip
 }
 
 func (nodeController *NodeController) FetchAndAdd() int {
