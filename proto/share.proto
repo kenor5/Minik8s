@@ -161,6 +161,10 @@ message GetFunctionResponse {
     repeated bytes Data = 1;
 }
 
+message DeleteFunctionRequest{
+    string FunctionName = 1;
+}
+
 // Workflow
 message ApplyWorkflowRequest {
     bytes Data = 1;

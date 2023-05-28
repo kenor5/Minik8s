@@ -20,7 +20,11 @@ func GetFunction(functionName string) (*entity.Function, error) {
 		log.PrintE("No such Function!")
 		return nil, err
 	}
-
+    
+	if len(out.Kvs) == 0{
+		return nil, nil
+	}
+	
 	// 解析Function并返回
 	function := &entity.Function{}
     json.Unmarshal(out.Kvs[0].Value, function)
@@ -36,6 +40,17 @@ func SetFunction(function *entity.Function) error {
 	defer cli.Close()
 	functionByte, err := json.Marshal(function)
 	etcdctl.Put(cli, "Function/"+function.Metadata.Name, string(functionByte))
+    return nil
+}
+
+func DelFunction(functionName string) error {
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("etcd client connetc error")
+		return err
+	}	
+	defer cli.Close()
+	etcdctl.Delete(cli, "Function/"+functionName)
     return nil
 }
 

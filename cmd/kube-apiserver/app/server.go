@@ -190,7 +190,6 @@ func (s *server)GetFunction(ctx context.Context, in *pb.GetFunctionRequest) (*pb
 	}
 }
 
-
 func (s *server)ApplyWorkflow(ctx context.Context, in *pb.ApplyWorkflowRequest) (*pb.StatusResponse, error) {
 	// 解析Wokflow
 	workflow := &entity.Workflow{}
@@ -202,6 +201,14 @@ func (s *server)ApplyWorkflow(ctx context.Context, in *pb.ApplyWorkflowRequest) 
     
 	return apiserver.ApiServerObject().ApplyWorkflow(workflow)
 }
+
+func (s *server)DeleteFunction(ctx context.Context, in *pb.DeleteFunctionRequest) (*pb.StatusResponse, error) {
+	// 获取FunctionName
+	functionName := string(in.FunctionName)
+    
+	return apiserver.ApiServerObject().DeleteFunction(functionName)        
+}
+
 
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
@@ -317,7 +324,6 @@ func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest)
 	}
 	defer cli.Close()
 	out, _ := etcdctl.Get(cli, "Service/"+string(in.ServiceName))
-	fmt.Println(out.Kvs)
 	if len(out.Kvs) == 0 {
 		return &pb.StatusResponse{Status: 0}, nil
 	}

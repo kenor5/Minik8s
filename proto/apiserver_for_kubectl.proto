@@ -37,5 +37,7 @@ service ApiServerKubectlService {
 
     rpc ApplyFunction(share.ApplyFunctionRequest) returns (share.StatusResponse);
     rpc GetFunction(share.GetFunctionRequest) returns (share.GetFunctionResponse);
+    rpc DeleteFunction(share.DeleteFunctionRequest) returns (share.StatusResponse);
+
     rpc ApplyWorkflow(share.ApplyWorkflowRequest) returns (share.StatusResponse);
 }

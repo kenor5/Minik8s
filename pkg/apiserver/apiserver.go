@@ -3,26 +3,27 @@ package apiserver
 import (
 	"encoding/json"
 	"fmt"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"minik8s/configs"
 	"minik8s/pkg/apiserver/ControllerManager/JobController"
 	"minik8s/tools/etcdctl"
 	"time"
 
+	clientv3 "go.etcd.io/etcd/client/v3"
+
 	// "minik8s/configs"
 
 	// "google.golang.org/grpc"
 	// "google.golang.org/grpc/credentials/insecure"
-	"minik8s/pkg/kubelet/container/containerfunc"
-	"os"
-	"os/exec"
 	"minik8s/entity"
 	Controller "minik8s/pkg/apiserver/ControllerManager"
-	"minik8s/pkg/apiserver/ControllerManager/NodeController"
 	"minik8s/pkg/apiserver/ControllerManager/FunctionController"
+	"minik8s/pkg/apiserver/ControllerManager/NodeController"
 	"minik8s/pkg/apiserver/client"
+	"minik8s/pkg/kubelet/container/containerfunc"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
+	"os"
+	"os/exec"
 )
 
 /**************************************************************************
@@ -398,6 +399,46 @@ func (master *ApiServer) ApplyWorkflow(workflow *entity.Workflow) (*pb.StatusRes
 
 	// 加入路由
     master.AddWorkflowRouter(workflow.Name)
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (master *ApiServer) DeleteFunction(functionName string) (*pb.StatusResponse, error) {
+    // 从etcd中查找function
+	function, _ := functioncontroller.GetFunction(functionName)
+	
+	// 将该function从etcd中删除
+    err := functioncontroller.DelFunction(functionName)
+	if err != nil {
+		log.PrintS("Delete function err!")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	// 删除所有属于这个function的Pod
+	functionPods := function.FunctionStatus.FunctionPods
+    for _, functionPod := range functionPods {
+		pod, _ := Controller.GetPodByName(functionPod.PodName)
+		podByte, err := json.Marshal(pod)
+		if err != nil {
+			log.PrintE("parse pod error")
+			return &pb.StatusResponse{Status: -1}, err
+		}
+		in := &pb.DeletePodRequest{
+			Data: podByte,
+		}		
+		_, err = master.DeletePod(in)
+		if err != nil {
+			log.PrintE("delete pod error")
+			return &pb.StatusResponse{Status: -1}, err
+		}
+	}
+
+	// // 删除路由
+	// master.FunctionManager.Mux.HandleFunc("/function/"+functionName, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 	// 可以添加一些处理逻辑，但不执行任何操作
+	// }))
+
+	log.PrintS("delete function: ", functionName)
 
 	return &pb.StatusResponse{Status: 0}, nil
 }

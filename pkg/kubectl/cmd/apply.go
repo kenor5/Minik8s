@@ -67,7 +67,7 @@ func doApply(cmd *cobra.Command, args []string) {
 		fmt.Println("file has no such field")
 	}
 
-	fmt.Println("dirname: ", dirname, "filename without extention: ", filenameWithoutExtention)
+	// fmt.Println("dirname: ", dirname, "filename without extention: ", filenameWithoutExtention)
 
 	switch obj {
 	case "Pod", "pod":
@@ -133,7 +133,7 @@ func applyPod(filename string) error {
 	pod := &entity.Pod{}
 	_, err := yamlParser.ParseYaml(pod, filename)
 	if err != nil {
-		fmt.Println("parse pod failed")
+		log.PrintE(err)
 		return err
 	}
 	fmt.Println(pod)
@@ -285,7 +285,7 @@ func applyJob(filename string) error {
 	job := &entity.Job{}
 	_, err := yamlParser.ParseYaml(job, filename)
 	if err != nil {
-		fmt.Println("parse pod failed")
+		log.PrintE(err)
 		return err
 	}
 	fmt.Println(job)
@@ -318,7 +318,7 @@ func applyFunction(filename string) error {
 	function := &entity.Function{}
 	_, err := yamlParser.ParseYaml(function, filename)
 	if err != nil {
-		fmt.Println("parse pod failed")
+		log.PrintE(err)
 		return err
 	}
 	fmt.Println(function)

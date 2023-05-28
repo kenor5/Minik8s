@@ -1,0 +1,13 @@
+kind: 
+  pod
+metadata:
+  name: service-pod2
+  labels:
+    app: myApp
+spec:
+  containers:
+    - name: my-http-server
+      image: luoshicai/my-http-server2:latest
+      ports:
+        - containerPort: 9090
+          hostPort: 8080

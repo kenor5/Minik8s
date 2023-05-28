@@ -83,11 +83,26 @@ func deleteDeployment(name string) {
 		fmt.Println(err)
 	}
 
-	fmt.Println("Delete Pod, response ", res)
+	fmt.Println("Delete Deployment, response ", res)
 }
 
 func deleteFunction(name string) {
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	log.Print("begin delete Function", name)
+	res, err := cli.DeleteFunction(ctx, &pb.DeleteFunctionRequest{
+		FunctionName: name,
+	})
 
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("Delete Function, response ", res)    
 }
 
 func deleteService(name string) {

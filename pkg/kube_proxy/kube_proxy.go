@@ -65,7 +65,7 @@ func (kp *KubeProxy) NewService(service *entity.Service, podNames []string, podI
 			}
 
 			// [内存] service chain 跳转到具体 pod chain
-			err = kp.IptableClient.ApplyPodRules(svcChainName, podChainName, i+1)
+			err = kp.IptableClient.ApplyPodRules(svcChainName, podChainName, podLen)
 			if err != nil {
 				return err
 			}
@@ -88,12 +88,6 @@ func (kp *KubeProxy) RemoveService(serviceName string) error {
 	serviceChains := kp.ServiceManager.GetServiceChains(serviceName)
 	clusterIp := kp.ServiceManager.GetClusterIp(serviceName)
 	for _, svc := range serviceChains {
-		// 先删除 iptable 里的路由规则
-		err := kp.IptableClient.RemoveServiceChain(svc.ChainName, clusterIp, uint32(svc.Ports.Port))
-		if err != nil {
-			return err
-		}
-
 		podChains := kp.ServiceManager.GetPodChains(svc.ChainName)
 		for _, podChain := range podChains {
 			err := kp.IptableClient.RemovePodChain(podChain.ChainName)
@@ -103,6 +97,12 @@ func (kp *KubeProxy) RemoveService(serviceName string) error {
 		}
 		// 在删除内存里的 podchain 信息
 		kp.ServiceManager.RemovePodChain(svc.ChainName)
+
+		// 先删除 iptable 里的路由规则
+		err := kp.IptableClient.RemoveServiceChain(svc.ChainName, clusterIp, uint32(svc.Ports.Port))
+		if err != nil {
+			return err
+		}
 	}
 
 	kp.ServiceManager.RemoveServiceChain(serviceName)

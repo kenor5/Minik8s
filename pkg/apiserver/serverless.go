@@ -24,6 +24,11 @@ func (master *ApiServer)AddRouter(functionName string) error {
 	functionHandler := func(w http.ResponseWriter, r *http.Request){
 		// 查找function
         function, _:= fc.GetFunction(functionName)
+        if function == nil {
+			fmt.Fprintf(w, "Default Handler")
+			return
+		}
+
 		podNum := len(function.FunctionStatus.FunctionPods)
 		podIp := ""
 		// 如果没有Pod，则冷启动创建Pod
