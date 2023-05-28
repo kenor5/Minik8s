@@ -1,0 +1,12 @@
+kind: Dns
+metadata:
+  name: dns-test1
+spec: 
+  host: example2.com 
+  paths:
+  - path: /path1
+    serviceName: fileserver-service1
+    servicePort: 8080
+  - path: /path2
+    serviceName: fileserver-service2
+    servicePort: 8080

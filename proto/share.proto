@@ -165,6 +165,10 @@ message DeleteFunctionRequest{
     string FunctionName = 1;
 }
 
+message UpdateFunctionRequest{
+    string FunctionName = 1;
+}
+
 // Workflow
 message ApplyWorkflowRequest {
     bytes Data = 1;

@@ -153,11 +153,13 @@ func applyPod(filename string) error {
 		return err
 	}
 
-	res, err := cli.ApplyPod(ctx, &pb.ApplyPodRequest{
+	_, err = cli.ApplyPod(ctx, &pb.ApplyPodRequest{
 		Data: podByte,
 	})
 
-	fmt.Println("Create Pod, response ", res)
+	if err != nil {
+		log.PrintS("Created Pod %s", pod.Metadata.Name)
+	}
 	return nil
 }
 
@@ -183,11 +185,14 @@ func applyDeployment(filename string) error {
 		return err
 	}
 
-	res, err := cli.ApplyDeployment(ctx, &pb.ApplyDeploymentRequest{
+	_, err = cli.ApplyDeployment(ctx, &pb.ApplyDeploymentRequest{
 		Data: deploymentByte,
 	})
 
-	fmt.Printf("Create Deployment, response %v,error %v\n", res, err)
+	if err != nil {
+		log.PrintS("Created deployment %s", deployment.Metadata.Name)
+	}
+	// fmt.Printf("Create Deployment, response %v,error %v\n", res, err)
 	return nil
 }
 
@@ -213,11 +218,14 @@ func applyService(filename string) error {
 		return err
 	}
 
-	res, err := cli.ApplyService(ctx, &pb.ApplyServiceRequest{
+	_, err = cli.ApplyService(ctx, &pb.ApplyServiceRequest{
 		Data: podByte,
 	})
 
-	fmt.Println("Create Service, response ", res)
+	if err != nil {
+		log.PrintS("Created svc %s", service.Metadata.Name)
+	}
+	// fmt.Println("Create Service, response ", res)
 	return nil
 }
 

@@ -51,6 +51,7 @@ func (kp *KubeProxy) NewService(service *entity.Service, podNames []string, podI
 		svcChainName := kp.IptableClient.CreateServiceChain()
 		// [内存] 加入 svcName -> svcChain 的映射
 		kp.ServiceManager.AddServiceChain(serviceName, svcChainName, &port)
+		kp.ServiceManager.AddClusterIp(serviceName, service.Spec.ClusterIP)
 
 		for i := 0; i < podLen; i++ {
 			//podName := podNames[i]
@@ -80,29 +81,38 @@ func (kp *KubeProxy) NewService(service *entity.Service, podNames []string, podI
 			return err
 		}
 	}
+
+	log.PrintE("service chain len %v", kp.ServiceManager.ServiceChainName2PodChain)
+	log.PrintE("pod chain len %v", kp.ServiceManager.ServiceName2ServiceChain)
 	return nil
 }
 
 func (kp *KubeProxy) RemoveService(serviceName string) error {
 	// 需要删除 service manager 中的数据和 iptable 中的路由数据
 	serviceChains := kp.ServiceManager.GetServiceChains(serviceName)
+	log.PrintE("service chain ", len(serviceChains))
 	clusterIp := kp.ServiceManager.GetClusterIp(serviceName)
+	log.PrintE("cluster ip;", clusterIp)
+
 	for _, svc := range serviceChains {
+		// 先删除 iptable 里的路由规则
+		err := kp.IptableClient.RemoveServiceChain(svc.ChainName, clusterIp, uint32(svc.Ports.Port))
+		if err != nil {
+			log.PrintE(err)
+			return err
+		}
+
 		podChains := kp.ServiceManager.GetPodChains(svc.ChainName)
+		log.PrintE("pod chain %v", podChains)
 		for _, podChain := range podChains {
 			err := kp.IptableClient.RemovePodChain(podChain.ChainName)
 			if err != nil {
+				log.PrintE(err)
 				return err
 			}
 		}
 		// 在删除内存里的 podchain 信息
 		kp.ServiceManager.RemovePodChain(svc.ChainName)
-
-		// 先删除 iptable 里的路由规则
-		err := kp.IptableClient.RemoveServiceChain(svc.ChainName, clusterIp, uint32(svc.Ports.Port))
-		if err != nil {
-			return err
-		}
 	}
 
 	kp.ServiceManager.RemoveServiceChain(serviceName)

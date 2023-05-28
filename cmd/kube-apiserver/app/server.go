@@ -12,7 +12,6 @@ import (
 	"minik8s/tools/etcdctl"
 	"net"
 
-	"minik8s/pkg/kubelet"
 	pb "minik8s/pkg/proto"
 
 	"minik8s/pkg/apiserver"
@@ -190,6 +189,13 @@ func (s *server)GetFunction(ctx context.Context, in *pb.GetFunctionRequest) (*pb
 	}
 }
 
+func (s *server)UpdateFunction(ctx context.Context, in *pb.UpdateFunctionRequest) (*pb.StatusResponse, error) {
+	// 获取FunctionName
+	functionName := string(in.FunctionName)
+    
+	return apiserver.ApiServerObject().UpdateFunction(functionName)
+}
+
 func (s *server)ApplyWorkflow(ctx context.Context, in *pb.ApplyWorkflowRequest) (*pb.StatusResponse, error) {
 	// 解析Wokflow
 	workflow := &entity.Workflow{}
@@ -325,13 +331,15 @@ func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest)
 	defer cli.Close()
 	out, _ := etcdctl.Get(cli, "Service/"+string(in.ServiceName))
 	if len(out.Kvs) == 0 {
+		log.PrintE("service %s not exist", in.ServiceName)
 		return &pb.StatusResponse{Status: 0}, nil
 	}
 
-	err = kubelet.KubeProxyObject().RemoveService(in.ServiceName)
-	if err != nil {
-		log.PrintE(err)
-	}
+	return apiserver.ApiServerObject().DeleteService(in)
+	// err = kubelet.KubeProxyObject().RemoveService(in.ServiceName)
+	// if err != nil {
+	// 	log.PrintE(err)
+	// }
 	// service := &entity.Service{}
 	// for _,data := range out.Kvs {
 	// 	err := json.Unmarshal(data.Value, service)
@@ -345,7 +353,7 @@ func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest)
 	// 	}
 	// }
 
-	return &pb.StatusResponse{Status: 0}, nil
+	// return &pb.StatusResponse{Status: 0}, nil
 }
 
 func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (*pb.StatusResponse, error) {
