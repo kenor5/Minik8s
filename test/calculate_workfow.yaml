@@ -1,0 +1,24 @@
+Kind: Workflow
+Name: calculate_workflow
+StartAt: calculate_function
+WorkflowNodes:
+  - Type: Task
+    Name: calculate_function
+    Next: JudgeGrade
+  - Type: Choice
+    Name: JudgeGrade
+    Choices:
+      - variable: finalGrade
+        Condition: "NumericGreaterThanOrEqual"
+        Number: 60
+        Next: pass_function
+      - variable: finalGrade
+        Condition: NumericLessThan
+        Number: 60
+        Next: fail_function
+  - Type: Task
+    Name: pass_function
+    End: True
+  - Type: Task
+    Name: fail_function
+    End: True

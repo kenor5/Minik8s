@@ -13,13 +13,16 @@ import (
 
 	// "google.golang.org/grpc"
 	// "google.golang.org/grpc/credentials/insecure"
-
 	"minik8s/entity"
 	Controller "minik8s/pkg/apiserver/ControllerManager"
+	"minik8s/pkg/apiserver/ControllerManager/FunctionController"
 	"minik8s/pkg/apiserver/ControllerManager/NodeController"
 	"minik8s/pkg/apiserver/client"
+	"minik8s/pkg/kubelet/container/containerfunc"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
+	"os"
+	"os/exec"
 )
 
 /**************************************************************************
@@ -27,14 +30,16 @@ import (
 ***************************************************************************/
 type ApiServer struct {
 	// conn pb.KubeletApiServerServiceClient
-	NodeManager NodeController.NodeController
+	NodeManager     NodeController.NodeController
+	FunctionManager functioncontroller.FunctionController
 }
 
 var apiServer *ApiServer
 
 func newApiServer() *ApiServer {
 	newServer := &ApiServer{
-		NodeManager: *NodeController.NewNodeController(),
+		NodeManager:     *NodeController.NewNodeController(),
+		FunctionManager: *functioncontroller.NewFunctionController(),
 	}
 	return newServer
 }
@@ -341,4 +346,88 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 	go JobController.SbatchAndQuery(job.Metadata.Name, conn)
 
 	return &pb.StatusResponse{Status: 0}, err
+}
+
+func (master *ApiServer) ApplyFunction(function *entity.Function) (*pb.StatusResponse, error) {
+	imageName := "luoshicai/" + function.Metadata.Name + ":latest"
+	exist, _ := containerfunc.ImageExist(imageName)
+	if exist == false {
+		log.Print("function image doesn't exist, create function image...")
+		// 生成Dockerfile
+		// 命令和参数
+		cmd := exec.Command("./scripts/gen_function_dockerfile.sh", function.Metadata.Name)
+		// 设置工作目录
+		cmd.Dir = "./"
+		// 执行命令并捕获输出
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			log.PrintE("命令执行失败：%v\n%s", err, output)
+		}
+
+		// 打印输出结果
+		log.Print(string(output))
+
+		// 生成镜像
+		dockerfilePath := "./tools/serverless/" + function.Metadata.Name
+
+		cmd = exec.Command("docker", "build", "-t", imageName, dockerfilePath)
+
+		// 设置命令输出到标准输出和标准错误
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		// 执行命令
+		err = cmd.Run()
+		if err != nil {
+			log.PrintE("执行命令失败：%v", err)
+		}
+
+		log.Print("镜像构建成功：%s\n", imageName)
+	}
+
+	// 存入etcd
+	PodTemplate := &entity.Pod{
+		Kind: "pod",
+		Metadata: entity.ObjectMeta{
+			Name: function.Metadata.Name + "-pod",
+			Labels: map[string]string{
+				"app": function.Metadata.Name,
+			},
+		},
+		Spec: entity.PodSpec{
+			Containers: []entity.Container{
+				{
+					Name:  "serverless-server",
+					Image: imageName,
+				},
+			},
+		},
+	}
+	function.FunctionStatus.AccessTimes = 0
+	function.FunctionStatus.Status = entity.Running
+	function.FunctionStatus.PodTemplate = *PodTemplate
+	functioncontroller.SetFunction(function)
+
+	// 加入路由
+	master.AddRouter(function.Metadata.Name)
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (master *ApiServer) ApplyWorkflow(workflow *entity.Workflow) (*pb.StatusResponse, error) {
+	// TODO: 判断etcd中是否有Workflow对应的function
+
+	// 存入etcd
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("etcd client connetc error")
+	}
+	defer cli.Close()
+	workflowByte, err := json.Marshal(workflow)
+	etcdctl.Put(cli, "Workflow/"+workflow.Name, string(workflowByte))
+
+	// 加入路由
+	master.AddWorkflowRouter(workflow.Name)
+
+	return &pb.StatusResponse{Status: 0}, nil
 }

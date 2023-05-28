@@ -1,0 +1,5 @@
+kind: Function
+metadata:
+  name: hello_function
+functionPath: ./tools/serverless/hello_function/hello_function.py
+requirementPath: ./tools/serverless/hello_function/requirement.txt

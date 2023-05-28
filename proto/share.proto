@@ -57,7 +57,7 @@ message DeleteDeploymentRequest{
 }
 
 message GetDeploymentResponse{
-    bytes Data = 1;
+    repeated bytes Data = 1;
 }
 
 //HorizontalPodAutoscaler
@@ -116,7 +116,7 @@ message GetNodeRequest{
 }
 
 message GetNodeResponse{
-    bytes NodeData = 1;
+    repeated bytes NodeData = 1;
 }
 
 //Dns
@@ -133,7 +133,7 @@ message DeleteDnsRequest{
 }
 
 message GetDnsResponse{
-    bytes Data = 1;
+    repeated bytes Data = 1;
 }
 // Job
 message ApplyJobRequest {
@@ -145,5 +145,23 @@ message GetJobRequest {
 }
 
 message GetJobResponse {
+    bytes Data = 1;
+}
+
+// function
+message ApplyFunctionRequest {
+    bytes Data = 1;
+}
+
+message GetFunctionRequest {
+    string FunctionName = 1;
+}
+
+message GetFunctionResponse {
+    repeated bytes Data = 1;
+}
+
+// Workflow
+message ApplyWorkflowRequest {
     bytes Data = 1;
 }

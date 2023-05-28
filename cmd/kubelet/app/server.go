@@ -113,7 +113,7 @@ func (s *server) CreateDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.Sta
 		log.PrintE("kubelet create dns failed")
 		return &pb.StatusResponse{Status: -1}, nil
 	}
-	
+
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
@@ -123,7 +123,7 @@ func (s *server) DeleteDns(ctx context.Context, in *pb.DeleteDnsRequest) (*pb.St
 		log.PrintE("kubelet delete dns failed")
 		return &pb.StatusResponse{Status: -1}, nil
 	}
-	
+
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
@@ -147,9 +147,9 @@ func Run() {
 	if err != nil {
 		log.PrintE(err)
 	}
-	////开启Pod状态监控和更新
-	log.PrintS("[kubelet]Begin Monitor Deployment")
-	go kubelet.KubeletObject().BeginMonitor()
+	// ////开启Pod状态监控和更新
+	// log.PrintS("[kubelet]Begin Monitor Deployment")
+	// go kubelet.KubeletObject().BeginMonitor()
 
 	//Kubelet启动监控检查本地的Pod运行状态
 	//go kubelet.KubeletObject().beginMonitor()

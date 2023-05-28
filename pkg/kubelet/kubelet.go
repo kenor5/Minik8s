@@ -104,19 +104,29 @@ func (kl *Kubelet) CreatePod(pod *entity.Pod) error {
 	pod.Spec.NodeName = kl.hostName
 	ContainerIds, err := podfunc.CreatePod(pod)
 	if err != nil {
+		log.PrintE(err)
 		return err
 	}
 
+	log.PrintS("1")
 	// 维护ContainerRuntimeManager
 	kl.podManger.AddPod(pod)
+
+	log.PrintS("2")
+
 	for _, ContainerId := range ContainerIds {
+		log.PrintS(ContainerId)
 		kubelet.podManger.AddContainerToPod(ContainerId, pod)
 	}
 	kl.containerManager.SetContainerIDsByPodName(pod, ContainerIds)
 
+	log.PrintS("3")
+
 	// 更新PodStatus
-	log.Print("[Kubelet] CreatePod success,Begin update Pod")
+	log.PrintS("[Kubelet] CreatePod success,Begin update Pod")
 	client.UpdatePodStatus(kubelet.connToApiServer, pod)
+
+	log.PrintS("4")
 	return nil
 }
 
@@ -303,7 +313,6 @@ func (kl *Kubelet) BeginMonitor() {
 	}
 	}()*/
 }
-
 
 func (kl *Kubelet) ApplyDns(dns *entity.Dns) error {
 	err := CreateDns(dns)

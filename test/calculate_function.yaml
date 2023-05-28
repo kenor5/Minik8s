@@ -1,0 +1,5 @@
+kind: Function
+metadata:
+  name: calculate_function
+functionPath: ./tools/serverless/calculate_function/calculate_function.py
+requirementPath: ./tools/serverless/calculate_function/requirement.txt

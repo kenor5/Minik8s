@@ -26,18 +26,20 @@ func doDelete(cmd *cobra.Command, args []string) {
 	}
 	name := args[1]
 	switch args[0] {
-	case "po","pod","pods":
+	case "po", "pod", "pods":
 		deletePod(name)
-	case "node","nodes":
+	case "node", "nodes":
 		deleteNode(name)
 	case "service":
 		deleteService(name)
 	case "function":
 		deleteFunction(name)
-	case "deployment","deploy":
+	case "deployment", "deploy":
 		deleteDeployment(name)
 	case "Dns", "dns":
 		deleteDns(name)
+	default:
+		log.PrintE("delete err, no such object")
 	}
 }
 
@@ -95,8 +97,7 @@ func deleteService(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
-	
+
 	res, err := cli.DeleteService(ctx, &pb.DeleteServiceRequest{
 		ServiceName: name,
 	})
@@ -115,7 +116,7 @@ func deleteDns(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	res, err := cli.DeleteDns(ctx, &pb.DeleteDnsRequest{
 		DnsName: name,
 	})
