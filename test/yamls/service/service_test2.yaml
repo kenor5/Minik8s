@@ -11,4 +11,4 @@ spec:
     targetPort: 8080
   
   type: ClusterIP
-  clusterIP: "10.20.0.3"
+  clusterIP: "10.20.0.2"

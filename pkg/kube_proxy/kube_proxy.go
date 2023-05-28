@@ -82,17 +82,14 @@ func (kp *KubeProxy) NewService(service *entity.Service, podNames []string, podI
 		}
 	}
 
-	log.PrintE("service chain len %v", kp.ServiceManager.ServiceChainName2PodChain)
-	log.PrintE("pod chain len %v", kp.ServiceManager.ServiceName2ServiceChain)
+
 	return nil
 }
 
 func (kp *KubeProxy) RemoveService(serviceName string) error {
 	// 需要删除 service manager 中的数据和 iptable 中的路由数据
 	serviceChains := kp.ServiceManager.GetServiceChains(serviceName)
-	log.PrintE("service chain ", len(serviceChains))
 	clusterIp := kp.ServiceManager.GetClusterIp(serviceName)
-	log.PrintE("cluster ip;", clusterIp)
 
 	for _, svc := range serviceChains {
 		// 先删除 iptable 里的路由规则

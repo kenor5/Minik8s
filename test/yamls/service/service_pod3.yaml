@@ -1,0 +1,11 @@
+kind: 
+  pod
+metadata:
+  name: service-pod3
+  labels:
+    app: nginx
+spec:
+  containers:
+    - name: nginx
+      image: nginx:latest
+

@@ -117,7 +117,7 @@ func deleteService(name string) {
 	defer cancel()
 	
 	
-	res, err := cli.DeleteService(ctx, &pb.DeleteServiceRequest{
+	_, err := cli.DeleteService(ctx, &pb.DeleteServiceRequest{
 		ServiceName: name,
 	})
 
@@ -125,7 +125,9 @@ func deleteService(name string) {
 		log.PrintE(err)
 	}
 
-	fmt.Println("Delete service, response ", res)
+	if err == nil {
+		log.PrintS("Delete svc ", name)
+	}
 }
 
 func deleteDns(name string) {

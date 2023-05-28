@@ -157,8 +157,8 @@ func applyPod(filename string) error {
 		Data: podByte,
 	})
 
-	if err != nil {
-		log.PrintS("Created Pod %s", pod.Metadata.Name)
+	if err == nil {
+		log.PrintS("Created Pod ", pod.Metadata.Name)
 	}
 	return nil
 }
@@ -189,8 +189,8 @@ func applyDeployment(filename string) error {
 		Data: deploymentByte,
 	})
 
-	if err != nil {
-		log.PrintS("Created deployment %s", deployment.Metadata.Name)
+	if err == nil {
+		log.PrintS("Created deployment ", deployment.Metadata.Name)
 	}
 	// fmt.Printf("Create Deployment, response %v,error %v\n", res, err)
 	return nil
@@ -222,8 +222,8 @@ func applyService(filename string) error {
 		Data: podByte,
 	})
 
-	if err != nil {
-		log.PrintS("Created svc %s", service.Metadata.Name)
+	if err == nil {
+		log.PrintS("Created svc ", service.Metadata.Name)
 	}
 	// fmt.Println("Create Service, response ", res)
 	return nil
@@ -280,11 +280,13 @@ func applyDns(filename string) error {
 		return err
 	}
 
-	res, err := cli.ApplyDns(ctx, &pb.ApplyDnsRequest{
+	_, err = cli.ApplyDns(ctx, &pb.ApplyDnsRequest{
 		Data: dnsByte,
 	})
 
-	fmt.Println("Create Dns, response ", res)
+	if err == nil {
+		log.PrintS("Created Dns ", dns.Metadata.Name)
+	}
 	return nil
 }
 
@@ -388,7 +390,7 @@ func applyWorkflow(filename string) error {
 
 	// fmt.Println("Create Workflow, response ", res)
 	if err == nil {
-		log.PrintS("Created workflow %s", workflow.Name)
+		log.PrintS("Created workflow ", workflow.Name)
 	}
 	return nil
 }
