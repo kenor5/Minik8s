@@ -38,6 +38,8 @@ func (master *ApiServer)AddRouter(functionName string) error {
 			pod := function.FunctionStatus.PodTemplate
 			Numstr := strconv.Itoa(podNum)
 			pod.Metadata.Name = pod.Metadata.Name + "-" + Numstr
+
+			log.PrintS("1")
 			// 组装消息
 			podByte, err := json.Marshal(pod)
 			if err != nil {
@@ -51,6 +53,8 @@ func (master *ApiServer)AddRouter(functionName string) error {
 				log.PrintE("Apply pod error")
 			}      
 			time.Sleep(5 * time.Second) // 休眠 5 秒,等待Pod可用
+			
+			log.PrintS("2")
 			
 			// 获取PodIp
 			podptr, err := ControllerManager.GetPodByName(pod.Metadata.Name)

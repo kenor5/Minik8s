@@ -39,10 +39,10 @@ func updateFunction(name string) {
 	if cli == nil {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	log.Print("begin update Function", name)
-	res, err := cli.UpdateFunction(ctx, &pb.UpdateFunctionRequest{
+	_, err := cli.UpdateFunction(ctx, &pb.UpdateFunctionRequest{
 		FunctionName: name,
 	})
 
@@ -50,6 +50,10 @@ func updateFunction(name string) {
 		log.PrintE(err)
 	}
 
-	log.Print("Update Function, response ", res)    
+	// log.Print("Update Function, response ", res) 
+	
+	if err == nil {
+		log.PrintS("Updated function ", name)
+	}
 
 }

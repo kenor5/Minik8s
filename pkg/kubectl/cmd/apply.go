@@ -329,7 +329,7 @@ func applyFunction(filename string) error {
 		log.PrintE(err)
 		return err
 	}
-	fmt.Println(function)
+	//fmt.Println(function)
 
 	// 通过 rpc 连接 apiserver
 	cli := NewClient()
@@ -346,11 +346,14 @@ func applyFunction(filename string) error {
 		return err
 	}
 
-	res, err := cli.ApplyFunction(ctx, &pb.ApplyFunctionRequest{
+	_, err = cli.ApplyFunction(ctx, &pb.ApplyFunctionRequest{
 		Data: functionByte,
 	})
 
-	fmt.Println("Create Job, response ", res)
+	// fmt.Println("Create Job, response ", res)
+	if err == nil {
+		log.PrintS("Created function ", function.Metadata.Name)
+	}
 	return nil
 }
 
@@ -362,7 +365,7 @@ func applyWorkflow(filename string) error {
 		fmt.Println("parse workflow failed")
 		return err
 	}
-	fmt.Println(workflow)
+	//fmt.Println(workflow)
 
 	// 通过 rpc 连接 apiserver
 	cli := NewClient()
@@ -379,10 +382,13 @@ func applyWorkflow(filename string) error {
 		return err
 	}
 
-	res, err := cli.ApplyWorkflow(ctx, &pb.ApplyWorkflowRequest{
+	_, err = cli.ApplyWorkflow(ctx, &pb.ApplyWorkflowRequest{
 		Data: workflowByte,
 	})
 
-	fmt.Println("Create Workflow, response ", res)
+	// fmt.Println("Create Workflow, response ", res)
+	if err == nil {
+		log.PrintS("Created workflow %s", workflow.Name)
+	}
 	return nil
 }

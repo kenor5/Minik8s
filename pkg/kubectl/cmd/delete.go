@@ -94,7 +94,7 @@ func deleteFunction(name string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	log.Print("begin delete Function", name)
-	res, err := cli.DeleteFunction(ctx, &pb.DeleteFunctionRequest{
+	_, err := cli.DeleteFunction(ctx, &pb.DeleteFunctionRequest{
 		FunctionName: name,
 	})
 
@@ -102,7 +102,10 @@ func deleteFunction(name string) {
 		fmt.Println(err)
 	}
 
-	fmt.Println("Delete Function, response ", res)    
+	// fmt.Println("Delete Function, response ", res)    
+	if err == nil {
+		log.PrintS("Deleted function ", name)
+	}
 }
 
 func deleteService(name string) {
