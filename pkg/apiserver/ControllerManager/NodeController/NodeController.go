@@ -14,31 +14,33 @@ import (
 
 type NodeController struct {
 	NodeNameToConn map[string]pb.KubeletApiServerServiceClient
-	Count int
+	NodeIPToConn   map[string]pb.KubeletApiServerServiceClient
+	Count          int
 }
 
 func NewNodeController() *NodeController {
 	newNodeController := &NodeController{
 		NodeNameToConn: map[string]pb.KubeletApiServerServiceClient{},
-		Count: 0,
+		NodeIPToConn:   map[string]pb.KubeletApiServerServiceClient{},
+		Count:          0,
 	}
 	return newNodeController
 }
 
-func (nodeController *NodeController)RegiseterNode(node *entity.Node) error {
-    // 获取grpc kubelet的连接
-    conn, err := ConnectToKubelet(node.KubeletUrl)
+func (nodeController *NodeController) RegiseterNode(node *entity.Node) error {
+	// 获取grpc kubelet的连接
+	conn, err := ConnectToKubelet(node.KubeletUrl)
 	if err != nil {
 		panic("fail to connect kubelet: " + node.KubeletUrl)
 	}
-    nodeController.NodeNameToConn[node.Name] = conn
-
+	nodeController.NodeNameToConn[node.Name] = conn
+	nodeController.NodeIPToConn[node.Ip] = conn
 	//连接etcd
 	cli, err := etcdctl.NewClient()
 	if err != nil {
 		fmt.Println("etcd client connetc error")
 	}
-    
+
 	// 将node存入etcd
 	nodeByte, err := json.Marshal(node)
 	if err != nil {
@@ -48,26 +50,26 @@ func (nodeController *NodeController)RegiseterNode(node *entity.Node) error {
 	fmt.Printf("[ApiServer] Node %s with IP %s has registered\n", node.Name, node.Ip)
 	etcdctl.Put(cli, "Node/"+node.Name, string(nodeByte))
 
-	return nil    
+	return nil
 }
 
 // RoundRobin调度策略
-func (nodeController *NodeController)RoundRobin() pb.KubeletApiServerServiceClient {
-    LivingNodes := nodeController.GetAllLivingNodes()
+func (nodeController *NodeController) RoundRobin() pb.KubeletApiServerServiceClient {
+	LivingNodes := nodeController.GetAllLivingNodes()
 	LivingNodesNum := len(LivingNodes)
-    
+
 	selectedNode := LivingNodes[nodeController.FetchAndAdd()%LivingNodesNum]
 	return nodeController.NodeNameToConn[selectedNode.Name]
 }
 
-func (nodeController *NodeController)FetchAndAdd() int { 
-    result := nodeController.Count
+func (nodeController *NodeController) FetchAndAdd() int {
+	result := nodeController.Count
 	nodeController.Count += 1
 	return result
 }
 
 // 获取所有活跃着的Node
-func (nodeController *NodeController)GetAllLivingNodes() []*entity.Node {
+func (nodeController *NodeController) GetAllLivingNodes() []*entity.Node {
 	LivingNodes := []*entity.Node{}
 
 	// 从etcd中拿出所有的Pod
@@ -87,18 +89,23 @@ func (nodeController *NodeController)GetAllLivingNodes() []*entity.Node {
 		}
 		//fmt.Println("get etcd", pod)
 
-        // 判断Pod仍在运行(状态为Running)Selector和Label完全相等
+		// 判断Pod仍在运行(状态为Running)Selector和Label完全相等
 		if node.Status == entity.NodeLive {
 			LivingNodes = append(LivingNodes, node)
 		}
 	}
 
-	return LivingNodes	
+	return LivingNodes
 }
 
 // 根据Node的名称获取conn
 func (nodeController *NodeController) GetNodeConnByName(NodeName string) pb.KubeletApiServerServiceClient {
-    return nodeController.NodeNameToConn[NodeName]
+	return nodeController.NodeNameToConn[NodeName]
+}
+
+// 根据Node的名称获取conn
+func (nodeController *NodeController) GetNodeConnByIP(NodeIP string) pb.KubeletApiServerServiceClient {
+	return nodeController.NodeIPToConn[NodeIP]
 }
 
 // 工具函数

@@ -69,6 +69,9 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 	// 根据Pod所在的节点的NodeName获得对应的grpc Conn
 	conn := master.NodeManager.GetNodeConnByName(pod.Spec.NodeName)
 	if conn == nil {
+		conn = master.NodeManager.GetNodeConnByIP(pod.Status.HostIp)
+	}
+	if conn == nil {
 		panic("UnKnown NodeName!\n")
 	}
 	// 发送消息给Kubelet
@@ -93,7 +96,6 @@ func (master *ApiServer) CreateService(in *pb.ApplyServiceRequest2) (*pb.StatusR
 			log.PrintE(err)
 			return &pb.StatusResponse{Status: -1}, err
 		}
-
 	}
 	return &pb.StatusResponse{Status: 0}, nil
 
@@ -158,7 +160,7 @@ func (master *ApiServer) ApplyHPA(HPAbyte *pb.ApplyHorizontalPodAutoscalerReques
 	defer func(cli *clientv3.Client) {
 		err := cli.Close()
 		if err != nil {
-			fmt.Print("close etcdClient error!")
+			log.PrintE("close etcdClient error!")
 		}
 	}(cli)
 	HPAData, err := json.Marshal(HPA)
@@ -204,25 +206,54 @@ func (master *ApiServer) CheckEtcdAndUpdate() {
 		case entity.Running:
 			continue
 		case entity.Failed:
-			//TODO: 利用hostIP通知Node检查状态或者重新创建
+			//TODO: 利用hostIP通知检查Node状态,Node存活则会自动更新状态
 			//一种简单通用实现：直接发送一次DeletePod 到Node，再为Pod重新指定Node创建
 			hostIP := pod.Status.HostIp
 			if hostIP == "" {
 				//需要分配新的Node
 				hostIP = "127.0.0.1"
 			}
-
 		case entity.Pending:
-		//TODO: 此类为已经写入etcd但还未指定Node创建的Pod，如新的replica
-		//根据调度策略选择合适Node分配
-
-		case entity.Succeed:
-			//TODO: 通知Node删除Pod后，删除本地信息
-			err := etcdctl.EtcdDelete("Pod/" + pod.Metadata.Name)
+			//TODO: 此类为已经写入etcd但还未指定Node创建的Pod，如新的replica
+			//根据调度策略选择合适Node分配
+			// 组装消息
+			podByte, err := json.Marshal(pod)
 			if err != nil {
-				log.PrintfE("[CheckEtcdAndUpdate]Delete Pod %s error", pod.Metadata.Name)
+				fmt.Println("parse pod error")
 				continue
 			}
+			in := &pb.ApplyPodRequest{
+				Data: podByte,
+			}
+			// 调度(获取conn)
+			conn := master.NodeManager.RoundRobin()
+			if conn == nil {
+				KubeletUrl := "127.0.0.1:5679"
+				conn, err := NodeController.ConnectToKubelet("127.0.0.1:5679")
+				if err != nil {
+					panic("fail to connect kubelet: " + KubeletUrl)
+				}
+				err = client.KubeletCreatePod(conn, in)
+			} else {
+				// 发送消息给Kubelet
+				err = client.KubeletCreatePod(conn, in)
+			}
+
+		case entity.Succeed:
+			//TODO: 通知Node删除Pod后，更新本地信息
+			conn := master.NodeManager.GetNodeConnByIP(pod.Status.PodIp)
+			podByte, _ := json.Marshal(pod)
+			err := client.KubeletDeletePod(conn, &pb.DeletePodRequest{
+				Data: podByte,
+			})
+			if err != nil {
+				log.PrintfE("[CheckEtcdAndUpdate]Delete Pod %s error", pod.Metadata.Name)
+			}
+			//err = etcdctl.EtcdDelete("Pod/" + pod.Metadata.Name)
+			//if err != nil {
+			//	log.PrintfE("[CheckEtcdAndUpdate]Delete Pod %s error", pod.Metadata.Name)
+			//	continue
+			//}
 		}
 	}
 }

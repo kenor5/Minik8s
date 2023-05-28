@@ -62,7 +62,7 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 	defer func(cli *clientv3.Client) {
 		err := cli.Close()
 		if err != nil {
-			fmt.Print("close etcdClient error!")
+			log.PrintE("close etcdClient error!")
 		}
 	}(cli)
 	//deployment信息写入etcd
@@ -184,12 +184,12 @@ func BeginMonitorDeployment() {
 func MonitorDeployment() error {
 	cli, err := etcdctl.NewClient()
 	if err != nil {
-		fmt.Println("etcd client connect error")
+		log.PrintE("etcd client connect error")
 	}
 	defer func(cli *clientv3.Client) {
 		err := cli.Close()
 		if err != nil {
-			fmt.Print("close etcdClient error!")
+			log.PrintE("close etcdClient error!")
 		}
 	}(cli)
 	//获取当前所有的deployment
@@ -264,7 +264,6 @@ func MonitorDeployment() error {
 			}
 		}
 	}
-	cli.Close()
 	//TODO:通知Node补充更新所有的FailedPod,借助Pod更新机制
 
 	return nil

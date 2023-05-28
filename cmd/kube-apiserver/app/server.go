@@ -443,10 +443,10 @@ func Run() {
 	//启动Pod监控
 	//go apiserver.ApiServerObject().BeginMonitorPod()
 	//log.PrintS("Apiserver For PodMonitor Server starts running...")
-	//
-	////启动deployment监控
-	//go ControllerManager.BeginMonitorDeployment()
-	//log.PrintS("Apiserver For DeploymentMonitor Server starts running...")
+
+	//启动deployment监控
+	go ControllerManager.BeginMonitorDeployment()
+	log.PrintS("Apiserver For DeploymentMonitor Server starts running...")
 
 	/**
 	**   创建gRPC服务器,接受来自Kubectl和ApiServer的请求
