@@ -183,16 +183,6 @@ func BeginMonitorDeployment() {
 // MonitorDeployment 另开线程中运行，持续检查deployment运行状态，并进行扩缩
 func MonitorDeployment() error {
 	log.Printf("[ApiServer]Begin Monitor Deployment")
-	//cli, err := etcdctl.NewClient()
-	//if err != nil {
-	//	log.PrintE("etcd client connect error")
-	//}
-	//defer func(cli *clientv3.Client) {
-	//	err := cli.Close()
-	//	if err != nil {
-	//		log.PrintE("close etcdClient error!")
-	//	}
-	//}(cli)
 	//获取当前所有的deployment
 	Deployments := make(map[string]entity.Deployment)
 	deploymentByte := make([]byte, 0)
@@ -206,7 +196,6 @@ func MonitorDeployment() error {
 
 	//获取其中的pod状态信息，failed则通知重新创建
 	//不满足replica要求则进行增删
-	FailedPods := make(map[string]entity.Pod)
 	for _, deployment := range Deployments {
 		PodsData, err := etcdctl.EtcdGetWithPrefix("Pod/" + deployment.Metadata.Name)
 		if err != nil {
@@ -214,20 +203,35 @@ func MonitorDeployment() error {
 			return err
 		}
 		moreNum, fewerNum := 0, 0
+		nowReplica := 0
+		for _, value := range PodsData.Kvs {
+			pod := entity.Pod{}
+			err = json.Unmarshal(value.Value, &pod)
+			if pod.Status.Phase == entity.Running || pod.Status.Phase == entity.Pending {
+				nowReplica++
+			}
+		}
+		log.Printf("[MonitorDeployment]now replica:%d need replica:%d", nowReplica, deployment.Spec.Replicas)
+		deployment.Status.Replicas = int32(nowReplica)
 		//大于replica,删除多余的pod
-		if int32(len(PodsData.Kvs)) > deployment.Spec.Replicas {
-			fewerNum = len(PodsData.Kvs) - int(deployment.Spec.Replicas)
+		if deployment.Status.Replicas > deployment.Spec.Replicas {
+			//fewerNum = len(PodsData.Kvs) - int(deployment.Spec.Replicas)
+			fewerNum = int(deployment.Status.Replicas - deployment.Spec.Replicas)
 			log.Printf("[MonitorDeployment]fewerNum=%d", fewerNum)
 		}
 		//小于replica,补充不足的的pod
-		if int32(len(PodsData.Kvs)) < deployment.Spec.Replicas {
-			moreNum = int(deployment.Spec.Replicas) - len(PodsData.Kvs)
+		if deployment.Status.Replicas < deployment.Spec.Replicas {
+			//moreNum = int(deployment.Spec.Replicas) - len(PodsData.Kvs)
+			moreNum = int(deployment.Spec.Replicas - deployment.Status.Replicas)
 			log.Printf("[MonitorDeployment]moreNum=%d", moreNum)
 		}
 		for _, value := range PodsData.Kvs {
 			pod := entity.Pod{}
 			err = json.Unmarshal(value.Value, &pod)
-			if fewerNum != 0 {
+			if pod.Status.Phase == entity.Succeed {
+				continue
+			}
+			if fewerNum > 0 {
 				//TODO：删除failed pod，改为succeed，借助Pod更新机制
 				log.Printf("[MonitorDeployment]%s need sub %d replica", deployment.Metadata.Name, fewerNum)
 				pod.Status.Phase = entity.Succeed
@@ -240,14 +244,12 @@ func MonitorDeployment() error {
 				fewerNum--
 			} else {
 				//如果Pod状态为Failed且fewerNum=0则记录
-				if pod.Status.Phase == entity.Failed {
-					FailedPods[pod.Metadata.Name] = pod
-				}
+				break
 			}
 		}
 		//deployment.replica有更新，需要增加moreNum个 pod
 		//TODO 新增etcd的pod信息后，如何通知Node的kubelet更新？借助Pod更新机制
-		if moreNum != 0 {
+		if moreNum > 0 {
 			log.Printf("[MonitorDeployment]%s need add %d replica", deployment.Metadata.Name, moreNum)
 			for i := 0; i <= moreNum; i++ {
 				//创建replicas份Pod

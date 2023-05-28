@@ -427,6 +427,12 @@ func (s *server) ApplyDeployment(ctx context.Context, in *pb.ApplyDeploymentRequ
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
+// HPA
+func (s *server) ApplyHPA(ctx context.Context, in *pb.ApplyHorizontalPodAutoscalerRequest) (*pb.StatusResponse, error) {
+	apiserver.ApiServerObject().AddHPA(in)
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
 // Dns
 func (s *server) GetDns(ctx context.Context, in *pb.GetDnsRequest) (*pb.GetDnsResponse, error) {
 	// get dns info from etcd

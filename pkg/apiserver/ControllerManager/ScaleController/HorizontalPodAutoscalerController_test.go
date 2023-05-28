@@ -29,15 +29,15 @@ func TestAutoscalerManager_startAutoscalerMonitor(t *testing.T) {
 	}
 	tests[0].fields.metricsManager = scale.NewMetricsManager()
 	hpa := &entity.HorizontalPodAutoscaler{}
-	_, _ = yamlParser.ParseYaml(hpa, "/home/zhaoxi/go/src/minik8s/test/hpaAutoScaleTest.yaml")
+	_, _ = yamlParser.ParseYaml(hpa, "/home/zhaoxi/go/src/minik8s/test/AutoScaleTest_hpa.yaml")
 	tests[0].args.autoscaler = hpa
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			AM := &AutoscalerManager{
-				metricsManager: tt.fields.metricsManager,
-				autoscalers:    tt.fields.autoscalers,
+				MetricsManager: tt.fields.metricsManager,
+				Autoscalers:    tt.fields.autoscalers,
 			}
-			AM.startAutoscalerMonitor(tt.args.autoscaler)
+			AM.StartAutoscalerMonitor(tt.args.autoscaler)
 		})
 	}
 }

@@ -31,23 +31,37 @@ type Controller interface {
 
 // AutoscalerManager
 type AutoscalerManager struct {
-	metricsManager *scale.MetricsManager
-	autoscalers    map[string]*entity.HorizontalPodAutoscaler //
+	MetricsManager *scale.MetricsManager
+	Autoscalers    map[string]*entity.HorizontalPodAutoscaler //
 }
 
 func (AM *AutoscalerManager) CreateAutoscaler(autoscaler *entity.HorizontalPodAutoscaler) error {
 	autoscalerName := autoscaler.Metadata.Name
-	_, ok := AM.autoscalers[autoscalerName]
+	_, ok := AM.Autoscalers[autoscalerName]
 	if ok {
 		log.Printf("HPA %s already exists", autoscalerName)
 		return nil
 	}
-	AM.autoscalers[autoscalerName] = autoscaler
+	AM.Autoscalers[autoscalerName] = autoscaler
 	return nil
 }
 
+func (AM *AutoscalerManager) DeleteAutoscaler(autoscalerName string) error {
+	_, ok := AM.Autoscalers[autoscalerName]
+	if ok {
+		log.Printf("HPA %s in Autoscalers", autoscalerName)
+		delete(AM.Autoscalers, autoscalerName)
+		return nil
+	} else {
+		log.PrintfW("HPA %s not in Autoscalers", autoscalerName)
+		return nil
+	}
+
+}
+
 // 按照scaleInterval指定的时间间隔（默认30s）执行策略，更新状态
-func (AM *AutoscalerManager) startAutoscalerMonitor(autoscaler *entity.HorizontalPodAutoscaler) {
+func (AM *AutoscalerManager) StartAutoscalerMonitor(autoscaler *entity.HorizontalPodAutoscaler) {
+	log.PrintS("[AutoscalerMonitor]Begin Monitor " + autoscaler.Metadata.Name)
 	deploymentName := autoscaler.Spec.ScaleTargetRef.Name
 	monitorInterval := time.Second * time.Duration(autoscaler.Spec.ScaleInterval)
 	ticker := time.NewTicker(monitorInterval) //每30s使用
@@ -55,7 +69,13 @@ func (AM *AutoscalerManager) startAutoscalerMonitor(autoscaler *entity.Horizonta
 		deploymentdata, _ := etcdctl.EtcdGet("Deployment/" + deploymentName)
 		if len(deploymentdata.Kvs) == 0 {
 			// Deployment 已经被删除
-			delete(AM.autoscalers, autoscaler.Metadata.Name)
+			delete(AM.Autoscalers, autoscaler.Metadata.Name)
+			return
+		}
+		autoscalerName := autoscaler.Metadata.Name
+		_, ok := AM.Autoscalers[autoscalerName]
+		if !ok {
+			log.PrintfW("[AutoscalerMonitor]%s has been del", autoscalerName)
 			return
 		}
 		deployment := &entity.Deployment{}
@@ -116,7 +136,7 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 		switch metric.Resource.Name {
 		case "cpu":
 			for _, pod := range pods {
-				cpuUsagePerPod, err = AM.metricsManager.PodCPUUsage(&pod)
+				cpuUsagePerPod, err = AM.MetricsManager.PodCPUUsage(&pod)
 				if err != nil {
 					log.PrintW("[monitorAndScaleDeployment]Get cpuUsage fail ", pod.Metadata.Name)
 				}
@@ -130,14 +150,15 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 			//newReplica := deployment.Spec.Replicas
 			if cpuUsageAvgPod > TargetCPUAvg*1.05 && newReplica < autoscaler.Spec.MaxReplicas {
 				//autoscaler.Status.DesiredReplicas++
-				log.Print(deployment.Metadata.Name + " add replica")
+
 				muti := int32(cpuUsageAvgPod / TargetCPUAvg)
 				if muti > 1 {
 					deployment.Spec.Replicas = muti * newReplica
 				} else {
 					deployment.Spec.Replicas = newReplica + 1
 				}
-			} else if newReplica >= autoscaler.Spec.MaxReplicas && cpuUsageAvgPod < TargetCPUAvg {
+				log.Print(deployment.Metadata.Name + " add replica to " + string(deployment.Spec.Replicas))
+			} else if newReplica >= autoscaler.Spec.MaxReplicas && cpuUsageAvgPod > TargetCPUAvg {
 				//已经超过最大运行的MaxReplicas，直接返回
 				deployment.Spec.Replicas = autoscaler.Spec.MaxReplicas
 				log.Printf("AUTOSCALER [%s]:Have reached MaxReplicas %d",
@@ -165,7 +186,11 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 					autoscaler.Spec.MinReplicas,
 				)
 				deployment.Spec.Replicas = autoscaler.Spec.MinReplicas
-				return
+			}
+			if deployment.Spec.Replicas < autoscaler.Spec.MinReplicas {
+				deployment.Spec.Replicas = autoscaler.Spec.MinReplicas
+			} else if deployment.Spec.Replicas > autoscaler.Spec.MaxReplicas {
+				deployment.Spec.Replicas = autoscaler.Spec.MaxReplicas
 			}
 			autoscaler.Status.CurrentReplicas = deployment.Spec.Replicas
 			autoscaler.Status.LastScaleTime = time.Now()
@@ -178,7 +203,7 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 		case "memory":
 			deploymentMemoryUsage = 0
 			for _, pod := range pods {
-				memoryUsagePerPod, err = AM.metricsManager.PodMemoryUsage(&pod)
+				memoryUsagePerPod, err = AM.MetricsManager.PodMemoryUsage(&pod)
 				if err != nil {
 					log.PrintW("[monitorAndScaleDeployment]Get cpuUsage fail", pod.Metadata.Name)
 				}

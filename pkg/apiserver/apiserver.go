@@ -3,9 +3,10 @@ package apiserver
 import (
 	"encoding/json"
 	"fmt"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"minik8s/configs"
 	"minik8s/pkg/apiserver/ControllerManager/JobController"
+	"minik8s/pkg/apiserver/ControllerManager/ScaleController"
+	"minik8s/pkg/apiserver/scale"
 	"minik8s/tools/etcdctl"
 	"time"
 
@@ -32,6 +33,7 @@ type ApiServer struct {
 	// conn pb.KubeletApiServerServiceClient
 	NodeManager     NodeController.NodeController
 	FunctionManager functioncontroller.FunctionController
+	AM              ScaleController.AutoscalerManager
 }
 
 var apiServer *ApiServer
@@ -40,6 +42,10 @@ func newApiServer() *ApiServer {
 	newServer := &ApiServer{
 		NodeManager:     *NodeController.NewNodeController(),
 		FunctionManager: *functioncontroller.NewFunctionController(),
+		AM: ScaleController.AutoscalerManager{
+			MetricsManager: scale.NewMetricsManager(),
+			Autoscalers:    map[string]*entity.HorizontalPodAutoscaler{},
+		},
 	}
 	return newServer
 }
@@ -157,30 +163,33 @@ func (master *ApiServer) DeleteDeployment(in *pb.DeleteDeploymentRequest) {
 	}
 }
 
-func (master *ApiServer) ApplyHPA(HPAbyte *pb.ApplyHorizontalPodAutoscalerRequest) {
-	HPA := &entity.Deployment{}
+func (master *ApiServer) AddHPA(HPAbyte *pb.ApplyHorizontalPodAutoscalerRequest) {
+	HPA := &entity.HorizontalPodAutoscaler{}
 	err := json.Unmarshal(HPAbyte.Data, HPA)
 	if err != nil {
-		fmt.Print("[ApiServer]ApplyHPA Unmarshal error!\n")
+		log.Print("[ApiServer]AddHPA Unmarshal error!\n")
 		return
 	}
+	master.AM.CreateAutoscaler(HPA)
+	go master.AM.StartAutoscalerMonitor(HPA)
 	//写入etcd元数据
-	cli, err := etcdctl.NewClient()
 	if err != nil {
 		fmt.Println("etcd client connect error")
 	}
-	defer func(cli *clientv3.Client) {
-		err := cli.Close()
-		if err != nil {
-			log.PrintE("close etcdClient error!")
-		}
-	}(cli)
 	HPAData, err := json.Marshal(HPA)
-	err = etcdctl.Put(cli, "HPA/"+HPA.Metadata.Name, string(HPAData))
+	err = etcdctl.EtcdPut("HPA/"+HPA.Metadata.Name, string(HPAData))
 	if err != nil {
 		log.PrintE("[ApiServer] Write HPAData fail")
 		return
 	}
+}
+
+func (master *ApiServer) DeleteHPA(HPAbyte *pb.DeleteHorizontalPodAutoscaler) {
+	HPAName := HPAbyte.Data
+	master.AM.DeleteAutoscaler(HPAName)
+
+	//删除etcd元数据
+	etcdctl.EtcdDelete("HPA/" + HPAName)
 }
 
 // BeginMonitorPod TODO 根据etcd中存储的信息，监控和更新Pod的状态
@@ -193,7 +202,7 @@ func (master *ApiServer) BeginMonitorPod() {
 	}
 }
 func (master *ApiServer) CheckEtcdAndUpdate() {
-	log.Printf("[Apiserver]CheckEtcdAndUpdate begin monitor")
+	log.Printf("[Apiserver]CheckEtcdAndUpdate begin monitor Pod")
 	PodsData, _ := etcdctl.EtcdGetWithPrefix("Pod/")
 	//读取所有的Pod信息
 	var Pods []entity.Pod
