@@ -40,12 +40,12 @@ build:
     - minik8scicd
   stage: build
   script:
-    - cd minik8s && go build ./...
+    - go build ./...
 
 test:
   tags:
     - minik8scicd
   stage: test
   script:
-    - cd minik8s && go test -v ./...
+    - go test -v ./...
 
