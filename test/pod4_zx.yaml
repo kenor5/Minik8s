@@ -19,17 +19,16 @@ spec:
         - name: volume
           mountPath: /usr/share/nginx/html/files
       resources:
-        - limits:
-          - memory: 200Mi
-            cpu: 700m
-        - requests:
-          - memory: 200Mi
-            cpu: 700m
+        limits:
+          memory: 200Mi
+          cpu: 700m
+        requests:
+          memory: 200Mi
+          cpu: 700m
   volumes: #定义一组挂载设备
     - name: volume #定义一个挂载设备的名字
       #emptyDir: {}
-      hostPath:
-        path: /opt #挂载设备类型为hostPath，路径为宿主机下的/opt,这里设备类型支持很多种
+      hostPath: /opt #挂载设备类型为hostPath，路径为宿主机下的/opt,这里设备类型支持很多种
   status:
     host_ip: 192.168.1.0
     Phase: "Pending"

@@ -217,9 +217,17 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 
 			if memoryUsageAvgPod > TargetMemoryAvg && newReplica < autoscaler.Spec.MaxReplicas {
 				//autoscaler.Status.DesiredReplicas++
-				deployment.Spec.Replicas++
+				muti := int32(memoryUsageAvgPod / TargetMemoryAvg)
+				if muti > 1 {
+					deployment.Spec.Replicas = muti * newReplica
+				} else {
+					deployment.Spec.Replicas = newReplica + 1
+				}
+				log.Print(deployment.Metadata.Name + " add replica to " + string(deployment.Spec.Replicas))
+				//deployment.Spec.Replicas++
 			} else if newReplica >= autoscaler.Spec.MaxReplicas && memoryUsageAvgPod > TargetMemoryAvg {
 				//已经低于大运行的MaxReplicas，直接返回
+				deployment.Spec.Replicas = autoscaler.Spec.MaxReplicas
 				fmt.Printf("AUTOSCALER [%s]:Have reached MaxReplicas %d",
 					autoscaler.Metadata.Name,
 					autoscaler.Spec.MinReplicas,
@@ -229,10 +237,18 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 
 			if memoryUsageAvgPod < TargetMemoryAvg && newReplica > autoscaler.Spec.MinReplicas {
 				//autoscaler.Status.DesiredReplicas--
-				deployment.Spec.Replicas--
+				//deployment.Spec.Replicas--
+				muti := int32(TargetMemoryAvg / memoryUsageAvgPod)
+				if muti > 1 {
+					log.Print(deployment.Metadata.Name + " sub replica " + strconv.Itoa(int(muti)))
+					deployment.Spec.Replicas = deployment.Spec.Replicas / muti
+				} else {
+					log.Print(deployment.Metadata.Name + " sub 1 replica ")
+					deployment.Spec.Replicas = newReplica - 1
+				}
 			} else if newReplica <= autoscaler.Spec.MinReplicas && memoryUsageAvgPod < TargetMemoryAvg {
 				//已经低于最小运行的MInReplicas，直接返回
-
+				deployment.Spec.Replicas = autoscaler.Spec.MinReplicas
 				fmt.Printf("AUTOSCALER [%s]:Have reached MinReplicas %d",
 					autoscaler.Metadata.Name,
 					autoscaler.Spec.MinReplicas,
@@ -240,6 +256,7 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 				return
 			}
 			autoscaler.Status.CurrentReplicas = deployment.Spec.Replicas
+			autoscaler.Status.DesiredReplicas = deployment.Spec.Replicas - deployment.Status.Replicas
 			autoscaler.Status.LastScaleTime = time.Now()
 			fmt.Printf("AUTOSCALER [%s]: memory usage per pod reaches %d, deployment %s scales out to %d replicas\n",
 				autoscaler.Metadata.Name,
