@@ -19,7 +19,7 @@ func main_4() {
 	// 创建一个自定义的 ServeMux 对象
 	mux := http.NewServeMux()
 
-    // 注册默认路由
+	// 注册默认路由
 	mux.HandleFunc("/", defaultHandler)
 
 	// 启动服务器

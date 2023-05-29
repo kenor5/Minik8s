@@ -59,7 +59,7 @@ type basicManager struct {
 // NewPodManager returns a functional Manager.
 func NewPodManager() PodManager {
 	return &basicManager{
-		podByFullName: map[string]*entity.Pod{},
+		podByFullName:   map[string]*entity.Pod{},
 		podByUID:        map[string]*entity.Pod{},
 		ContainersByPod: map[string][]string{},
 	}

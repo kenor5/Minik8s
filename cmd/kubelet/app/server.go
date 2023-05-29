@@ -113,7 +113,7 @@ func (s *server) CreateDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.Sta
 		log.PrintE("kubelet create dns failed")
 		return &pb.StatusResponse{Status: -1}, nil
 	}
-	
+
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
@@ -123,7 +123,7 @@ func (s *server) DeleteDns(ctx context.Context, in *pb.DeleteDnsRequest) (*pb.St
 		log.PrintE("kubelet delete dns failed")
 		return &pb.StatusResponse{Status: -1}, nil
 	}
-	
+
 	return &pb.StatusResponse{Status: 0}, nil
 }
 

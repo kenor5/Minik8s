@@ -99,7 +99,7 @@ func GetWithPrefix(client *clientv3.Client, k string) (*clientv3.GetResponse, er
 	if client == nil {
 		return nil, errors.New("client is null")
 	}
-
+	//defer client.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	ret, err := client.Get(ctx, k, clientv3.WithPrefix())
 	cancel()
@@ -134,7 +134,7 @@ func Delete(client *clientv3.Client, k string) error {
 	if client == nil {
 		return errors.New("client is null")
 	}
-
+	//defer client.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 	_, err1 := client.Delete(ctx, k)

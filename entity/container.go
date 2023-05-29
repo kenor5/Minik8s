@@ -20,8 +20,8 @@ type ResourceRequirements struct {
 }
 
 type Quantity struct {
-	Memory []string `json:"memory,omitempty" yaml:"memory,omitempty"`
-	Cpu    []string `json:"cpu,omitempty" yaml:"cpu,omitempty"`
+	Memory string `json:"memory,omitempty" yaml:"memory,omitempty"`
+	Cpu    string `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 }
 
 type ContainerPort struct {
@@ -43,6 +43,6 @@ type Volume struct {
 	HostPath string `json:"hostPath,omitempty" yaml:"hostPath,omitempty"`
 }
 
-//type hostPath struct {
-//	path string `json:"path,omitempty" yaml:"path,omitempty"`
-//}
+// type hostPath struct {
+// 	Path string `json:"path,omitempty" yaml:"path,omitempty"`
+// }

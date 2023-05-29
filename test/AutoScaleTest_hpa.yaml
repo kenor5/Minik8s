@@ -14,7 +14,7 @@ spec:
         name: cpu
         target:
           type: Utilization  #使用指标为百分比
-          averageUtilization: 5 #保持所有 Pod 的平均 CPU 利用率为 50%
+          averageUtilization: 2 #保持所有 Pod 的平均 CPU 利用率为 50%
 #    - type: Resource
 #      resource:
 #        name: memory

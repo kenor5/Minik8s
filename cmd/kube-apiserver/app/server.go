@@ -129,7 +129,7 @@ func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNod
 	if len(out.Kvs) == 0 {
 		return &pb.GetNodeResponse{NodeData: nil}, nil
 	} else {
-		return &pb.GetNodeResponse{NodeData:data}, nil
+		return &pb.GetNodeResponse{NodeData: data}, nil
 	}
 }
 
@@ -154,7 +154,7 @@ func (s *server) ApplyJob(ctx context.Context, in *pb.ApplyJobRequest) (*pb.Stat
 	return apiserver.ApiServerObject().ApplyJob(job)
 }
 
-func (s *server)ApplyFunction(ctx context.Context, in *pb.ApplyFunctionRequest) (*pb.StatusResponse, error) {
+func (s *server) ApplyFunction(ctx context.Context, in *pb.ApplyFunctionRequest) (*pb.StatusResponse, error) {
 	// 解析Function
 	function := &entity.Function{}
 	err := json.Unmarshal(in.Data, function)
@@ -162,11 +162,11 @@ func (s *server)ApplyFunction(ctx context.Context, in *pb.ApplyFunctionRequest) 
 		log.PrintE("function unmarshel err")
 		return &pb.StatusResponse{Status: -1}, err
 	}
-    
+
 	return apiserver.ApiServerObject().ApplyFunction(function)
 }
 
-func (s *server)GetFunction(ctx context.Context, in *pb.GetFunctionRequest) (*pb.GetFunctionResponse, error) {
+func (s *server) GetFunction(ctx context.Context, in *pb.GetFunctionRequest) (*pb.GetFunctionResponse, error) {
 	cli, err := etcdctl.NewClient()
 	if err != nil {
 		log.PrintE("connect to etcd error")
@@ -186,12 +186,11 @@ func (s *server)GetFunction(ctx context.Context, in *pb.GetFunctionRequest) (*pb
 	if len(out.Kvs) == 0 {
 		return &pb.GetFunctionResponse{Data: nil}, nil
 	} else {
-		return &pb.GetFunctionResponse{Data:data}, nil
+		return &pb.GetFunctionResponse{Data: data}, nil
 	}
 }
 
-
-func (s *server)ApplyWorkflow(ctx context.Context, in *pb.ApplyWorkflowRequest) (*pb.StatusResponse, error) {
+func (s *server) ApplyWorkflow(ctx context.Context, in *pb.ApplyWorkflowRequest) (*pb.StatusResponse, error) {
 	// 解析Wokflow
 	workflow := &entity.Workflow{}
 	err := json.Unmarshal(in.Data, workflow)
@@ -199,7 +198,7 @@ func (s *server)ApplyWorkflow(ctx context.Context, in *pb.ApplyWorkflowRequest) 
 		log.PrintE("workflow unmarshel err")
 		return &pb.StatusResponse{Status: -1}, err
 	}
-    
+
 	return apiserver.ApiServerObject().ApplyWorkflow(workflow)
 }
 
@@ -215,10 +214,10 @@ func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (
 }
 
 func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequest) (*pb.StatusResponse, error) {
-	pod := &entity.Pod{}
-	err := json.Unmarshal(in.Data, pod)
+	podNew := &entity.Pod{}
+	err := json.Unmarshal(in.Data, podNew)
 	if err != nil {
-		log.PrintE("pod unmarshel err")
+		log.PrintE("podNew unmarshel err")
 		return &pb.StatusResponse{Status: -1}, err
 	}
 
@@ -229,17 +228,30 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 	defer cli.Close()
 
 	//检查本地etcd中是否有此Pod，没有说明已经是一个删除的Pod，将其etcd端信息写为succeed,下一次Pod更新通知删除
-	response, err := etcdctl.Get(cli, "Pod/"+pod.Metadata.Name)
+	response, err := etcdctl.Get(cli, "Pod/"+podNew.Metadata.Name)
 	if len(response.Kvs) == 0 {
-		pod.Status.Phase = entity.Succeed
+		log.Print("[UpdatePodStatus]更新一个没有的Pod")
+		podNew.Status.Phase = entity.Succeed
+		podNew.Status.HostIp = ""
 	}
+	podOld := &entity.Pod{}
+	//仅更新Phase和PodIP
+	err = json.Unmarshal(response.Kvs[0].Value, podOld)
+	podOld.Status.Phase = podNew.Status.Phase
+	podOld.Status.PodIp = podNew.Status.PodIp
+	podOld.Status.StartTime = podNew.Status.StartTime
+	if podNew.Status.Phase == entity.Succeed {
+		podOld.Status.HostIp = ""
+	}
+	podData, _ := json.Marshal(podOld)
+	log.PrintS("Update Pod Status: put etcd:", string(podData))
+	//podNew:=&entity.Pod{}
 
-	log.PrintS("Update Pod Status: put etcd:", string(in.Data))
-	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
+	etcdctl.Put(cli, "Pod/"+podNew.Metadata.Name, string(podData))
 	//更新deployment replica
-	if strings.Contains(pod.Metadata.Name, "deployment") {
+	if strings.Contains(podNew.Metadata.Name, "deployment") {
 
-		str := pod.Metadata.Name
+		str := podNew.Metadata.Name
 		index := strings.Index(str, "deployment")
 		deploymentName := ""
 		if index != -1 {
@@ -250,10 +262,15 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 		out, err := etcdctl.Get(cli, "Deployment/"+deploymentName)
 		if err != nil {
 			log.Print("deployment %s not exist", deploymentName)
+			return nil, err
 		}
 		deployment := &entity.Deployment{}
 		err = json.Unmarshal(out.Kvs[0].Value, deployment)
-		deployment.Status.Replicas += 1
+		if podNew.Status.Phase == entity.Running {
+			deployment.Status.Replicas += 1
+		} else if podNew.Status.Phase == entity.Succeed {
+			deployment.Status.Replicas -= 1
+		}
 		deploymentByte, err := json.Marshal(deployment)
 		etcdctl.Put(cli, "Deployment/"+deploymentName, string(deploymentByte))
 	}
@@ -377,7 +394,7 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 
 // Deployment
 func (s *server) GetDeployment(ctx context.Context, in *pb.GetDeploymentRequest) (*pb.GetDeploymentResponse, error) {
-	
+
 	cli, err := etcdctl.NewClient()
 	if err != nil {
 		log.PrintE("connect to etcd error")
@@ -407,6 +424,12 @@ func (s *server) DeleteDeployment(ctx context.Context, in *pb.DeleteDeploymentRe
 func (s *server) ApplyDeployment(ctx context.Context, in *pb.ApplyDeploymentRequest) (*pb.StatusResponse, error) {
 	//TODO 调用DeploymentController 创建deployment
 	apiserver.ApiServerObject().AddDeployment(in)
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+// HPA
+func (s *server) ApplyHPA(ctx context.Context, in *pb.ApplyHorizontalPodAutoscalerRequest) (*pb.StatusResponse, error) {
+	apiserver.ApiServerObject().AddHPA(in)
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
@@ -524,22 +547,22 @@ func Run() {
 	}
 
 	//启动Pod监控
-	//go apiserver.ApiServerObject().BeginMonitorPod()
-	//log.PrintS("Apiserver For PodMonitor Server starts running...")
-	//
-	////启动deployment监控
-	//go ControllerManager.BeginMonitorDeployment()
-	//log.PrintS("Apiserver For DeploymentMonitor Server starts running...")
+	go apiserver.ApiServerObject().BeginMonitorPod()
+	log.PrintS("Apiserver For PodMonitor Server starts running...")
+
+	//启动deployment监控
+	go ControllerManager.BeginMonitorDeployment()
+	log.PrintS("Apiserver For DeploymentMonitor Server starts running...")
 
 	/**
 	*  Serverless: 创建Http Trigger
 	**/
-    go apiserver.ApiServerObject().FunctionManager.FunctionServer()
+	go apiserver.ApiServerObject().FunctionManager.FunctionServer()
 
 	/**
 	*  Serverless: 启动对Function的监控
 	**/
-    go apiserver.ApiServerObject().MonitorFunction()
+	go apiserver.ApiServerObject().MonitorFunction()
 
 	/**
 	**   创建gRPC服务器,接受来自Kubectl和ApiServer的请求
