@@ -41,6 +41,7 @@ build:
   stage: build
   script:
     - ls -a && pwd
+    - go mod init minik8s
     - go mod tidy
     - go mod vendor
     - ./scripts/gen_proto.sh
