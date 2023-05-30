@@ -24,8 +24,8 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 		return nil, nil
 	}
 	//根据template获得template hash
-	templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name + strconv.Itoa(int(deployment.Spec.Replicas))))))
-
+	//templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name + strconv.Itoa(int(deployment.Spec.Replicas))))))
+	templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name))))
 	Pods := make(map[string]*entity.Pod, Replicas)
 	for i := 0; i < Replicas; i++ {
 		//创建replicas份Pod
@@ -257,7 +257,9 @@ func MonitorDeployment() error {
 				pod.Metadata = deployment.Spec.Template.Metadata
 				pod.Metadata.Uid = UUID.UUID()
 				//根据template获得template hash
-				templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name + strconv.Itoa(int(deployment.Spec.Replicas))))))
+				//templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name + strconv.Itoa(int(deployment.Spec.Replicas))))))
+				templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name))))
+
 				//组合产生Deployment pod的名字
 				pod.Metadata.Name = deployment.Metadata.Name + "-" + templateHash + "-" + pod.Metadata.Uid[:5]
 				pod.Spec = deployment.Spec.Template.Spec

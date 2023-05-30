@@ -204,14 +204,35 @@ func (s *server) ApplyWorkflow(ctx context.Context, in *pb.ApplyWorkflowRequest)
 }
 
 // 客户端为Kubelet
-func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.StatusResponse, error) {
+func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.RegisterNodeResponse, error) {
 	newNode := &entity.Node{}
 	newNode.Ip = in.NodeIp
 	newNode.Name = in.NodeName
 	newNode.KubeletUrl = in.KubeletUrl
 	newNode.Status = entity.NodeLive
 	apiserver.ApiServerObject().NodeManager.RegiseterNode(newNode)
-	return &pb.StatusResponse{Status: 0}, nil
+	podsByte := getPodbyHostIP(newNode.Ip)
+	return &pb.RegisterNodeResponse{PodData: podsByte}, nil
+}
+func getPodbyHostIP(hostIP string) [][]byte {
+	//var pods []entity.Pod
+	bytes := [][]byte{}
+	response, _ := etcdctl.EtcdGetWithPrefix("Pod/")
+	for _, poddata := range response.Kvs {
+		podNew := entity.Pod{}
+		err := json.Unmarshal(poddata.Value, &podNew)
+		if err != nil {
+			log.PrintE("podNew unmarshel err")
+			return nil
+		}
+		if podNew.Status.HostIp == hostIP {
+			//pods = append(pods, podNew)
+			podByte, _ := json.Marshal(podNew)
+			bytes = append(bytes, podByte)
+		}
+	}
+
+	return bytes
 }
 
 func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequest) (*pb.StatusResponse, error) {

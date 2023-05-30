@@ -38,4 +38,3 @@ status:
         name: cpu
         current:
           averageUtilization: 0
-#          averageValue: 0

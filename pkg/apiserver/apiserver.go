@@ -64,8 +64,10 @@ func (master *ApiServer) ApplyPod(in *pb.ApplyPodRequest) (*pb.StatusResponse, e
 	pod := &entity.Pod{}
 	err := json.Unmarshal(in.Data, pod)
 	pod.Status.HostIp = hostip
+
 	// 发送消息给Kubelet
 	poddata, _ := json.Marshal(pod)
+	etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(poddata))
 	in.Data = poddata
 
 	err = client.KubeletCreatePod(conn, in)
