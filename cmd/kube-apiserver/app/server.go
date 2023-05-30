@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"minik8s/configs"
+	"minik8s/pkg/apiserver/scale"
 	"minik8s/tools/log"
 	"strings"
 
@@ -545,7 +546,11 @@ func Run() {
 		log.PrintE(err)
 		return
 	}
-
+	//启动Promtheus服务
+	err = scale.StartPrometheusServer()
+	if err != nil {
+		log.PrintE("[Apiserver] Start PrometheusServer error...")
+	}
 	//启动Pod监控
 	go apiserver.ApiServerObject().BeginMonitorPod()
 	log.PrintS("Apiserver For PodMonitor Server starts running...")

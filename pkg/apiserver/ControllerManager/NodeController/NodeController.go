@@ -3,10 +3,11 @@ package NodeController
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"minik8s/entity"
+	"minik8s/pkg/apiserver/scale"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/etcdctl"
+	"minik8s/tools/log"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -40,7 +41,13 @@ func (nodeController *NodeController) RegiseterNode(node *entity.Node) error {
 	if err != nil {
 		fmt.Println("etcd client connetc error")
 	}
-
+	//將IP写入Promtheus配置
+	var nodes []*entity.Node
+	nodes = append(nodes, node)
+	err = scale.GeneratePrometheusTargets(nodes)
+	if err != nil {
+		log.PrintfE("[RegiseterNode]Modify PromtheusConfiguration error!")
+	}
 	// 将node存入etcd
 	nodeByte, err := json.Marshal(node)
 	if err != nil {
@@ -113,7 +120,7 @@ func ConnectToKubelet(kubelet_url string) (pb.KubeletApiServerServiceClient, err
 	// 发送消息给Kubelet
 	dial, err := grpc.Dial(kubelet_url, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatal(err)
+		log.PrintE(err)
 		return nil, err
 	}
 	// defer dial.Close()

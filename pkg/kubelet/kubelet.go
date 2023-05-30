@@ -7,6 +7,7 @@ import (
 
 	"context"
 	"fmt"
+	"minik8s/tools/log"
 
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
@@ -20,8 +21,6 @@ import (
 
 	kp "minik8s/pkg/kube_proxy"
 	pb "minik8s/pkg/proto"
-	"minik8s/tools/log"
-
 	"regexp"
 	"strconv"
 	"sync"
