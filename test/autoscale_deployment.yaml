@@ -27,4 +27,3 @@ spec:
             requests:
               memory: 100Mi
               cpu: 100m
-#          command: ['/bin/bash','chmod +x ./autoScale']

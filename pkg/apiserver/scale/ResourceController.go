@@ -5,9 +5,7 @@ import "minik8s/entity"
 var resourceController *ResourceController
 
 type ResourceController struct {
-	PodsName map[string]*entity.Pod
-	//AverageCPUUsage    map[string]float64
-	//AverageMemoryUsage map[string]uint64
+	PodsName       map[string]*entity.Pod
 	metricsManager *MetricsManager
 }
 
@@ -21,7 +19,7 @@ func (rc *ResourceController) ResourceControllerObjetc() *ResourceController {
 }
 
 func (rc *ResourceController) GetPodCPUUsage(pod *entity.Pod) (float64, error) {
-	//TODO implement me
+
 	//panic("implement me")
 	CPUUsage, err := rc.metricsManager.PodCPUUsage(pod)
 	if err != nil {
@@ -32,17 +30,17 @@ func (rc *ResourceController) GetPodCPUUsage(pod *entity.Pod) (float64, error) {
 
 func (rc *ResourceController) GetPodMemoryUsage(pod *entity.Pod) (uint64, error) {
 	//TODO implement me
-	panic("implement me")
+	//panic("implement me")
+	MemoryUsage, err := rc.metricsManager.PodMemoryUsage(pod)
+	if err != nil {
+		return 0, err
+	}
+	return MemoryUsage, err
 }
 
 func (rc *ResourceController) NewresourceController() *ResourceController {
-	//if resourceController==nil{
-	//	resourceController=
-	//}
 	return &ResourceController{
-		PodsName: map[string]*entity.Pod{},
-		//AverageMemoryUsage: map[string]uint64{},
-		//AverageCPUUsage:    map[string]float64{},
+		PodsName:       map[string]*entity.Pod{},
 		metricsManager: NewMetricsManager(),
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"minik8s/configs"
 	"minik8s/entity"
 	"minik8s/pkg/kubelet"
+	res "minik8s/pkg/kubelet/resourse"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
 	"net"
@@ -147,12 +148,16 @@ func Run() {
 	if err != nil {
 		log.PrintE(err)
 	}
-	// ////开启Pod状态监控和更新
-	// log.PrintS("[kubelet]Begin Monitor Deployment")
-	// go kubelet.KubeletObject().BeginMonitor()
+	//启动cAdvisor
+	err = res.StartcAdvisor()
+	if err != nil {
+		log.PrintE("[kubelet] Start cAdvisor error...")
+	}
 
-	//Kubelet启动监控检查本地的Pod运行状态
-	//go kubelet.KubeletObject().beginMonitor()
+	// 开启Pod状态监控和更新
+	go kubelet.KubeletObject().BeginMonitor()
+	log.PrintS("[kubelet]Begin Monitor Deployment")
+
 	// 创建gRPC服务器
 	svr := grpc.NewServer()
 	// 将实现的接口注册进 gRPC 服务器

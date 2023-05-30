@@ -12,60 +12,61 @@ import (
 // 主要用于管理Pod的MetaData
 type PodManager interface {
 	// GetPods returns the regular pods bound to the kubelet and their spec.
-	GetPods() []*entity.Pod
+	GetPods() []entity.Pod
 	// GetPodByFullName returns the (non-mirror) pod that matches full name, as well as
 	// whether the pod was found.
-	GetPodByFullName(podFullName string) (*entity.Pod, bool)
+	GetPodByFullName(podFullName string) (entity.Pod, bool)
 
 	// GetPodByName provides the (non-mirror) pod that matches namespace and
 	// name, as well as whether the pod was found.
-	GetPodByName(namespace string, name string) (*entity.Pod, bool)
+	GetPodByName(namespace string, name string) (entity.Pod, bool)
 	// GetPodByUID provides the (non-mirror) pod that matches pod UID, as well as
 	// whether the pod is found.
-	GetPodByUID(string) (*entity.Pod, bool)
+	GetPodByUID(string) (entity.Pod, bool)
 
-	AddPod(pod *entity.Pod)
+	AddPod(pod entity.Pod)
 	// UpdatePod updates the given pod in the manager.
-	UpdatePod(pod *entity.Pod)
+	UpdatePod(pod entity.Pod)
 	// DeletePod deletes the given pod from the manager.  For mirror pods,
 	// this means deleting the mappings related to mirror pods.  For non-
 	// mirror pods, this means deleting from indexes for all non-mirror pods.
-	DeletePod(pod *entity.Pod)
+	DeletePod(pod entity.Pod)
 
 	// AddContainerToPod DeletePodByName(name string)
-	AddContainerToPod(containerId string, pod *entity.Pod)
+	AddContainerToPod(containerId string, pod entity.Pod)
 
-	GetContainersByPod(pod *entity.Pod) []string
+	GetContainersByPod(pod entity.Pod) []string
 	// DeleteContainersByPod Delete containerIds in Pod
-	DeleteContainersByPod(pod *entity.Pod)
+	DeleteContainersByPod(pod entity.Pod)
 }
 
-// basicManager is a functional Manager.
+// BasicManager is a functional Manager.
 //
-// All fields in basicManager are read-only and are updated calling SetPods,
+// All fields in BasicManager are read-only and are updated calling SetPods,
 // AddPod, UpdatePod, or DeletePod.
-type basicManager struct {
+type BasicManager struct {
 	// Protects all internal maps.
 	lock sync.RWMutex
 
 	// Regular pods indexed by UID.
-	podByUID map[string]*entity.Pod
+	podByUID map[string]entity.Pod
 
 	// Pods indexed by full name for easy access.
-	podByFullName   map[string]*entity.Pod
+	podByFullName   map[string]entity.Pod
 	ContainersByPod map[string][]string
 }
 
 // NewPodManager returns a functional Manager.
 func NewPodManager() PodManager {
-	return &basicManager{
-		podByFullName:   map[string]*entity.Pod{},
-		podByUID:        map[string]*entity.Pod{},
+	podmanager := &BasicManager{
+		podByFullName:   map[string]entity.Pod{},
+		podByUID:        map[string]entity.Pod{},
 		ContainersByPod: map[string][]string{},
 	}
+	return podmanager
 }
 
-func (pm *basicManager) AddPod(pod *entity.Pod) {
+func (pm *BasicManager) AddPod(pod entity.Pod) {
 	log.PrintS("a")
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
@@ -80,7 +81,7 @@ func (pm *basicManager) AddPod(pod *entity.Pod) {
 	log.PrintS("g")
 }
 
-func (pm *basicManager) UpdatePod(pod *entity.Pod) {
+func (pm *BasicManager) UpdatePod(pod entity.Pod) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 
@@ -94,7 +95,7 @@ func (pm *basicManager) UpdatePod(pod *entity.Pod) {
 	}
 }
 
-func (pm *basicManager) DeletePod(pod *entity.Pod) {
+func (pm *BasicManager) DeletePod(pod entity.Pod) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	podFullName := pod.Metadata.Namespace + pod.Metadata.Name
@@ -104,29 +105,29 @@ func (pm *basicManager) DeletePod(pod *entity.Pod) {
 
 }
 
-func (pm *basicManager) GetPods() []*entity.Pod {
+func (pm *BasicManager) GetPods() []entity.Pod {
 	pm.lock.RLock()
 	defer pm.lock.RUnlock()
-	pods := make([]*entity.Pod, 0, len(pm.podByFullName))
+	pods := make([]entity.Pod, 0, len(pm.podByFullName))
 	for _, pod := range pm.podByFullName {
 		pods = append(pods, pod)
 	}
 	return pods
 }
 
-func (pm *basicManager) GetPodByUID(uid string) (*entity.Pod, bool) {
+func (pm *BasicManager) GetPodByUID(uid string) (entity.Pod, bool) {
 	pm.lock.RLock()
 	defer pm.lock.RUnlock()
 	pod, ok := pm.podByUID[uid]
 	return pod, ok
 }
 
-func (pm *basicManager) GetPodByName(namespace string, name string) (*entity.Pod, bool) {
+func (pm *BasicManager) GetPodByName(namespace string, name string) (entity.Pod, bool) {
 	podFullName := namespace + name
 	return pm.GetPodByFullName(podFullName)
 }
 
-func (pm *basicManager) GetPodByFullName(podFullName string) (*entity.Pod, bool) {
+func (pm *BasicManager) GetPodByFullName(podFullName string) (entity.Pod, bool) {
 	// log.PrintS("b")
 	// pm.lock.RLock()
 	// log.PrintS("c")
@@ -136,21 +137,21 @@ func (pm *basicManager) GetPodByFullName(podFullName string) (*entity.Pod, bool)
 	return pod, ok
 }
 
-func (pm *basicManager) AddContainerToPod(containerId string, pod *entity.Pod) {
+func (pm *BasicManager) AddContainerToPod(containerId string, pod entity.Pod) {
 	pm.lock.RLock()
 	defer pm.lock.RUnlock()
 	fullname := pod.Metadata.Namespace + pod.Metadata.Name
 	pm.ContainersByPod[fullname] = append(pm.ContainersByPod[fullname], containerId)
 }
 
-func (pm *basicManager) GetContainersByPod(pod *entity.Pod) []string {
+func (pm *BasicManager) GetContainersByPod(pod entity.Pod) []string {
 	pm.lock.RLock()
 	defer pm.lock.RUnlock()
 	fullname := pod.Metadata.Namespace + pod.Metadata.Name
 	return pm.ContainersByPod[fullname]
 }
 
-func (pm *basicManager) DeleteContainersByPod(pod *entity.Pod) {
+func (pm *BasicManager) DeleteContainersByPod(pod entity.Pod) {
 	pm.lock.RLock()
 	defer pm.lock.RUnlock()
 	fullname := pod.Metadata.Namespace + pod.Metadata.Name

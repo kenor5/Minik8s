@@ -7,8 +7,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"log"
 	"minik8s/pkg/kubelet/container/containerfunc"
+	"minik8s/tools/log"
 )
 
 const (
@@ -31,7 +31,7 @@ func StartPrometheusServer() error {
 	if err != nil {
 		panic(err)
 	} // Pull Prometheus image
-	err = containerfunc.EnsureImage("prom/prometheus")
+	err = containerfunc.EnsureImage(prometheusName)
 	if err != nil {
 		return err
 	}
@@ -56,10 +56,13 @@ func StartPrometheusServer() error {
 		},
 		Binds: vBinds,
 	}, nil, nil, prometheusConatinerName)
-
+	if err != nil {
+		log.PrintfE("fail to create prometheus container", err)
+		return err
+	}
 	err = cli.ContainerStart(context.Background(), resp.ID, dockertypes.ContainerStartOptions{})
 	if err != nil {
-		log.Printf("fail to start prometheus container: %v", err)
+		log.PrintfE("fail to start prometheus container: %v", err)
 		return err
 	}
 	return err
