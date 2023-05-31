@@ -111,7 +111,7 @@ func doApply(cmd *cobra.Command, args []string) {
 		if err != nil {
 			fmt.Println(err)
 		}
-	case "HPA", "hpa":
+	case "HPA", "hpa", "HorizontalPodAutoscaler":
 		err := applyHPA(filename)
 		if err != nil {
 			return

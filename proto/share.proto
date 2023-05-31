@@ -39,6 +39,10 @@ message RegisterNodeRequest{
     string kubelet_url = 3;
 }
 
+message RegisterNodeResponse{
+    repeated bytes PodData = 1;
+}
+
 message UpdatePodStatusRequest {
     bytes Data = 1;
 }

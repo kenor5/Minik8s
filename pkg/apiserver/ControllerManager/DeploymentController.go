@@ -24,8 +24,8 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 		return nil, nil
 	}
 	//根据template获得template hash
-	templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name + strconv.Itoa(int(deployment.Spec.Replicas))))))
-
+	//templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name + strconv.Itoa(int(deployment.Spec.Replicas))))))
+	templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name))))
 	Pods := make(map[string]*entity.Pod, Replicas)
 	for i := 0; i < Replicas; i++ {
 		//创建replicas份Pod
@@ -62,7 +62,7 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 	defer func(cli *clientv3.Client) {
 		err := cli.Close()
 		if err != nil {
-			fmt.Print("close etcdClient error!")
+			log.PrintE("close etcdClient error!")
 		}
 	}(cli)
 	//deployment信息写入etcd
@@ -182,53 +182,61 @@ func BeginMonitorDeployment() {
 
 // MonitorDeployment 另开线程中运行，持续检查deployment运行状态，并进行扩缩
 func MonitorDeployment() error {
-	cli, err := etcdctl.NewClient()
-	if err != nil {
-		fmt.Println("etcd client connect error")
-	}
-	defer func(cli *clientv3.Client) {
-		err := cli.Close()
-		if err != nil {
-			fmt.Print("close etcdClient error!")
-		}
-	}(cli)
+	log.Printf("[ApiServer]Begin Monitor Deployment")
 	//获取当前所有的deployment
 	Deployments := make(map[string]entity.Deployment)
 	deploymentByte := make([]byte, 0)
-	deployments, _ := cli.Get(context.Background(), "Deployment/", clientv3.WithPrefix())
+	deployments, _ := etcdctl.EtcdGetWithPrefix("Deployment/")
 	for _, value := range deployments.Kvs {
 		deploymentDetail := entity.Deployment{}
 		deploymentByte = value.Value
-		err = json.Unmarshal(deploymentByte, &deploymentDetail)
+		json.Unmarshal(deploymentByte, &deploymentDetail)
 		Deployments[deploymentDetail.Metadata.Name] = deploymentDetail
 	}
 
 	//获取其中的pod状态信息，failed则通知重新创建
 	//不满足replica要求则进行增删
-	FailedPods := make(map[string]entity.Pod)
 	for _, deployment := range Deployments {
-		PodsData, err := cli.Get(context.Background(), "Pod/"+deployment.Metadata.Name, clientv3.WithPrefix())
+		PodsData, err := etcdctl.EtcdGetWithPrefix("Pod/" + deployment.Metadata.Name)
 		if err != nil {
 			fmt.Println("get from etcd failed, err:", err)
 			return err
 		}
 		moreNum, fewerNum := 0, 0
+		nowReplica := 0
+		for _, value := range PodsData.Kvs {
+			pod := entity.Pod{}
+			err = json.Unmarshal(value.Value, &pod)
+			if pod.Status.Phase == entity.Running || pod.Status.Phase == entity.Pending {
+				nowReplica++
+			}
+		}
+		log.Printf("[MonitorDeployment]now replica:%d need replica:%d", nowReplica, deployment.Spec.Replicas)
+		deployment.Status.Replicas = int32(nowReplica)
 		//大于replica,删除多余的pod
-		if int32(len(PodsData.Kvs)) > deployment.Spec.Replicas {
-			fewerNum = len(PodsData.Kvs) - int(deployment.Spec.Replicas)
+		if deployment.Status.Replicas > deployment.Spec.Replicas {
+			//fewerNum = len(PodsData.Kvs) - int(deployment.Spec.Replicas)
+			fewerNum = int(deployment.Status.Replicas - deployment.Spec.Replicas)
+			log.Printf("[MonitorDeployment]fewerNum=%d", fewerNum)
 		}
 		//小于replica,补充不足的的pod
-		if int32(len(PodsData.Kvs)) < deployment.Spec.Replicas {
-			moreNum = int(deployment.Spec.Replicas) - len(PodsData.Kvs)
+		if deployment.Status.Replicas < deployment.Spec.Replicas {
+			//moreNum = int(deployment.Spec.Replicas) - len(PodsData.Kvs)
+			moreNum = int(deployment.Spec.Replicas - deployment.Status.Replicas)
+			log.Printf("[MonitorDeployment]moreNum=%d", moreNum)
 		}
 		for _, value := range PodsData.Kvs {
 			pod := entity.Pod{}
 			err = json.Unmarshal(value.Value, &pod)
-			if fewerNum != 0 {
+			if pod.Status.Phase == entity.Succeed {
+				continue
+			}
+			if fewerNum > 0 {
 				//TODO：删除failed pod，改为succeed，借助Pod更新机制
+				log.Printf("[MonitorDeployment]%s need sub %d replica", deployment.Metadata.Name, fewerNum)
 				pod.Status.Phase = entity.Succeed
 				PodsData, _ := json.Marshal(pod)
-				_, err := cli.Put(context.Background(), "Pod/"+pod.Metadata.Name, string(PodsData))
+				err := etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(PodsData))
 				if err != nil {
 					fmt.Println("[MonitorDeployment]delete failed pod fail!")
 					return err
@@ -236,27 +244,28 @@ func MonitorDeployment() error {
 				fewerNum--
 			} else {
 				//如果Pod状态为Failed且fewerNum=0则记录
-				if pod.Status.Phase == entity.Failed {
-					FailedPods[pod.Metadata.Name] = pod
-				}
+				break
 			}
 		}
 		//deployment.replica有更新，需要增加moreNum个 pod
 		//TODO 新增etcd的pod信息后，如何通知Node的kubelet更新？借助Pod更新机制
-		if moreNum != 0 {
+		if moreNum > 0 {
+			log.Printf("[MonitorDeployment]%s need add %d replica", deployment.Metadata.Name, moreNum)
 			for i := 0; i <= moreNum; i++ {
 				//创建replicas份Pod
 				pod := &entity.Pod{}
 				pod.Metadata = deployment.Spec.Template.Metadata
 				pod.Metadata.Uid = UUID.UUID()
 				//根据template获得template hash
-				templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name + strconv.Itoa(int(deployment.Spec.Replicas))))))
+				//templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name + strconv.Itoa(int(deployment.Spec.Replicas))))))
+				templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name))))
+
 				//组合产生Deployment pod的名字
 				pod.Metadata.Name = deployment.Metadata.Name + "-" + templateHash + "-" + pod.Metadata.Uid[:5]
 				pod.Spec = deployment.Spec.Template.Spec
 				pod.Status.Phase = entity.Pending
 				PodData, err := json.Marshal(pod)
-				err = etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(PodData))
+				err = etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(PodData))
 				if err != nil {
 					fmt.Println("[MonitorDepployment]write more PodData to etcd error!")
 					return err
@@ -264,7 +273,6 @@ func MonitorDeployment() error {
 			}
 		}
 	}
-	cli.Close()
 	//TODO:通知Node补充更新所有的FailedPod,借助Pod更新机制
 
 	return nil

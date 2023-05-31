@@ -14,11 +14,11 @@ import (
 *****************************************/
 type FunctionController struct {
 	Mux *http.ServeMux // 创建一个自定义的 ServeMux 对象
-} 
+}
 
 func NewFunctionController() *FunctionController {
 	newFunctionController := &FunctionController{
-        Mux : http.NewServeMux(),
+		Mux: http.NewServeMux(),
 	}
 	return newFunctionController
 }
@@ -26,7 +26,7 @@ func NewFunctionController() *FunctionController {
 /*******************************************************
 ** Serverless服务器，暴露端口让用户可以通过路由访问函数 **
 ********************************************************/
-func (fc *FunctionController)FunctionServer() {
+func (fc *FunctionController) FunctionServer() {
 	// 注册默认路由
 	fc.Mux.HandleFunc("/", DefaultHandler)
 
@@ -41,27 +41,27 @@ func DefaultHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // 给Function发消息
-func SendFunction(functionName string, body *bytes.Buffer) (*bytes.Buffer){
-		// 发消息
-		url := "http://127.0.0.1:8070/function/"+functionName
-	
-		req, err := http.NewRequest("POST", url, body)
-		if err != nil {
-			fmt.Println("NewRequest error:", err)
-			return nil
-		}
+func SendFunction(functionName string, body *bytes.Buffer) *bytes.Buffer {
+	// 发消息
+	url := "http://127.0.0.1:8070/function/" + functionName
 
-		req.Header.Set("Content-Type", "application/json")
-	
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Println("Request error:", err)
-			return nil
-		}
-		defer resp.Body.Close()	
-		buf := new(bytes.Buffer)
-		_, err = buf.ReadFrom(resp.Body)
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		fmt.Println("NewRequest error:", err)
+		return nil
+	}
 
-		return buf
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Request error:", err)
+		return nil
+	}
+	defer resp.Body.Close()
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(resp.Body)
+
+	return buf
 }

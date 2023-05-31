@@ -12,7 +12,7 @@ import (
 /**
 ** Kubelet作为客户端给Api Server发请求  in *pb.RegisterNodeRequest
 **/
-func RegisterNode(c pb.ApiServerKubeletServiceClient, hostName string, hostIp string) error {
+func RegisterNode(c pb.ApiServerKubeletServiceClient, hostName string, hostIp string) ([][]byte, error) {
 	ctx := context.Background()
 	// 组装消息
 	in := &pb.RegisterNodeRequest{
@@ -25,9 +25,9 @@ func RegisterNode(c pb.ApiServerKubeletServiceClient, hostName string, hostIp st
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(reply.Status)
+	log.Println(reply.PodData)
 
-	return err
+	return reply.PodData, err
 }
 
 func UpdatePodStatus(c pb.ApiServerKubeletServiceClient, pod *entity.Pod) error {

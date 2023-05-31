@@ -6,11 +6,12 @@ import (
 	// "fmt"
 
 	"context"
+	"encoding/json"
 	"fmt"
-
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	dockerclient "github.com/docker/docker/client"
+	"minik8s/tools/log"
 
 	"minik8s/configs"
 	"minik8s/entity"
@@ -20,13 +21,10 @@ import (
 
 	kp "minik8s/pkg/kube_proxy"
 	pb "minik8s/pkg/proto"
-	"minik8s/tools/log"
-
 	"regexp"
 	"strconv"
 	"sync"
 	"time"
-
 	// "net"
 
 	"minik8s/pkg/kubelet/client"
@@ -79,7 +77,7 @@ func newKubelet() *Kubelet {
 func KubeletObject() *Kubelet {
 	if kubelet == nil {
 		kubelet = newKubelet()
-		//go kubelet.beginMonitor()
+		//TODO: 调用APIServer中接口，初始化时获得HostIP 为自己的pod列表
 	}
 	return kubelet
 }
@@ -111,13 +109,13 @@ func (kl *Kubelet) CreatePod(pod *entity.Pod) error {
 
 	log.PrintS("1")
 	// 维护ContainerRuntimeManager
-	kl.podManger.AddPod(pod)
+	kl.podManger.AddPod(*pod)
 
 	log.PrintS("2")
 
 	for _, ContainerId := range ContainerIds {
 		log.PrintS(ContainerId)
-		kubelet.podManger.AddContainerToPod(ContainerId, pod)
+		kubelet.podManger.AddContainerToPod(ContainerId, *pod)
 	}
 	kl.containerManager.SetContainerIDsByPodName(pod, ContainerIds)
 
@@ -142,7 +140,7 @@ func (kl *Kubelet) DeletePod(pod *entity.Pod) error {
 	//kl.podManger.DeletePod(pod)
 	// 更新Pod的状态
 	pod.Status.Phase = entity.Succeed
-	kl.podManger.DeletePod(pod)
+	kl.podManger.DeletePod(*pod)
 	log.Print("[Kubelet] DeletePod success,Begin update Pod")
 	client.UpdatePodStatus(kubelet.connToApiServer, pod)
 	return nil
@@ -172,8 +170,56 @@ func (kl *Kubelet) RegisterNode() error {
 	// 	NodeName:   kl.hostName,
 	// 	KubeletUrl: kl.hostIp + configs.KubeletGrpcPort,
 	// }
-	client.RegisterNode(kl.connToApiServer, kl.hostName, kl.hostIp)
+	Podsbyte, err := client.RegisterNode(kl.connToApiServer, kl.hostName, kl.hostIp)
+	//注册返回Pod信息并初始化本地信息
+	for _, podByte := range Podsbyte {
+		pod := entity.Pod{}
+		err := json.Unmarshal(podByte, &pod)
+		kl.podManger.AddPod(pod)
+		err = kl.getContainersByPodname(pod)
+		if err != nil {
+			return err
+		}
+	}
+	if err != nil {
+		return err
+	}
 	return nil
+}
+func (kl *Kubelet) getContainersByPodname(pod entity.Pod) error {
+	podname := pod.Metadata.Name
+	ctx := context.Background()
+	cli, err := dockerclient.NewClientWithOpts()
+	if err != nil {
+		panic(err)
+	}
+	defer cli.Close()
+
+	// 获取运行中的容器列表
+	containers, err := cli.ContainerList(ctx, dockertypes.ContainerListOptions{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 创建一个 filter 查询条件
+	filter := filters.NewArgs()
+	filter.Add("name", podname)
+
+	// 获取容器列表
+	containers, err = cli.ContainerList(context.Background(), dockertypes.ContainerListOptions{
+		All:     false,
+		Filters: filter,
+	})
+	if err != nil {
+		panic(err)
+	}
+	// 遍历容器列表输出 ID
+	for _, container := range containers {
+		kl.podManger.AddContainerToPod(container.ID, pod)
+	}
+
+	return err
+
 }
 
 func ConnectToApiServer(apiserver_url string) (pb.ApiServerKubeletServiceClient, error) {
@@ -192,6 +238,7 @@ func ConnectToApiServer(apiserver_url string) (pb.ApiServerKubeletServiceClient,
 func (kl *Kubelet) monitorPods() {
 	//kl.lock.Lock()
 	//defer kl.lock.Unlock()
+	log.Printf("[Kubelet]Begin Monitor Pod")
 	var FailedPods []*entity.Pod
 	var SucceedPods []*entity.Pod
 	cli, _ := dockerclient.NewClientWithOpts(
@@ -204,13 +251,13 @@ func (kl *Kubelet) monitorPods() {
 	Pods := kl.podManger.GetPods()
 	for _, pod := range Pods {
 		if pod.Status.Phase == entity.Failed {
-			FailedPods = append(FailedPods, pod)
+			FailedPods = append(FailedPods, &pod)
 			//client.UpdatePodStatus(kl.connToApiServer, pod)
 			continue
 		}
 		//Succeed为主动关闭的pod
 		if pod.Status.Phase == entity.Succeed {
-			SucceedPods = append(SucceedPods, pod)
+			SucceedPods = append(SucceedPods, &pod)
 			//client.UpdatePodStatus(kl.connToApiServer, pod)
 			continue
 		}
@@ -245,11 +292,11 @@ func (kl *Kubelet) monitorPods() {
 					}
 					if exitCode != 0 {
 						isFailed = true
-						FailedPods = append(FailedPods, pod)
+						FailedPods = append(FailedPods, &pod)
 					}
 				case "dead":
 					isFailed = true
-					FailedPods = append(FailedPods, pod)
+					FailedPods = append(FailedPods, &pod)
 				default:
 					isFinished = false
 				}
@@ -262,14 +309,14 @@ func (kl *Kubelet) monitorPods() {
 
 	//删除Succeed Pod的pod和container
 	for _, pod := range SucceedPods {
-		conatainers := kl.podManger.GetContainersByPod(pod)
+		conatainers := kl.podManger.GetContainersByPod(*pod)
 		err := podfunc.DeletePod(conatainers)
 		if err != nil {
 			fmt.Printf("delete containerId %v error", conatainers[0])
 			return
 		}
-		kl.podManger.DeleteContainersByPod(pod)
-		kl.podManger.DeletePod(pod)
+		kl.podManger.DeleteContainersByPod(*pod)
+		kl.podManger.DeletePod(*pod)
 	}
 
 	//删除FailedPod的其余container，并重新创建Pod
@@ -279,13 +326,13 @@ func (kl *Kubelet) monitorPods() {
 			log.PrintfE("[monitorPods]Update Pod %s status erroe", pod.Metadata.Name)
 			continue
 		}
-		conatainers := kl.podManger.GetContainersByPod(pod)
+		conatainers := kl.podManger.GetContainersByPod(*pod)
 		err = podfunc.DeletePod(conatainers)
 		if err != nil {
 			fmt.Printf("delete container of Pod %v error", pod.Metadata.Name)
 			return
 		}
-		kl.podManger.DeleteContainersByPod(pod)
+		kl.podManger.DeleteContainersByPod(*pod)
 	}
 	//kl.lock.Unlock()
 	//重新创建FailedPod
@@ -314,7 +361,6 @@ func (kl *Kubelet) BeginMonitor() {
 	}
 	}()*/
 }
-
 
 func (kl *Kubelet) ApplyDns(dns *entity.Dns) error {
 	err := CreateDns(dns)

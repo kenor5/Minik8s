@@ -26,18 +26,18 @@ func GetWorkflow(workflowName string) (*entity.Workflow, error) {
 
 	// 解析Workflow并返回
 	workflow := &entity.Workflow{}
-    json.Unmarshal(out.Kvs[0].Value, workflow)
+	json.Unmarshal(out.Kvs[0].Value, workflow)
 	return workflow, nil
 }
 
 func GetWorkflowNodeByName(Name string, workflow *entity.Workflow) (*entity.WorkflowNode, error) {
-    for _, workflowNode := range workflow.WorkflowNodes {
-		if (workflowNode.Name == Name) {
+	for _, workflowNode := range workflow.WorkflowNodes {
+		if workflowNode.Name == Name {
 			return &workflowNode, nil
 		}
 	}
 	return nil, errors.New("No such Node!")
-} 
+}
 
 func SelectChoice(data string, choices []entity.Choice) string {
 	for _, choice := range choices {
@@ -45,29 +45,29 @@ func SelectChoice(data string, choices []entity.Choice) string {
 		match := false
 		switch choice.Condition {
 		case "NumericEquals":
-			match = (Number==choice.Number)
+			match = (Number == choice.Number)
 			break
 		case "NumericNotEquals":
-			match = (Number!=choice.Number)
+			match = (Number != choice.Number)
 			break
 		case "NumericLessThan":
-			match = (Number<choice.Number)
+			match = (Number < choice.Number)
 			break
 		case "NumericGreaterThan":
-			match = (Number>choice.Number)
-			break		             
+			match = (Number > choice.Number)
+			break
 		case "NumericGreaterThanOrEqual":
-			match = (Number>=choice.Number)
-			break	
+			match = (Number >= choice.Number)
+			break
 		case "NumericLessThanOrEqual":
-			match = (Number<=choice.Number)
-			break							
-		default :
+			match = (Number <= choice.Number)
+			break
+		default:
 			return "End"
 		}
 		if match {
 			return choice.Next
-		} 
+		}
 	}
 	return "End"
 }

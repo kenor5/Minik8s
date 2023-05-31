@@ -37,7 +37,7 @@ import (
 
 func main() {
 	data := `{"finalGrade": 93.0}`
-    variable := "finalGrade"
+	variable := "finalGrade"
 	// 查找 "finalGrade" 的起始索引位置
 	startIndex := strings.Index(data, variable)
 	if startIndex == -1 {

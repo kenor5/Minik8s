@@ -1,26 +1,26 @@
-stages:
-  - dockertest
-  # - test
+# stages:
+#   - dockertest
+#   # - test
 
-# cache:
-#   key: ${CI_BUILD_REF_NAME}
-#   paths:
-#     - bin/
+# # cache:
+# #   key: ${CI_BUILD_REF_NAME}
+# #   paths:
+# #     - bin/
 
-dockertest:
-  stage: dockertest
-  only:
-    - master
-  script:
-    - go init minik8s
-    - go mod init minik8s
-    - go mod tidy
-    - go mod vendor
-    - cd test
-    - go run operate_simple_docker.go
+# dockertest:
+#   stage: dockertest
+#   only:
+#     - master
+#   script:
+#     - go init minik8s
+#     - go mod init minik8s
+#     - go mod tidy
+#     - go mod vendor
+#     - cd test
+#     - go run operate_simple_docker.go
 
-  tags:
-    - minik8stest
+  # tags:
+  #   - minik8scicd
 
 # test:
 #   stage: test
@@ -30,3 +30,27 @@ dockertest:
 #     - ./bin/hello
 #   tags:
 #     - test
+
+stages:
+  - build
+  - test
+
+build:
+  tags:
+    - minik8scicd
+  stage: build
+  script:
+    - ls -a && pwd
+    - go mod init minik8s
+    - go mod tidy
+    - go mod vendor
+    - ./scripts/gen_proto.sh
+    - go build ./...
+
+test:
+  tags:
+    - minik8scicd
+  stage: test
+  script:
+    - go test -v ./...
+

@@ -16,8 +16,13 @@ func CreatePod() {
 	yamlParser.ParseYaml(newPod, yamlPath)
 	fmt.Println("****ParseYaml Pod*****")
 	fmt.Println(newPod)
+<<<<<<< HEAD
 	// fmt.Println(newPod.Spec.Containers[0].Resources.Limit["cpu"])
 	// fmt.Println(newPod.Spec.Containers[0].Resources.Limit["Cpu"])
+=======
+	fmt.Println(newPod.Spec.Containers[0].Resources.Limit.Cpu)
+	fmt.Println(newPod.Spec.Containers[0].Resources.Limit.Memory)
+>>>>>>> master
 	ContainerIDs, err := podfunc.CreatePod(newPod)
 	fmt.Println("ContainerIDs: ", ContainerIDs)
 	if err != nil {

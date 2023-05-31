@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cobra"
 	"minik8s/entity"
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
-	"time"
 	"minik8s/tools/prettyprint"
-	"github.com/spf13/cobra"
+	"time"
 )
 
 var getCmd = &cobra.Command{
@@ -30,17 +30,17 @@ func doGet(cmd *cobra.Command, args []string) {
 	} else {
 		name = args[1]
 	}
-	
+
 	switch args[0] {
-	case "po","pod","pods":
+	case "po", "pod", "pods":
 		getPod(name)
-	case "node","nodes":
+	case "node", "nodes":
 		getNode(name)
 	case "service":
 		getService(name)
 	case "function":
 		getFunction(name)
-	case "deployment","deploy":
+	case "deployment", "deploy":
 		getDeployment(name)
 	case "Dns", "dns":
 		getDns(name)
@@ -55,60 +55,60 @@ func doGet(cmd *cobra.Command, args []string) {
 }
 
 func getPod(name string) {
-		// 通过 rpc 连接 apiserver
-		cli := NewClient()
-		if cli == nil {
-			return
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		
-		res, err := cli.GetPod(ctx, &pb.GetPodRequest{
-			PodName: name,
-		})
+	// 通过 rpc 连接 apiserver
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	res, err := cli.GetPod(ctx, &pb.GetPodRequest{
+		PodName: name,
+	})
+	if err != nil {
+		log.PrintE(err)
+	}
+
+	title := []string{"Name", "Status", "IP", "Age"}
+
+	data := [][]string{}
+	for _, onePod := range res.PodData {
+		// prettyprint
+		pod := &entity.Pod{}
+		// fmt.Println("Get Pod, response ", res)
+		err = json.Unmarshal(onePod, pod)
 		if err != nil {
 			log.PrintE(err)
 		}
+		// 计算age,精确到秒
 
-		title := []string{"Name", "Status", "IP", "Age"}
+		age := time.Now().Sub(pod.Status.StartTime).Round(time.Second)
+		data = append(data, []string{pod.Metadata.Name, pod.Status.Phase, pod.Status.PodIp, age.String()})
+	}
 
-		data := [][]string{}
-		for _, onePod := range res.PodData {
-		// prettyprint
-			pod := &entity.Pod{}
-			// fmt.Println("Get Pod, response ", res)
-			err = json.Unmarshal(onePod, pod)
-			if err != nil {
-				log.PrintE(err)
-			}
-			// 计算age,精确到秒
-
-			age := time.Now().Sub(pod.Status.StartTime).Round(time.Second)
-			data = append(data, []string{pod.Metadata.Name, pod.Status.Phase, pod.Status.PodIp, age.String()})
-		}
-
-		prettyprint.PrettyPrint(title, data)
+	prettyprint.PrettyPrint(title, data)
 }
 
 func getNode(name string) {
 	// 通过 rpc 连接 apiserver
 	cli := NewClient()
-    if cli == nil {
+	if cli == nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	res, err := cli.GetNode(ctx, &pb.GetNodeRequest{
 		NodeName: name,
 	})
 	if err != nil {
 		log.PrintE(err)
 	}
-	
+
 	title := []string{"Name", "Ip", "Status"}
 	data := [][]string{}
-	for _, oneNode := range res.NodeData{
+	for _, oneNode := range res.NodeData {
 		node := &entity.Node{}
 		err = json.Unmarshal(oneNode, node)
 		if err != nil {
@@ -127,23 +127,23 @@ func getDeployment(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	res, err := cli.GetDeployment(ctx, &pb.GetDeploymentRequest{
 		DeploymentName: name,
 	})
 	if err != nil {
 		log.PrintE(err)
 	}
-	
+
 	title := []string{"Name", "Replicas"}
 	data := [][]string{}
-	for _, oneDeployment := range res.Data{
+	for _, oneDeployment := range res.Data {
 		deployment := &entity.Deployment{}
 		err = json.Unmarshal(oneDeployment, deployment)
 		if err != nil {
 			log.PrintE(err)
 		}
-		
+
 		data = append(data, []string{deployment.Metadata.Name, fmt.Sprintf("%d", deployment.Status.Replicas)})
 	}
 	prettyprint.PrettyPrint(title, data)
@@ -157,17 +157,17 @@ func getFunction(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	res, err := cli.GetFunction(ctx, &pb.GetFunctionRequest{
 		FunctionName: name,
 	})
 	if err != nil {
 		log.PrintE(err)
 	}
-	
+
 	title := []string{"Name", "Path"}
 	data := [][]string{}
-	for _, oneFunction := range res.Data{
+	for _, oneFunction := range res.Data {
 		function := &entity.Function{}
 		err = json.Unmarshal(oneFunction, function)
 		if err != nil {
@@ -177,27 +177,26 @@ func getFunction(name string) {
 	}
 	prettyprint.PrettyPrint(title, data)
 
-
 }
 
 func getService(name string) {
 	cli := NewClient()
-    if cli == nil {
+	if cli == nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	res, err := cli.GetService(ctx, &pb.GetServiceRequest{
 		ServiceName: name,
 	})
 	if err != nil {
 		log.PrintE(err)
 	}
-	
+
 	title := []string{"Name", "Type", "ClusterIP"}
 	data := [][]string{}
-	for _, oneService := range res.Data{
+	for _, oneService := range res.Data {
 		service := &entity.Service{}
 		err = json.Unmarshal(oneService, service)
 		if err != nil {
@@ -216,7 +215,7 @@ func getDns(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	res, err := cli.GetDns(ctx, &pb.GetDnsRequest{
 		DnsName: name,
 	})
@@ -227,14 +226,14 @@ func getDns(name string) {
 	title := []string{"Name", "Host", "Subpath", "ServiceName"}
 
 	data := [][]string{}
-	for _, oneDns := range res.Data{
+	for _, oneDns := range res.Data {
 
 		dns := &entity.Dns{}
 		err = json.Unmarshal(oneDns, dns)
 		if err != nil {
 			log.PrintE(err)
 		}
-		
+
 		for i, v := range dns.Spec.Paths {
 			if i == 0 {
 				data = append(data, []string{dns.Metadata.Name, dns.Spec.Host, v.Path, v.ServiceName})
@@ -244,23 +243,24 @@ func getDns(name string) {
 		}
 	}
 	prettyprint.PrettyPrint(title, data)
-	
+
 }
 
 func getJob(name string) {
 	cli := NewClient()
-    if cli == nil {
+	if cli == nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	res, err := cli.GetJob(ctx, &pb.GetJobRequest{
 		JobName: name,
 	})
 	if err != nil {
 		log.PrintE(err)
 	}
+<<<<<<< HEAD
 	
 	
 	title := []string{"Id", "Name", "Status"}
@@ -309,3 +309,7 @@ func getJobResult(jobId string) {
 
 	fmt.Print(job.JobStatus.Result)
 }
+=======
+	fmt.Println("Get Job, response ", res)
+}
+>>>>>>> master

@@ -42,7 +42,7 @@ func CreateContainer(Container entity.Container) string {
 		panic(err)
 	}
 
-	log.Print("ID: %s\n", body.ID)
+	log.Printf("ID: %s\n", body.ID)
 	return body.ID
 }
 

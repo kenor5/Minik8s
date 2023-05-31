@@ -27,15 +27,15 @@ func doDescribe(cmd *cobra.Command, args []string) {
 	}
 	name := args[1]
 	switch args[0] {
-	case "po","pod","pods":
+	case "po", "pod", "pods":
 		describePod(name)
-	case "node","nodes":
+	case "node", "nodes":
 		describeNode(name)
 	case "service":
 		describeService(name)
 	case "function":
 		describeFunction(name)
-	case "deployment","deploy":
+	case "deployment", "deploy":
 		describeDeployment(name)
 	default:
 		log.PrintE("describe err, no such object")
@@ -49,7 +49,7 @@ func describePod(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	res, err := cli.GetPod(ctx, &pb.GetPodRequest{
 		PodName: name,
 	})
@@ -78,7 +78,7 @@ func describeNode(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	res, err := cli.GetNode(ctx, &pb.GetNodeRequest{
 		NodeName: name,
 	})
@@ -108,7 +108,7 @@ func describeDeployment(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	res, err := cli.GetDeployment(ctx, &pb.GetDeploymentRequest{
 		DeploymentName: name,
 	})
@@ -137,7 +137,7 @@ func describeFunction(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	res, err := cli.GetFunction(ctx, &pb.GetFunctionRequest{
 		FunctionName: name,
 	})
@@ -165,7 +165,7 @@ func describeService(name string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	res, err := cli.GetService(ctx, &pb.GetServiceRequest{
 		ServiceName: name,
 	})

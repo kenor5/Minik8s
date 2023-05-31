@@ -27,7 +27,7 @@ func GetFunction(functionName string) (*entity.Function, error) {
 	
 	// 解析Function并返回
 	function := &entity.Function{}
-    json.Unmarshal(out.Kvs[0].Value, function)
+	json.Unmarshal(out.Kvs[0].Value, function)
 	return function, nil
 }
 
@@ -36,11 +36,11 @@ func SetFunction(function *entity.Function) error {
 	if err != nil {
 		log.PrintE("etcd client connetc error")
 		return err
-	}	
+	}
 	defer cli.Close()
 	functionByte, err := json.Marshal(function)
 	etcdctl.Put(cli, "Function/"+function.Metadata.Name, string(functionByte))
-    return nil
+	return nil
 }
 
 func DelFunction(functionName string) error {
@@ -73,11 +73,11 @@ func GetRunningFunction() []*entity.Function {
 			log.PrintE("pod unmarshal error")
 		}
 
-        // 判断Pod仍在运行(状态为Running)Selector和Label完全相等
+		// 判断Pod仍在运行(状态为Running)Selector和Label完全相等
 		if function.FunctionStatus.Status == entity.Running {
 			RunningFunctions = append(RunningFunctions, function)
 		}
 	}
 
-	return RunningFunctions	
-}	 
+	return RunningFunctions
+}

@@ -20,8 +20,8 @@ echo "Building kubelet..."
 go build -o ${srv_bin_dir}/kubelet ${kubelet}
 
 # 启动apiserver和kubelet
-echo "Starting apiserver and kubelet..."
-./bin/kube-apiserver
+#echo "Starting apiserver and kubelet..."
+#./bin/kube-apiserver
 
 #./bin/kubelete
 #
