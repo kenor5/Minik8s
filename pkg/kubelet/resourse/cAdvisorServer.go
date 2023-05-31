@@ -18,12 +18,21 @@ const cadvisorPort = 8080
 const cAdvisorName = "kubeletcAdvisor"
 
 func StartcAdvisor() error {
+	// 确定容器是否已经存在，如果存在则不再启动
+	exist, err := containerfunc.CheckContainerRunning("kubeletcAdvisor")
+	if (err != nil) {
+        return err
+	}
+	if (exist) {
+		return nil
+	}
+
 	cli, _ := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
 	)
 	defer cli.Close()
-	err := containerfunc.EnsureImage(cAdvisorImage)
+	err = containerfunc.EnsureImage(cAdvisorImage)
 	if err != nil {
 		return err
 	}

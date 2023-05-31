@@ -105,6 +105,19 @@ func (nodeController *NodeController) GetAllLivingNodes() []*entity.Node {
 	return LivingNodes
 }
 
+// 将Node存入etcd中
+func (nodeController *NodeController) SetNode(Node *entity.Node) (error) {
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("etcd client connetc error")
+		return err
+	}
+	defer cli.Close()
+	nodeByte, err := json.Marshal(Node)
+	etcdctl.Put(cli, "Node/"+Node.Name, string(nodeByte))
+	return nil
+}
+
 // 根据Node的名称获取conn
 func (nodeController *NodeController) GetNodeConnByName(NodeName string) pb.KubeletApiServerServiceClient {
 	return nodeController.NodeNameToConn[NodeName]
@@ -113,6 +126,29 @@ func (nodeController *NodeController) GetNodeConnByName(NodeName string) pb.Kube
 // 根据Node的名称获取conn
 func (nodeController *NodeController) GetNodeConnByIP(NodeIP string) pb.KubeletApiServerServiceClient {
 	return nodeController.NodeIPToConn[NodeIP]
+}
+
+// 重新获取Node Conn
+func (nodeController *NodeController) RestartNodeConn() (error) {
+    LivingNodes := nodeController.GetAllLivingNodes()
+
+	for _, LivingNode := range LivingNodes {
+		// 获取grpc kubelet的连接
+	    conn, err := ConnectToKubelet(LivingNode.KubeletUrl)
+		if err != nil {
+			log.PrintW("fail to connect kubelet: " + LivingNode.KubeletUrl)
+		    // 更新etcd中Node的状态
+			LivingNode.Status= entity.NodeDead
+			// 存入etcd中
+            nodeController.SetNode(LivingNode)
+			continue
+		}
+		// 加入内存中的map
+		nodeController.NodeNameToConn[LivingNode.Name] = conn
+		nodeController.NodeIPToConn[LivingNode.Ip] = conn
+	}
+
+	return nil
 }
 
 // 工具函数

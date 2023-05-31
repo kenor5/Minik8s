@@ -228,6 +228,7 @@ func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (
 	podsByte := getPodbyHostIP(newNode.Ip)
 	return &pb.RegisterNodeResponse{PodData: podsByte}, nil
 }
+
 func getPodbyHostIP(hostIP string) [][]byte {
 	//var pods []entity.Pod
 	bytes := [][]byte{}
@@ -583,6 +584,13 @@ func Run() {
 	// 		log.PrintE("etcd close error")
 	// 	}
 	// }(cli)
+    // 初始化Node
+	err := apiserver.ApiServerObject().RestartApiserver()
+    if (err != nil) {
+		log.PrintE("fail to RestartApiserver!")
+	}
+    log.PrintS("restart apiserver successfully!")
+
 
 	// 注册请求处理接口
 	listen, err := net.Listen("tcp", configs.GrpcPort)

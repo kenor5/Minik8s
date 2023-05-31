@@ -186,6 +186,7 @@ func (kl *Kubelet) RegisterNode() error {
 	}
 	return nil
 }
+
 func (kl *Kubelet) getContainersByPodname(pod entity.Pod) error {
 	podname := pod.Metadata.Name
 	ctx := context.Background()

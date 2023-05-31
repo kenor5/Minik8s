@@ -646,3 +646,14 @@ func (master *ApiServer) UpdateFunction(functionName string) (*pb.StatusResponse
 
 	return &pb.StatusResponse{Status: 0}, nil
 }
+
+// 当重启ApieceSever时，获取异常关闭之前的Node信息并建立新的连接
+func (master *ApiServer) RestartApiserver() (error) {
+	// 重新获取和所有Node的连接
+   	err := master.NodeManager.RestartNodeConn()	
+    if (err != nil) {
+		log.PrintE("Fail to Restart Node conn")
+		return err
+	}
+    return nil
+}
