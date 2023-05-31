@@ -67,7 +67,7 @@ func doApply(cmd *cobra.Command, args []string) {
 		fmt.Println("file has no such field")
 	}
 
-	fmt.Println("dirname: ", dirname, "filename without extention: ", filenameWithoutExtention)
+	// fmt.Println("dirname: ", dirname, "filename without extention: ", filenameWithoutExtention)
 
 	switch obj {
 	case "Pod", "pod":
@@ -133,7 +133,7 @@ func applyPod(filename string) error {
 	pod := &entity.Pod{}
 	_, err := yamlParser.ParseYaml(pod, filename)
 	if err != nil {
-		fmt.Println("parse pod failed")
+		log.PrintE(err)
 		return err
 	}
 	fmt.Println(pod)
@@ -153,11 +153,13 @@ func applyPod(filename string) error {
 		return err
 	}
 
-	res, err := cli.ApplyPod(ctx, &pb.ApplyPodRequest{
+	_, err = cli.ApplyPod(ctx, &pb.ApplyPodRequest{
 		Data: podByte,
 	})
 
-	fmt.Println("Create Pod, response ", res)
+	if err == nil {
+		log.PrintS("Created Pod ", pod.Metadata.Name)
+	}
 	return nil
 }
 
@@ -183,11 +185,14 @@ func applyDeployment(filename string) error {
 		return err
 	}
 
-	res, err := cli.ApplyDeployment(ctx, &pb.ApplyDeploymentRequest{
+	_, err = cli.ApplyDeployment(ctx, &pb.ApplyDeploymentRequest{
 		Data: deploymentByte,
 	})
 
-	fmt.Printf("Create Deployment, response %v,error %v\n", res, err)
+	if err == nil {
+		log.PrintS("Created deployment ", deployment.Metadata.Name)
+	}
+	// fmt.Printf("Create Deployment, response %v,error %v\n", res, err)
 	return nil
 }
 
@@ -213,11 +218,14 @@ func applyService(filename string) error {
 		return err
 	}
 
-	res, err := cli.ApplyService(ctx, &pb.ApplyServiceRequest{
+	_, err = cli.ApplyService(ctx, &pb.ApplyServiceRequest{
 		Data: podByte,
 	})
 
-	fmt.Println("Create Service, response ", res)
+	if err == nil {
+		log.PrintS("Created svc ", service.Metadata.Name)
+	}
+	// fmt.Println("Create Service, response ", res)
 	return nil
 }
 
@@ -272,11 +280,13 @@ func applyDns(filename string) error {
 		return err
 	}
 
-	res, err := cli.ApplyDns(ctx, &pb.ApplyDnsRequest{
+	_, err = cli.ApplyDns(ctx, &pb.ApplyDnsRequest{
 		Data: dnsByte,
 	})
 
-	fmt.Println("Create Dns, response ", res)
+	if err == nil {
+		log.PrintS("Created Dns ", dns.Metadata.Name)
+	}
 	return nil
 }
 
@@ -285,7 +295,7 @@ func applyJob(filename string) error {
 	job := &entity.Job{}
 	_, err := yamlParser.ParseYaml(job, filename)
 	if err != nil {
-		fmt.Println("parse pod failed")
+		log.PrintE(err)
 		return err
 	}
 	fmt.Println(job)
@@ -318,10 +328,10 @@ func applyFunction(filename string) error {
 	function := &entity.Function{}
 	_, err := yamlParser.ParseYaml(function, filename)
 	if err != nil {
-		fmt.Println("parse pod failed")
+		log.PrintE(err)
 		return err
 	}
-	fmt.Println(function)
+	//fmt.Println(function)
 
 	// 通过 rpc 连接 apiserver
 	cli := NewClient()
@@ -338,11 +348,14 @@ func applyFunction(filename string) error {
 		return err
 	}
 
-	res, err := cli.ApplyFunction(ctx, &pb.ApplyFunctionRequest{
+	_, err = cli.ApplyFunction(ctx, &pb.ApplyFunctionRequest{
 		Data: functionByte,
 	})
 
-	fmt.Println("Create Job, response ", res)
+	// fmt.Println("Create Job, response ", res)
+	if err == nil {
+		log.PrintS("Created function ", function.Metadata.Name)
+	}
 	return nil
 }
 
@@ -354,7 +367,7 @@ func applyWorkflow(filename string) error {
 		fmt.Println("parse workflow failed")
 		return err
 	}
-	fmt.Println(workflow)
+	//fmt.Println(workflow)
 
 	// 通过 rpc 连接 apiserver
 	cli := NewClient()
@@ -371,10 +384,13 @@ func applyWorkflow(filename string) error {
 		return err
 	}
 
-	res, err := cli.ApplyWorkflow(ctx, &pb.ApplyWorkflowRequest{
+	_, err = cli.ApplyWorkflow(ctx, &pb.ApplyWorkflowRequest{
 		Data: workflowByte,
 	})
 
-	fmt.Println("Create Workflow, response ", res)
+	// fmt.Println("Create Workflow, response ", res)
+	if err == nil {
+		log.PrintS("Created workflow ", workflow.Name)
+	}
 	return nil
 }

@@ -4,11 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"minik8s/configs"
+	"minik8s/pkg/apiserver/ControllerManager"
 	"minik8s/pkg/apiserver/ControllerManager/JobController"
 	"minik8s/pkg/apiserver/ControllerManager/ScaleController"
 	"minik8s/pkg/apiserver/scale"
 	"minik8s/tools/etcdctl"
+	"strconv"
 	"time"
+
+	//clientv3 "go.etcd.io/etcd/client/v3"
 
 	// "minik8s/configs"
 
@@ -125,6 +129,24 @@ func (master *ApiServer) CreateService(in *pb.ApplyServiceRequest2) (*pb.StatusR
 	}
 	return &pb.StatusResponse{Status: 0}, nil
 
+}
+
+func (master *ApiServer) DeleteService(in *pb.DeleteServiceRequest) (*pb.StatusResponse, error) {
+	LivingNodes := master.NodeManager.GetAllLivingNodes()
+
+	for _, node := range LivingNodes {
+		// 发送消息给Kubelet
+		conn := master.NodeManager.GetNodeConnByName(node.Name)
+		err := client.KubeLetDeleteService(conn, &pb.DeleteServiceRequest2{
+			ServiceName: in.ServiceName,
+		})
+		if err != nil {
+			log.PrintE(err)
+			return &pb.StatusResponse{Status: -1}, err
+		}
+
+	}
+	return &pb.StatusResponse{Status: 0}, nil
 }
 
 // AddDeployment 增加新的deployment，先将元数据写入etcd,之后监控机制检查更新pod状态并启动
@@ -490,6 +512,144 @@ func (master *ApiServer) ApplyWorkflow(workflow *entity.Workflow) (*pb.StatusRes
 
 	// 加入路由
 	master.AddWorkflowRouter(workflow.Name)
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (master *ApiServer) DeleteFunction(functionName string) (*pb.StatusResponse, error) {
+    // 从etcd中查找function
+	function, _ := functioncontroller.GetFunction(functionName)
+	
+	// 将该function从etcd中删除
+    err := functioncontroller.DelFunction(functionName)
+	if err != nil {
+		log.PrintS("Delete function err!")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	// 删除所有属于这个function的Pod
+	functionPods := function.FunctionStatus.FunctionPods
+    for _, functionPod := range functionPods {
+		pod, _ := Controller.GetPodByName(functionPod.PodName)
+		podByte, err := json.Marshal(pod)
+		if err != nil {
+			log.PrintE("parse pod error")
+			return &pb.StatusResponse{Status: -1}, err
+		}
+		in := &pb.DeletePodRequest{
+			Data: podByte,
+		}		
+		_, err = master.DeletePod(in)
+		if err != nil {
+			log.PrintE("delete pod error")
+			return &pb.StatusResponse{Status: -1}, err
+		}
+	}
+
+	log.PrintS("delete function: ", functionName)
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (master *ApiServer) UpdateFunction(functionName string) (*pb.StatusResponse, error) {
+	imageName := "luoshicai/" + functionName + ":latest"
+    // 从etcd中查找function
+	function, _ := functioncontroller.GetFunction(functionName)
+	
+	// 将该function从etcd中删除
+    err := functioncontroller.DelFunction(functionName)
+	if err != nil {
+		log.PrintS("Delete function err!")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	// 删除原有镜像
+	containerfunc.DeleteImage(imageName)
+
+	// 创建新镜像
+	log.Print("begin update function image...")
+	// 生成Dockerfile
+	// 命令和参数
+	cmd := exec.Command("./scripts/gen_function_dockerfile.sh", function.Metadata.Name)
+		// 设置工作目录
+	cmd.Dir = "./"
+	// 执行命令并捕获输出
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.PrintE("命令执行失败：%v\n%s", err, output)
+	} 
+
+	// 打印输出结果
+	log.Print(string(output))
+
+	// 生成镜像
+	dockerfilePath := "./tools/serverless/" + function.Metadata.Name
+
+	cmd = exec.Command("docker", "build", "-t", imageName, dockerfilePath)
+
+	// 设置命令输出到标准输出和标准错误
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// 执行命令
+	err = cmd.Run()
+	if err != nil {
+		log.PrintE("执行命令失败：%v", err)
+	}
+
+	log.Print("镜像更新成功：%s\n", imageName)	
+
+	// 更新Pod:策略为先删除所有的Pod，再创建同样数量的新Pod
+	podNum := len(function.FunctionStatus.FunctionPods)
+	for _, functionPod := range function.FunctionStatus.FunctionPods {
+		pod, _ := Controller.GetPodByName(functionPod.PodName)
+		podByte, err := json.Marshal(pod)
+		if err != nil {
+			log.PrintE("parse pod error")
+			return &pb.StatusResponse{Status: -1}, err
+		}
+		in := &pb.DeletePodRequest{
+			Data: podByte,
+		}		
+		_, err = master.DeletePod(in)
+		if err != nil {
+			log.PrintE("delete pod error")
+			return &pb.StatusResponse{Status: -1}, err
+		}
+	}
+
+	newPod := function.FunctionStatus.PodTemplate
+	newPodName := newPod.Metadata.Name
+	for i := 0; i < podNum; i++ {
+		newPod.Metadata.Name = newPodName + "-" + strconv.Itoa(i)
+		// 组装消息
+		podByte, err := json.Marshal(newPod)
+		if err != nil {
+		log.PrintE("parse pod error")
+		}
+		in := &pb.ApplyPodRequest{
+			Data: podByte,
+		}			
+		_, err = master.ApplyPod(in)
+		if err != nil {
+			log.PrintE("Apply pod error")
+		}        
+	}
+	
+	// 然后更新function
+	PodsList := ControllerManager.GetPodsByLabels(&newPod.Metadata.Labels)
+	targetFunctionPods := []entity.FunctionPod{}
+	// 遍历列表
+	for it := PodsList.Front(); it != nil; it = it.Next() {
+		element := it.Value.(*entity.Pod)
+		targetFunctionPods = append(targetFunctionPods, entity.FunctionPod{
+			PodName: element.Metadata.Name,
+			PodIp: element.Status.PodIp,
+		})
+	}
+
+	// 将function重新放入etcd中
+    functioncontroller.SetFunction(function)
 
 	return &pb.StatusResponse{Status: 0}, nil
 }

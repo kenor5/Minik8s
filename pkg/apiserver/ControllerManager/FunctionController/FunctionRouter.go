@@ -28,7 +28,7 @@ func NewFunctionController() *FunctionController {
 ********************************************************/
 func (fc *FunctionController) FunctionServer() {
 	// 注册默认路由
-	fc.Mux.HandleFunc("/", defaultHandler)
+	fc.Mux.HandleFunc("/", DefaultHandler)
 
 	// 启动服务器
 	fmt.Println("[Serverless] Server started on port 8070")
@@ -36,7 +36,7 @@ func (fc *FunctionController) FunctionServer() {
 }
 
 // 默认处理函数
-func defaultHandler(w http.ResponseWriter, r *http.Request) {
+func DefaultHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Default Handler")
 }
 

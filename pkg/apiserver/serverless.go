@@ -23,7 +23,12 @@ func (master *ApiServer) AddRouter(functionName string) error {
 	// 处理函数
 	functionHandler := func(w http.ResponseWriter, r *http.Request) {
 		// 查找function
-		function, _ := fc.GetFunction(functionName)
+        function, _:= fc.GetFunction(functionName)
+        if function == nil {
+			fmt.Fprintf(w, "Default Handler")
+			return
+		}
+
 		podNum := len(function.FunctionStatus.FunctionPods)
 		podIp := ""
 		// 如果没有Pod，则冷启动创建Pod
@@ -33,6 +38,8 @@ func (master *ApiServer) AddRouter(functionName string) error {
 			pod := function.FunctionStatus.PodTemplate
 			Numstr := strconv.Itoa(podNum)
 			pod.Metadata.Name = pod.Metadata.Name + "-" + Numstr
+
+			log.PrintS("1")
 			// 组装消息
 			podByte, err := json.Marshal(pod)
 			if err != nil {
@@ -46,7 +53,9 @@ func (master *ApiServer) AddRouter(functionName string) error {
 				log.PrintE("Apply pod error")
 			}
 			time.Sleep(5 * time.Second) // 休眠 5 秒,等待Pod可用
-
+			
+			log.PrintS("2")
+			
 			// 获取PodIp
 			podptr, err := ControllerManager.GetPodByName(pod.Metadata.Name)
 			if err != nil {
