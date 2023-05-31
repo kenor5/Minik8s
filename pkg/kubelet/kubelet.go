@@ -214,11 +214,18 @@ func (kl *Kubelet) getContainersByPodname(pod entity.Pod) error {
 	if err != nil {
 		panic(err)
 	}
+
+	// 该map返回Pod中的ContainerID
+	ContainerIDMap := []string{}
+	
 	// 遍历容器列表输出 ID
 	for _, container := range containers {
 		kl.podManger.AddContainerToPod(container.ID, pod)
+		ContainerIDMap = append(ContainerIDMap, container.ID)
 	}
 
+    kl.containerManager.SetContainerIDsByPodName(&pod, ContainerIDMap)
+	
 	return err
 
 }
