@@ -438,13 +438,11 @@ func (s *server) GetDeployment(ctx context.Context, in *pb.GetDeploymentRequest)
 }
 
 func (s *server) DeleteDeployment(ctx context.Context, in *pb.DeleteDeploymentRequest) (*pb.StatusResponse, error) {
-	//TODO
 	apiserver.ApiServerObject().DeleteDeployment(in)
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
 func (s *server) ApplyDeployment(ctx context.Context, in *pb.ApplyDeploymentRequest) (*pb.StatusResponse, error) {
-	//TODO 调用DeploymentController 创建deployment
 	apiserver.ApiServerObject().AddDeployment(in)
 	return &pb.StatusResponse{Status: 0}, nil
 }

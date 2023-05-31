@@ -7,7 +7,6 @@ func TestStartcAdvisor(t *testing.T) {
 		name    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name:    "Valid test should not return error",
 			wantErr: false,

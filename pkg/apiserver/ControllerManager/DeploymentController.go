@@ -130,7 +130,7 @@ func DeleteDeployment(DeploymentName string) error {
 	}
 
 	log.Print("Node删除成功后删除etcd信息")
-	//TODO: Node删除成功后删除etcd信息,借助Pod更新机制
+	//Node删除成功后删除etcd信息,借助Pod更新机制
 	for _, pod := range Pods {
 		podpath := "Pod/" + pod.Metadata.Name
 		pod.Status.Phase = entity.Succeed
@@ -154,7 +154,6 @@ func DeleteDeployment(DeploymentName string) error {
 
 // GetPodsBydeployment Pod命名：deploymentname(nginx-deployment)+templet对应HASH(9594276)+PodUID前5位
 func GetPodsBydeployment(deployment string) []entity.Pod {
-	//TODO 默认了能在etcd中查询到的pod都是可用状态，属于replica，是否需要更新？
 	PodsData, _ := etcdctl.EtcdGetWithPrefix("Pod/" + deployment)
 	var Pods []entity.Pod
 	for _, PodData := range PodsData.Kvs {
@@ -164,7 +163,9 @@ func GetPodsBydeployment(deployment string) []entity.Pod {
 			log.PrintE("GetPodsBydeployment Unmarshal Pod error")
 			return nil
 		}
-		Pods = append(Pods, pod)
+		if pod.Status.Phase == entity.Running {
+			Pods = append(Pods, pod)
+		}
 	}
 	return Pods
 }

@@ -86,6 +86,12 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 	if in.Data == nil || pod.Status.Phase == entity.Succeed {
 		return &pb.StatusResponse{Status: 0}, err
 	}
+	//通知删除后更新本地Pod信息
+	pod.Status.HostIp = ""
+	pod.Status.Phase = entity.Succeed
+	podNewData, _ := json.Marshal(pod)
+	etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(podNewData))
+
 	// 根据Pod所在的节点的NodeName获得对应的grpc Conn
 	conn := master.NodeManager.GetNodeConnByName(pod.Spec.NodeName)
 	if conn == nil {
@@ -231,7 +237,7 @@ func (master *ApiServer) CheckEtcdAndUpdate() {
 		case entity.Running:
 			continue
 		case entity.Failed:
-			//TODO: 利用hostIP通知检查Node状态,Node存活则会自动更新状态
+			//利用hostIP通知检查Node状态,Node存活则会自动更新状态
 			//一种简单通用实现：直接发送一次DeletePod 到Node，再为Pod重新指定Node创建
 			hostIP := pod.Status.HostIp
 			if hostIP == "" {
@@ -239,7 +245,7 @@ func (master *ApiServer) CheckEtcdAndUpdate() {
 				hostIP = "127.0.0.1"
 			}
 		case entity.Pending:
-			//TODO: 此类为已经写入etcd但还未指定Node创建的Pod，如新的replica
+			//此类为已经写入etcd但还未指定Node创建的Pod，如新的replica
 			//根据调度策略选择合适Node分配
 			// 组装消息
 			log.Print("[CheckEtcdAndUpdate]处理Pod:Pending")
@@ -300,6 +306,7 @@ func (master *ApiServer) CheckEtcdAndUpdate() {
 			pod.Status.HostIp = ""
 			pod.Status.PodIp = ""
 			podByte, _ := json.Marshal(pod)
+			etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(podByte))
 			err := client.KubeletDeletePod(conn, &pb.DeletePodRequest{
 				Data: podByte,
 			})
