@@ -51,7 +51,7 @@ func ParseYaml(v interface{}, filename string) (bool, error) {
 	}
 	err = yaml.Unmarshal(buffer, v)
 	if err != nil {
-		return false, errors.New("unmarshal yaml error")
+		return false, err
 	}
 	return true, nil
 }

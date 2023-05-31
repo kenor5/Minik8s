@@ -83,8 +83,9 @@ func KubeletObject() *Kubelet {
 }
 
 func KubeProxyObject() *kp.KubeProxy {
+	var err error
 	if kubeProxy == nil {
-		kubeProxy, err := kp.NewKubeProxy()
+		kubeProxy, err = kp.NewKubeProxy()
 		if err != nil {
 			log.PrintE("error when creating kubeproxy")
 			return nil

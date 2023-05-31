@@ -1,0 +1,10 @@
+kind: 
+  pod
+metadata:
+  name: dns-pod2
+  labels:
+    app: myApp2
+spec:
+  containers:
+    - name: my-http-server
+      image: luoshicai/my-http-server3:latest

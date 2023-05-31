@@ -2,16 +2,13 @@ apiVersion: v1
 kind:
   pod
 metadata:
-  name: pod
-  namespace: default
+  name: pod1
   labels:
     app: myApp
 spec:
-  restartPolicy: Always
   containers:
     - name: viewer
       image: dplsming/nginx-fileserver:1.0
-      imagePullPolicy: IfNotPresent
       ports:
         - containerPort: 80
       command: ['sh']
@@ -25,11 +22,14 @@ spec:
         requests:
             memory: 200Mi
             cpu: 700m
+    - name: my-http-server
+      image: luoshicai/my-http-server:latest
+      ports:
+        - containerPort: 6800
+          hostPort: 6800
+      volumeMounts:
+        - name: volume
+          mountPath: /usr/share/nginx/html/files
   volumes: #定义一组挂载设备
     - name: volume #定义一个挂载设备的名字
-      #emptyDir: {}
       hostPath: /opt #挂载设备类型为hostPath，路径为宿主机下的/opt,这里设备类型支持很多种
-  status:
-    host_ip: 192.168.1.0
-    Phase: "Pending"
-    pod_ip: 192.168.2.0

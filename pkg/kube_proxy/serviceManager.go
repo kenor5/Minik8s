@@ -67,6 +67,13 @@ func (sm *ServiceManager) AddPodChain(svcChainName string, podChainName string) 
 
 }
 
+func (sm *ServiceManager) AddClusterIp(svcName string, clusterIp string) {
+	if !sm.ExistClusterIp(clusterIp)	{
+		sm.ServiceName2ClusterIp[svcName] = clusterIp
+	}
+
+}
+
 func (sm *ServiceManager) ExistServiceChain(svcChainName string) bool {
 	_, exist := sm.ServiceName2ServiceChain[svcChainName]
 	return exist
@@ -74,5 +81,10 @@ func (sm *ServiceManager) ExistServiceChain(svcChainName string) bool {
 
 func (sm *ServiceManager) ExistPodChain(svcChainName string) bool {
 	_, exist := sm.ServiceChainName2PodChain[svcChainName]
+	return exist
+}
+
+func (sm *ServiceManager) ExistClusterIp(svcName string) bool {
+	_, exist := sm.ServiceName2ClusterIp[svcName]
 	return exist
 }
