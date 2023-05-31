@@ -8,6 +8,3 @@ spec:
   containers:
     - name: my-http-server
       image: luoshicai/my-http-server:latest
-      ports:
-        - containerPort: 8080
-          hostPort: 8081
