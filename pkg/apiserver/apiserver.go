@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	clientv3 "go.etcd.io/etcd/client/v3"
+	//clientv3 "go.etcd.io/etcd/client/v3"
 
 	// "minik8s/configs"
 

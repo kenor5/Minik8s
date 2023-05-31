@@ -116,7 +116,7 @@ func deleteService(name string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	res, err := cli.DeleteService(ctx, &pb.DeleteServiceRequest{
+	_, err := cli.DeleteService(ctx, &pb.DeleteServiceRequest{
 		ServiceName: name,
 	})
 
