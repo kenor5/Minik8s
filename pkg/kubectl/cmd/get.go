@@ -260,7 +260,6 @@ func getJob(name string) {
 	if err != nil {
 		log.PrintE(err)
 	}
-<<<<<<< HEAD
 	
 	
 	title := []string{"Id", "Name", "Status"}
@@ -309,7 +308,3 @@ func getJobResult(jobId string) {
 
 	fmt.Print(job.JobStatus.Result)
 }
-=======
-	fmt.Println("Get Job, response ", res)
-}
->>>>>>> master
