@@ -112,6 +112,17 @@ message DeleteServiceRequest2{
     string ServiceName = 1;
 }
 
+message AddPod2ServiceRequest {
+    string ServiceName = 1;
+    string PodIp = 2;
+    int32 TargetPort = 3;
+}
+
+message RemovePodFromServiceRequest {
+    string ServiceName = 1;
+    string PodName = 2;
+}
+
 // Node
 message AddNodeRequest{
     string NodeName = 1;
