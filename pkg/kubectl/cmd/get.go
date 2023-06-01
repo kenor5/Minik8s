@@ -70,7 +70,7 @@ func getPod(name string) {
 		log.PrintE(err)
 	}
 
-	title := []string{"Name", "Status", "IP", "Age"}
+	title := []string{"Name", "Status", "IP", "Age", "Node"}
 
 	data := [][]string{}
 	for _, onePod := range res.PodData {
@@ -84,7 +84,7 @@ func getPod(name string) {
 		// 计算age,精确到秒
 
 		age := time.Now().Sub(pod.Status.StartTime).Round(time.Second)
-		data = append(data, []string{pod.Metadata.Name, pod.Status.Phase, pod.Status.PodIp, age.String()})
+		data = append(data, []string{pod.Metadata.Name, pod.Status.Phase, pod.Status.PodIp, age.String(), pod.Spec.NodeName})
 	}
 
 	prettyprint.PrettyPrint(title, data)

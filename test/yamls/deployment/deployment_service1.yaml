@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: deployment_service1
+spec:
+  selector:
+    app: autoscale
+  ports:
+  - name: http
+    port: 9090
+    targetPort: 9090
+  
+  type: ClusterIP
+  clusterIP: "10.20.0.4"
