@@ -133,7 +133,7 @@ func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNod
 	}
 }
 
-func (s *server)AddNode(ctx context.Context, in *pb.AddNodeRequest) (*pb.StatusResponse, error) {
+func (s *server) AddNode(ctx context.Context, in *pb.AddNodeRequest) (*pb.StatusResponse, error) {
 	cli, err := etcdctl.NewClient()
 	if err != nil {
 		log.PrintE("connect to etcd error")
@@ -154,11 +154,11 @@ func (s *server)AddNode(ctx context.Context, in *pb.AddNodeRequest) (*pb.StatusR
 		}
 
 		node.Status = entity.NodeLive
-        
+
 		nodeByte, _ := json.Marshal(node)
 		etcdctl.Put(cli, "Node/"+node.Name, string(nodeByte))
 
-	}  
+	}
 
 	return &pb.StatusResponse{Status: 0}, nil
 }
@@ -181,10 +181,10 @@ func (s *server) DeleteNode(ctx context.Context, in *pb.DeleteNodeRequest) (*pb.
 		}
 
 		node.Status = entity.NodePending
-        
+
 		nodeByte, _ := json.Marshal(node)
 		etcdctl.Put(cli, "Node/"+node.Name, string(nodeByte))
-	}  
+	}
 
 	return &pb.StatusResponse{Status: 0}, nil
 }
@@ -246,10 +246,10 @@ func (s *server) GetFunction(ctx context.Context, in *pb.GetFunctionRequest) (*p
 	}
 }
 
-func (s *server)UpdateFunction(ctx context.Context, in *pb.UpdateFunctionRequest) (*pb.StatusResponse, error) {
+func (s *server) UpdateFunction(ctx context.Context, in *pb.UpdateFunctionRequest) (*pb.StatusResponse, error) {
 	// 获取FunctionName
 	functionName := string(in.FunctionName)
-    
+
 	return apiserver.ApiServerObject().UpdateFunction(functionName)
 }
 
@@ -265,13 +265,12 @@ func (s *server) ApplyWorkflow(ctx context.Context, in *pb.ApplyWorkflowRequest)
 	return apiserver.ApiServerObject().ApplyWorkflow(workflow)
 }
 
-func (s *server)DeleteFunction(ctx context.Context, in *pb.DeleteFunctionRequest) (*pb.StatusResponse, error) {
+func (s *server) DeleteFunction(ctx context.Context, in *pb.DeleteFunctionRequest) (*pb.StatusResponse, error) {
 	// 获取FunctionName
 	functionName := string(in.FunctionName)
-    
-	return apiserver.ApiServerObject().DeleteFunction(functionName)        
-}
 
+	return apiserver.ApiServerObject().DeleteFunction(functionName)
+}
 
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.RegisterNodeResponse, error) {
@@ -354,8 +353,9 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 		if index != -1 {
 			deploymentName = str[:index]
 		}
+
 		deploymentName = deploymentName + "deployment"
-		log.Print("Update deployment Status.Replicas", deploymentName)
+		log.Printf("Update deployment %s Status.Replicas", deploymentName)
 		out, err := etcdctl.Get(cli, "Deployment/"+deploymentName)
 		if err != nil {
 			log.Print("deployment %s not exist", deploymentName)
@@ -642,13 +642,12 @@ func Run() {
 	// 		log.PrintE("etcd close error")
 	// 	}
 	// }(cli)
-    // 初始化Node
+	// 初始化Node
 	err := apiserver.ApiServerObject().RestartApiserver()
-    if (err != nil) {
+	if err != nil {
 		log.PrintE("fail to RestartApiserver!")
 	}
-    log.PrintS("restart apiserver successfully!")
-
+	log.PrintS("restart apiserver successfully!")
 
 	// 注册请求处理接口
 	listen, err := net.Listen("tcp", configs.GrpcPort)

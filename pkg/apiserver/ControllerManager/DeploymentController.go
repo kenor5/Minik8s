@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"minik8s/configs"
 	"minik8s/entity"
 	"minik8s/tools/etcdctl"
 	HASH "minik8s/tools/hash"
@@ -71,11 +71,7 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 	if err != nil {
 		fmt.Println("convert DeploymentYaml error!")
 	}
-	err = etcdctl.Put(cli, "Deployment/"+deployment.Metadata.Name, string(DeploymentData))
-	if err != nil {
-		fmt.Println("write DeploymentYaml to etcd error!")
-		return nil, err
-	}
+
 	//pod信息写入etcd
 	podsList := []*entity.Pod{}
 	for _, pod := range Pods {
@@ -86,6 +82,11 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 			fmt.Println("write PodData to etcd error!")
 			return nil, err
 		}
+	}
+	err = etcdctl.Put(cli, "Deployment/"+deployment.Metadata.Name, string(DeploymentData))
+	if err != nil {
+		fmt.Println("write DeploymentYaml to etcd error!")
+		return nil, err
 	}
 	//写入成功
 	fmt.Println("*************write deployment success!************")
@@ -171,17 +172,137 @@ func GetPodsBydeployment(deployment string) []entity.Pod {
 }
 
 func BeginMonitorDeployment() {
-	ticker := time.NewTicker(configs.MonitorDeploymentTime * time.Second) //每10s使用
-	for range ticker.C {
-		err := MonitorDeployment()
+	//ticker := time.NewTicker(configs.MonitorDeploymentTime * time.Second) //每10s使用
+	//for range ticker.C {
+	//	err := MonitorDeployment()
+	//	if err != nil {
+	//		log.PrintE(err)
+	//		continue
+	//	}
+	//}
+	for true {
+		err := WatchMonitorDeployment()
 		if err != nil {
 			log.PrintE(err)
 			continue
 		}
 	}
 }
+func WatchMonitorDeployment() error {
+	log.Printf("[ApiServer]Begin Monitor Deployment")
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("etcd client connect error")
+	}
+	defer func(cli *clientv3.Client) {
+		err := cli.Close()
+		if err != nil {
+			log.PrintE("close etcdClient error!")
+		}
+	}(cli)
+	watchCh := cli.Watch(context.Background(), "Deployment/", clientv3.WithPrefix())
+	// 接收 key 的变化事件
+	for resp := range watchCh {
+		for _, event := range resp.Events {
+			if event.Type == mvccpb.PUT { // 如果 key 值被更新了
+				fmt.Printf("key=%s updatedvalue=%s\n", event.Kv.Key, event.Kv.Value)
+				deployment := &entity.Deployment{}
+				json.Unmarshal(event.Kv.Value, deployment)
+				go func() {
+					err := CheckDeploymentPod(*deployment)
+					if err != nil {
+						log.PrintfE("Check deployment %s error", deployment.Metadata.Name)
+					}
+				}()
+			} else if event.Type == mvccpb.DELETE { // 如果 key 值被删除了
+				fmt.Printf("key=%s deleted=true\n", event.Kv.Key)
+			}
+		}
+	}
 
-// MonitorDeployment 另开线程中运行，持续检查deployment运行状态，并进行扩缩
+	return err
+}
+
+func CheckDeploymentPod(deployment entity.Deployment) error {
+	PodsData, err := etcdctl.EtcdGetWithPrefix("Pod/" + deployment.Metadata.Name)
+	if err != nil {
+		fmt.Println("get from etcd failed, err:", err)
+		return err
+	}
+	moreNum, fewerNum := 0, 0
+	nowReplica := 0
+	for _, value := range PodsData.Kvs {
+		pod := entity.Pod{}
+		err = json.Unmarshal(value.Value, &pod)
+		if pod.Status.Phase == entity.Running || pod.Status.Phase == entity.Pending {
+			nowReplica++
+		}
+	}
+	log.Printf("[MonitorDeployment]now replica:%d need replica:%d", nowReplica, deployment.Spec.Replicas)
+	deployment.Status.Replicas = int32(nowReplica)
+	//大于replica,删除多余的pod
+	if deployment.Status.Replicas > deployment.Spec.Replicas {
+		//fewerNum = len(PodsData.Kvs) - int(deployment.Spec.Replicas)
+		fewerNum = int(deployment.Status.Replicas - deployment.Spec.Replicas)
+		log.Printf("[MonitorDeployment]fewerNum=%d", fewerNum)
+	}
+	//小于replica,补充不足的的pod
+	if deployment.Status.Replicas < deployment.Spec.Replicas {
+		//moreNum = int(deployment.Spec.Replicas) - len(PodsData.Kvs)
+		moreNum = int(deployment.Spec.Replicas - deployment.Status.Replicas)
+		log.Printf("[MonitorDeployment]moreNum=%d", moreNum)
+	}
+	for _, value := range PodsData.Kvs {
+		pod := entity.Pod{}
+		err = json.Unmarshal(value.Value, &pod)
+		if pod.Status.Phase == entity.Succeed {
+			continue
+		}
+		if fewerNum > 0 {
+			//TODO：删除failed pod，改为succeed，借助Pod更新机制
+			log.Printf("[MonitorDeployment]%s need sub %d replica", deployment.Metadata.Name, fewerNum)
+			pod.Status.Phase = entity.Succeed
+			PodsData, _ := json.Marshal(pod)
+			err := etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(PodsData))
+			if err != nil {
+				fmt.Println("[MonitorDeployment]delete failed pod fail!")
+				return err
+			}
+			fewerNum--
+		} else {
+			//如果Pod状态为Failed且fewerNum=0则记录
+			break
+		}
+	}
+	//deployment.replica有更新，需要增加moreNum个 pod
+	//TODO 新增etcd的pod信息后，如何通知Node的kubelet更新？借助Pod更新机制
+	if moreNum > 0 {
+		log.Printf("[MonitorDeployment]%s need add %d replica", deployment.Metadata.Name, moreNum)
+		for i := 0; i <= moreNum; i++ {
+			//创建replicas份Pod
+			pod := &entity.Pod{}
+			pod.Metadata = deployment.Spec.Template.Metadata
+			pod.Metadata.Uid = UUID.UUID()
+			//根据template获得template hash
+			//templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name + strconv.Itoa(int(deployment.Spec.Replicas))))))
+			templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name))))
+
+			//组合产生Deployment pod的名字
+			pod.Metadata.Name = deployment.Metadata.Name + "-" + templateHash + "-" + pod.Metadata.Uid[:5]
+			pod.Spec = deployment.Spec.Template.Spec
+			pod.Status.Phase = entity.Pending
+			PodData, err := json.Marshal(pod)
+			err = etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(PodData))
+			if err != nil {
+				fmt.Println("[MonitorDepployment]write more PodData to etcd error!")
+				return err
+			}
+		}
+	}
+	return err
+}
+
+// MonitorDeployment 另开线程中运行，持续轮询检查deployment运行状态，并进行扩缩
 func MonitorDeployment() error {
 	log.Printf("[ApiServer]Begin Monitor Deployment")
 	//获取当前所有的deployment
