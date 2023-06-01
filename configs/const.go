@@ -15,4 +15,6 @@ const (
 
 	MonitorDeploymentTime = 10
 	MonitorPodTime        = 5
+
+	NodeConfig = "/root/go/src/minik8s/configs/node/node1.yaml"
 )

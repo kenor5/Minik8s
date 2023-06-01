@@ -705,7 +705,7 @@ func Run() {
 	if err != nil {
 		log.PrintE("fail to RestartApiserver!")
 	}
-	log.PrintS("restart apiserver successfully!")
+	log.PrintS("start apiserver successfully!")
 
 	// 注册请求处理接口
 	listen, err := net.Listen("tcp", configs.GrpcPort)

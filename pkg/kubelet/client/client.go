@@ -16,7 +16,7 @@ import (
 func RegisterNode(c pb.ApiServerKubeletServiceClient, hostName string, hostIp string) ([][]byte, error) {
 	// 获取主机信息
 	newNode := &entity.Node{}
-	yamlParser.ParseYaml(newNode, "/home/zhaoxi/go/src/minik8s/configs/node/node1.yaml")
+	yamlParser.ParseYaml(newNode, configs.NodeConfig)
 	newNode.Ip = hostIp
 	newNode.KubeletUrl = hostIp + configs.KubeletGrpcPort
 	nodeByte, err := json.Marshal(newNode)
