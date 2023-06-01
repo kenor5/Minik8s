@@ -4,14 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"go.etcd.io/etcd/api/v3/mvccpb"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"minik8s/pkg/apiserver/ControllerManager"
 	"minik8s/pkg/apiserver/ControllerManager/JobController"
 	"minik8s/pkg/apiserver/ControllerManager/ScaleController"
+	servicecontroller "minik8s/pkg/apiserver/ControllerManager/ServiceController"
 	"minik8s/pkg/apiserver/scale"
 	"minik8s/tools/etcdctl"
 	"strconv"
+	"time"
+
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	clientv3 "go.etcd.io/etcd/client/v3"
+
 	//clientv3 "go.etcd.io/etcd/client/v3"
 
 	// "minik8s/configs"
@@ -20,7 +24,7 @@ import (
 	// "google.golang.org/grpc/credentials/insecure"
 	"minik8s/entity"
 	Controller "minik8s/pkg/apiserver/ControllerManager"
-	"minik8s/pkg/apiserver/ControllerManager/FunctionController"
+	functioncontroller "minik8s/pkg/apiserver/ControllerManager/FunctionController"
 	"minik8s/pkg/apiserver/ControllerManager/NodeController"
 	"minik8s/pkg/apiserver/client"
 	"minik8s/pkg/kubelet/container/containerfunc"
@@ -353,7 +357,7 @@ func (master *ApiServer) delDiferPod(pod entity.Pod) error {
 		log.Print("[CheckEtcdAndUpdate]处理Pod:Succeed")
 		conn := master.NodeManager.GetNodeConnByIP(pod.Status.HostIp)
 		pod.Status.HostIp = ""
-		pod.Status.PodIp = ""
+		//pod.Status.PodIp = ""
 		podByte, _ := json.Marshal(pod)
 		err := etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(podByte))
 		if err != nil {
@@ -465,7 +469,7 @@ func (master *ApiServer) CheckEtcdAndUpdate() {
 			log.Print("[CheckEtcdAndUpdate]处理Pod:Succeed")
 			conn := master.NodeManager.GetNodeConnByIP(pod.Status.HostIp)
 			pod.Status.HostIp = ""
-			pod.Status.PodIp = ""
+			//pod.Status.PodIp = ""
 			podByte, _ := json.Marshal(pod)
 			etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(podByte))
 			err := client.KubeletDeletePod(conn, &pb.DeletePodRequest{
@@ -806,4 +810,114 @@ func (master *ApiServer) RestartApiserver() error {
 
 func (master *ApiServer) MonitorNode() {
 	master.NodeManager.MonitorNode()
+}
+
+func (master *ApiServer) UpdateSvc(serviceName string, podName string, podIp string, targetPort int32) error {
+	// get all living node
+	nodeList := master.NodeManager.GetAllLivingNodes()
+
+	// update svc in all living node
+	for _, node := range nodeList {
+		conn := master.NodeManager.GetNodeConnByName(node.Name)
+		err := client.KubeletUpdateSvc(conn, &pb.AddPod2ServiceRequest{
+			PodName:     podName,
+			PodIp:       podIp,
+			ServiceName: serviceName,
+			TargetPort:  targetPort,
+		})
+		if err != nil {
+			log.PrintE("update svc error")
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (master *ApiServer) UpdateSvc2(serviceName string, podName string) error {
+
+	// get all living node
+	nodeList := master.NodeManager.GetAllLivingNodes()
+
+	// update svc in all living node
+	for _, node := range nodeList {
+		conn := master.NodeManager.GetNodeConnByName(node.Name)
+		err := client.KubeletUpdateSvc2(conn, &pb.RemovePodFromServiceRequest{
+			ServiceName: serviceName,
+			PodName:     podName,
+		})
+		if err != nil {
+			log.PrintE("update svc error")
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (master *ApiServer) MonitorService() {
+	for {
+		log.PrintS("monitor Service")
+		AllService, err := servicecontroller.GetAllService()
+		//log.PrintS("All service: ", AllService)
+		if err != nil {
+			log.PrintE("Get All Service Err")
+			panic("Get All Service Err")
+		}
+
+		for _, service := range AllService {
+			selectedPods := ControllerManager.GetPodsByLabels(&service.Spec.Selector)
+			// 更新service
+			var updateServicePods []string
+			for element := selectedPods.Front(); element != nil; element = element.Next() {
+				value := element.Value
+
+				// 进行类型断言以获取具体的值
+				if pod, ok := value.(*entity.Pod); ok {
+					//log.PrintS("pod: ", pod)
+					updateServicePods = append(updateServicePods, pod.Metadata.Name)
+				}
+			}
+
+			// 删除挂掉的Pod
+			for _, servicePodName := range service.Status.ServicePods {
+				find := false
+				for element := selectedPods.Front(); element != nil; element = element.Next() {
+					value := element.Value
+
+					// 进行类型断言以获取具体的值
+					if pod, ok := value.(*entity.Pod); ok {
+						// 在这里使用 pod 变量进行操作
+						if servicePodName == pod.Metadata.Name {
+							// 执行逻辑
+							find = true
+							selectedPods.Remove(element)
+							break
+						}
+					}
+				}
+				// 从service中删除死掉的Pod
+				if find == false {
+					// TODO: 删除DeadPod
+					master.UpdateSvc2(service.Metadata.Name, servicePodName)
+				}
+			}
+
+			// 新加入Pod
+			for element := selectedPods.Front(); element != nil; element = element.Next() {
+				value := element.Value
+
+				// 进行类型断言以获取具体的值
+				if pod, ok := value.(*entity.Pod); ok {
+					//log.PrintS("updateSvc: ", pod)
+					master.UpdateSvc(service.Metadata.Name, pod.Metadata.Name, pod.Status.PodIp, service.Spec.Ports[0].TargetPort)
+				}
+			}
+
+			// 更新该service
+			service.Status.ServicePods = updateServicePods
+			servicecontroller.SetService(service)
+		}
+		time.Sleep(30 * time.Second)
+	}
 }

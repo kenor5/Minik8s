@@ -102,7 +102,7 @@ func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest2
 }
 
 func (s *server) AddPod2Service (ctx context.Context, in *pb.AddPod2ServiceRequest) (*pb.StatusResponse, error) {
-	err := kubelet.KubeProxyObject().AddPod2Service(in.ServiceName, in.PodIp, in.PodName, uint32(in.TargetPort))
+	err := kubelet.KubeProxyObject().AddPod2Service(in.ServiceName,  in.PodName, in.PodIp,uint32(in.TargetPort))
 	if err != nil {
 		log.PrintE(err)
 		log.PrintE("kubelet add pod 2 service failed")

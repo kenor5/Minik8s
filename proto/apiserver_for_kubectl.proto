@@ -44,4 +44,7 @@ service ApiServerKubectlService {
 
     rpc AddNode(share.AddNodeRequest) returns (share.StatusResponse);
     rpc DeleteNode(share.DeleteNodeRequest) returns (share.StatusResponse);
+
+    rpc UpdateSvc(share.UpdateSvcRequest) returns (share.StatusResponse);
+    rpc UpdateSvc2(share.UpdateSvcRequest) returns (share.StatusResponse);
 }

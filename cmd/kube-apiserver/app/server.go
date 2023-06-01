@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"minik8s/configs"
+	servicecontroller "minik8s/pkg/apiserver/ControllerManager/ServiceController"
 	"minik8s/pkg/apiserver/scale"
 	"minik8s/tools/log"
 	"strings"
@@ -464,13 +465,13 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 		return &pb.StatusResponse{Status: -1}, err
 	}
 
-	// 放进etcd
-	cli, err := etcdctl.NewClient()
-	if err != nil {
-		log.PrintE("etcd client connetc error")
-	}
-	defer cli.Close()
-	etcdctl.Put(cli, "Service/"+service.Metadata.Name, string(in.Data))
+	// // 放进etcd
+	// cli, err := etcdctl.NewClient()
+	// if err != nil {
+	// 	log.PrintE("etcd client connetc error")
+	// }
+	// defer cli.Close()
+	// etcdctl.Put(cli, "Service/"+service.Metadata.Name, string(in.Data))
 
 	// 获取符合条件的Pod
 	selectedPods := ControllerManager.GetPodsByLabels(&service.Spec.Selector)
@@ -479,10 +480,12 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 	// 组装信息
 	podNames := make([]string, 0, selectedPods.Len())
 	podIps := make([]string, 0, selectedPods.Len())
+	var servicePodNames []string
 	for it := selectedPods.Front(); it != nil; it = it.Next() {
 		pod := it.Value.(*entity.Pod)
 		podNames = append(podNames, pod.Metadata.Name)
 		podIps = append(podIps, pod.Status.PodIp)
+        servicePodNames = append(servicePodNames, pod.Metadata.Name)
 	}
 
 	if in.Data == nil || podNames == nil || podIps == nil {
@@ -491,6 +494,11 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 		log.Print(podNames)
 		log.Print(podIps)
 	}
+
+	// 更新etcd
+	service.Status.ServicePods = servicePodNames
+	servicecontroller.SetService(service)
+	
 	return apiserver.ApiServerObject().CreateService(&pb.ApplyServiceRequest2{
 		Data:     in.Data,
 		PodNames: podNames,
@@ -628,6 +636,56 @@ func (s *server) ApplyDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.Stat
 
 }
 
+func (s *server) UpdateSvc(ctx context.Context, in *pb.UpdateSvcRequest) (*pb.StatusResponse, error) {
+	// get pod by podName
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("etcd client connetc error")
+	}
+	defer cli.Close()
+	out, _ := etcdctl.Get(cli, "Pod/"+string(in.PodName))
+	if len(out.Kvs) == 0 {
+		log.PrintE("no pod found")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+	pod := &entity.Pod{}
+	err = json.Unmarshal(out.Kvs[0].Value, pod)
+	if err != nil {
+		log.PrintE("pod unmarshal error")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	// get service by serviceName
+	out, _ = etcdctl.Get(cli, "Service/"+string(in.SvcName))
+	if len(out.Kvs) == 0 {
+		log.PrintE("no service found")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+	service := &entity.Service{}
+	err = json.Unmarshal(out.Kvs[0].Value, service)
+	if err != nil {
+		log.PrintE("service unmarshal error")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	err = apiserver.ApiServerObject().UpdateSvc(in.SvcName, in.PodName, pod.Status.PodIp, service.Spec.Ports[0].TargetPort)
+	if err != nil {
+		log.PrintE("update service error")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (s *server) UpdateSvc2(ctx context.Context, in *pb.UpdateSvcRequest) (*pb.StatusResponse, error) {
+	err := apiserver.ApiServerObject().UpdateSvc2(in.SvcName, in.PodName)
+	if err != nil {
+		log.PrintE("update service error")
+		return &pb.StatusResponse{Status: -1}, err
+	}
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
 func Run() {
 	/**
 	**   开启etcd
@@ -670,6 +728,9 @@ func Run() {
 
 	// 启动Node监控
 	go apiserver.ApiServerObject().MonitorNode()
+
+	// 启动service监控
+	go apiserver.ApiServerObject().MonitorService()
 
 	/**
 	*  Serverless: 创建Http Trigger

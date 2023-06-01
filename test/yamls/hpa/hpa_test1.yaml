@@ -1,0 +1,40 @@
+kind: HorizontalPodAutoscaler
+metadata:
+  name: auto-scale
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: autoscale-deployment
+  scaleInterval: 15 #监控更新的时间间隔
+  minReplicas: 1
+  maxReplicas: 4 #控制的 Pod 存在 1 到 10 个副本
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization  #使用指标为百分比
+          averageUtilization: 3 #保持所有 Pod 的平均 CPU 利用率为 50%
+#    - type: Resource
+#      resource:
+#        name: memory
+#        target:
+#          type: Utilization  #使用指标为百分比
+#          averageUtilization: 2M #保持所有 Pod 的平均Memory使用量
+#    - type: Resource
+#      resource:
+#        name: cpu
+#        target:
+#          type: AverageValue #使用指标为绝对值，目前暂不支持！！！！
+#          averageValue: 60
+status:
+  observedGeneration: 1
+  lastScaleTime:
+  currentReplicas: 0
+  desiredReplicas: 0
+  currentMetrics:
+    - type: Resource
+      resource:
+        name: cpu
+        current:
+          averageUtilization: 0

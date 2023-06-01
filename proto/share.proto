@@ -195,3 +195,9 @@ message UpdateFunctionRequest{
 message ApplyWorkflowRequest {
     bytes Data = 1;
 }
+
+// service
+message UpdateSvcRequest {
+    string SvcName = 1;
+    string PodName = 2;
+}

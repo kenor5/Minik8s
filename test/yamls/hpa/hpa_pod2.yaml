@@ -1,11 +1,11 @@
 kind: 
   pod
 metadata:
-  name: service-pod2
+  name: hpa-pod2
   labels:
     app: myApp
 spec:
   containers:
     - name: my-http-server
-      image: luoshicai/my-http-server3:latest
+      image: luoshicai/my-http-server4:latest
 
