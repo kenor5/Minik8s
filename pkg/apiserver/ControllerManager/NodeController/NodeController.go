@@ -61,11 +61,35 @@ func (nodeController *NodeController) RegiseterNode(node *entity.Node) error {
 }
 
 // RoundRobin调度策略
-func (nodeController *NodeController) RoundRobin() (pb.KubeletApiServerServiceClient, string) {
+func (nodeController *NodeController) RoundRobin(nodeSelector map[string]string) (pb.KubeletApiServerServiceClient, string) {
 	LivingNodes := nodeController.GetAllLivingNodes()
-	LivingNodesNum := len(LivingNodes)
 
-	selectedNode := LivingNodes[nodeController.FetchAndAdd()%LivingNodesNum]
+	// 选取Label
+	var selectedNodes []*entity.Node
+	for _, node := range LivingNodes {
+		nodeLabels := node.Labels
+		match := true
+
+		// 检查Node的Label字段是否包含Pod的NodeSelector字段
+		for key, value := range nodeSelector {
+			if nodeLabels[key] != value {
+				match = false
+				break
+			}
+		}
+
+		if match {
+			selectedNodes = append(selectedNodes, node)
+		}
+	}    
+
+	selectedNodesNum := len(selectedNodes)
+    if selectedNodesNum == 0 {
+        log.PrintE("No such Node!")
+		panic("No such Node!")
+	}
+
+	selectedNode := selectedNodes[nodeController.FetchAndAdd()%selectedNodesNum]
 	return nodeController.NodeNameToConn[selectedNode.Name], selectedNode.Ip
 }
 
@@ -105,6 +129,19 @@ func (nodeController *NodeController) GetAllLivingNodes() []*entity.Node {
 	return LivingNodes
 }
 
+// 将Node存入etcd中
+func (nodeController *NodeController) SetNode(Node *entity.Node) (error) {
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("etcd client connetc error")
+		return err
+	}
+	defer cli.Close()
+	nodeByte, err := json.Marshal(Node)
+	etcdctl.Put(cli, "Node/"+Node.Name, string(nodeByte))
+	return nil
+}
+
 // 根据Node的名称获取conn
 func (nodeController *NodeController) GetNodeConnByName(NodeName string) pb.KubeletApiServerServiceClient {
 	return nodeController.NodeNameToConn[NodeName]
@@ -113,6 +150,29 @@ func (nodeController *NodeController) GetNodeConnByName(NodeName string) pb.Kube
 // 根据Node的名称获取conn
 func (nodeController *NodeController) GetNodeConnByIP(NodeIP string) pb.KubeletApiServerServiceClient {
 	return nodeController.NodeIPToConn[NodeIP]
+}
+
+// 重新获取Node Conn
+func (nodeController *NodeController) RestartNodeConn() (error) {
+    LivingNodes := nodeController.GetAllLivingNodes()
+
+	for _, LivingNode := range LivingNodes {
+		// 获取grpc kubelet的连接
+	    conn, err := ConnectToKubelet(LivingNode.KubeletUrl)
+		if err != nil {
+			log.PrintW("fail to connect kubelet: " + LivingNode.KubeletUrl)
+		    // 更新etcd中Node的状态
+			LivingNode.Status= entity.NodeDead
+			// 存入etcd中
+            nodeController.SetNode(LivingNode)
+			continue
+		}
+		// 加入内存中的map
+		nodeController.NodeNameToConn[LivingNode.Name] = conn
+		nodeController.NodeIPToConn[LivingNode.Ip] = conn
+	}
+
+	return nil
 }
 
 // 工具函数

@@ -193,6 +193,7 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 				deployment.Spec.Replicas = autoscaler.Spec.MaxReplicas
 			}
 			autoscaler.Status.CurrentReplicas = deployment.Spec.Replicas
+			autoscaler.Status.DesiredReplicas = deployment.Spec.Replicas - deployment.Status.Replicas
 			autoscaler.Status.LastScaleTime = time.Now()
 			log.Printf("AUTOSCALER [%s]: cpu usage per pod reaches %f, deployment %s scales out to %d replicas\n",
 				autoscaler.Metadata.Name,
@@ -228,7 +229,7 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 			} else if newReplica >= autoscaler.Spec.MaxReplicas && memoryUsageAvgPod > TargetMemoryAvg {
 				//已经低于大运行的MaxReplicas，直接返回
 				deployment.Spec.Replicas = autoscaler.Spec.MaxReplicas
-				fmt.Printf("AUTOSCALER [%s]:Have reached MaxReplicas %d",
+				fmt.Printf("AUTOSCALER [%s]:Have reached MaxReplicas %d\n",
 					autoscaler.Metadata.Name,
 					autoscaler.Spec.MinReplicas,
 				)
@@ -249,11 +250,16 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 			} else if newReplica <= autoscaler.Spec.MinReplicas && memoryUsageAvgPod < TargetMemoryAvg {
 				//已经低于最小运行的MInReplicas，直接返回
 				deployment.Spec.Replicas = autoscaler.Spec.MinReplicas
-				fmt.Printf("AUTOSCALER [%s]:Have reached MinReplicas %d",
+				fmt.Printf("AUTOSCALER [%s]:Have reached MinReplicas %d\n",
 					autoscaler.Metadata.Name,
 					autoscaler.Spec.MinReplicas,
 				)
 				return
+			}
+			if deployment.Spec.Replicas < autoscaler.Spec.MinReplicas {
+				deployment.Spec.Replicas = autoscaler.Spec.MinReplicas
+			} else if deployment.Spec.Replicas > autoscaler.Spec.MaxReplicas {
+				deployment.Spec.Replicas = autoscaler.Spec.MaxReplicas
 			}
 			autoscaler.Status.CurrentReplicas = deployment.Spec.Replicas
 			autoscaler.Status.DesiredReplicas = deployment.Spec.Replicas - deployment.Status.Replicas

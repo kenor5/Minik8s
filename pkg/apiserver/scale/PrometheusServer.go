@@ -13,15 +13,24 @@ import (
 
 const (
 	prometheusConatinerName = "minik8s_prometheus"
-	prometheusName          = "prom/prometheus"
+	prometheusName          = "prom/prometheus:latest"
 	prometheusPort          = 9090
 	prometheusConfig        = "prometheus.yml"
-	ConfigPath              = "/home/zhaoxi/go/src/minik8s/configs/"
+	ConfigPath              = "/root/go/src/minik8s/configs/"
 	PrometheusConfigPath    = "/etc/prometheus/"
 )
 
 // 部署启动一个prometheus服务
 func StartPrometheusServer() error {
+	// 确定容器是否已经存在，如果存在则不再启动
+	exist, err := containerfunc.CheckContainerRunning(prometheusConatinerName)
+	if err != nil {
+		return err
+	}
+	if exist {
+		return nil
+	}
+
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(
 		client.FromEnv,

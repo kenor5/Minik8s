@@ -133,6 +133,62 @@ func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNod
 	}
 }
 
+func (s *server) AddNode(ctx context.Context, in *pb.AddNodeRequest) (*pb.StatusResponse, error) {
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("connect to etcd error")
+	}
+
+	defer cli.Close()
+	out, _ := etcdctl.Get(cli, "Node/"+string(in.NodeName))
+	if in.NodeName == "" {
+		out, _ = etcdctl.GetWithPrefix(cli, "Node/")
+	}
+
+	for _, v := range out.Kvs {
+		node := &entity.Node{}
+		err := json.Unmarshal(v.Value, node)
+		if err != nil {
+			log.PrintE("podNew unmarshel err")
+			return &pb.StatusResponse{Status: -1}, err
+		}
+
+		node.Status = entity.NodeLive
+
+		nodeByte, _ := json.Marshal(node)
+		etcdctl.Put(cli, "Node/"+node.Name, string(nodeByte))
+
+	}
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (s *server) DeleteNode(ctx context.Context, in *pb.DeleteNodeRequest) (*pb.StatusResponse, error) {
+
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("connect to etcd error")
+	}
+	defer cli.Close()
+	out, err := etcdctl.Get(cli, "Node/"+string(in.NodeName))
+
+	for _, v := range out.Kvs {
+		node := &entity.Node{}
+		err := json.Unmarshal(v.Value, node)
+		if err != nil {
+			log.PrintE("podNew unmarshel err")
+			return &pb.StatusResponse{Status: -1}, err
+		}
+
+		node.Status = entity.NodePending
+
+		nodeByte, _ := json.Marshal(node)
+		etcdctl.Put(cli, "Node/"+node.Name, string(nodeByte))
+	}
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
 func (s *server) ApplyJob(ctx context.Context, in *pb.ApplyJobRequest) (*pb.StatusResponse, error) {
 	// 解析Job
 	job := &entity.Job{}
@@ -190,10 +246,10 @@ func (s *server) GetFunction(ctx context.Context, in *pb.GetFunctionRequest) (*p
 	}
 }
 
-func (s *server)UpdateFunction(ctx context.Context, in *pb.UpdateFunctionRequest) (*pb.StatusResponse, error) {
+func (s *server) UpdateFunction(ctx context.Context, in *pb.UpdateFunctionRequest) (*pb.StatusResponse, error) {
 	// 获取FunctionName
 	functionName := string(in.FunctionName)
-    
+
 	return apiserver.ApiServerObject().UpdateFunction(functionName)
 }
 
@@ -209,25 +265,29 @@ func (s *server) ApplyWorkflow(ctx context.Context, in *pb.ApplyWorkflowRequest)
 	return apiserver.ApiServerObject().ApplyWorkflow(workflow)
 }
 
-func (s *server)DeleteFunction(ctx context.Context, in *pb.DeleteFunctionRequest) (*pb.StatusResponse, error) {
+func (s *server) DeleteFunction(ctx context.Context, in *pb.DeleteFunctionRequest) (*pb.StatusResponse, error) {
 	// 获取FunctionName
 	functionName := string(in.FunctionName)
-    
-	return apiserver.ApiServerObject().DeleteFunction(functionName)        
-}
 
+	return apiserver.ApiServerObject().DeleteFunction(functionName)
+}
 
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.RegisterNodeResponse, error) {
 	newNode := &entity.Node{}
-	newNode.Ip = in.NodeIp
-	newNode.Name = in.NodeName
-	newNode.KubeletUrl = in.KubeletUrl
-	newNode.Status = entity.NodeLive
+	err := json.Unmarshal(in.NodeData, newNode)
+	if err != nil {
+		log.PrintE("workflow unmarshel err")
+	}
+	// newNode.Ip = in.NodeIp
+	// newNode.Name = in.NodeName
+	// newNode.KubeletUrl = in.KubeletUrl
+	newNode.Status = entity.NodePending
 	apiserver.ApiServerObject().NodeManager.RegiseterNode(newNode)
 	podsByte := getPodbyHostIP(newNode.Ip)
 	return &pb.RegisterNodeResponse{PodData: podsByte}, nil
 }
+
 func getPodbyHostIP(hostIP string) [][]byte {
 	//var pods []entity.Pod
 	bytes := [][]byte{}
@@ -293,8 +353,9 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 		if index != -1 {
 			deploymentName = str[:index]
 		}
+
 		deploymentName = deploymentName + "deployment"
-		log.Print("Update deployment Status.Replicas", deploymentName)
+		log.Printf("Update deployment %s Status.Replicas", deploymentName)
 		out, err := etcdctl.Get(cli, "Deployment/"+deploymentName)
 		if err != nil {
 			log.Print("deployment %s not exist", deploymentName)
@@ -461,13 +522,11 @@ func (s *server) GetDeployment(ctx context.Context, in *pb.GetDeploymentRequest)
 }
 
 func (s *server) DeleteDeployment(ctx context.Context, in *pb.DeleteDeploymentRequest) (*pb.StatusResponse, error) {
-	//TODO
 	apiserver.ApiServerObject().DeleteDeployment(in)
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
 func (s *server) ApplyDeployment(ctx context.Context, in *pb.ApplyDeploymentRequest) (*pb.StatusResponse, error) {
-	//TODO 调用DeploymentController 创建deployment
 	apiserver.ApiServerObject().AddDeployment(in)
 	return &pb.StatusResponse{Status: 0}, nil
 }
@@ -583,6 +642,12 @@ func Run() {
 	// 		log.PrintE("etcd close error")
 	// 	}
 	// }(cli)
+	// 初始化Node
+	err := apiserver.ApiServerObject().RestartApiserver()
+	if err != nil {
+		log.PrintE("fail to RestartApiserver!")
+	}
+	log.PrintS("restart apiserver successfully!")
 
 	// 注册请求处理接口
 	listen, err := net.Listen("tcp", configs.GrpcPort)
@@ -602,6 +667,9 @@ func Run() {
 	//启动deployment监控
 	go ControllerManager.BeginMonitorDeployment()
 	log.PrintS("Apiserver For DeploymentMonitor Server starts running...")
+
+	// 启动Node监控
+	go apiserver.ApiServerObject().MonitorNode()
 
 	/**
 	*  Serverless: 创建Http Trigger

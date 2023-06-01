@@ -71,7 +71,7 @@ func (kp *KubeProxy) NewService(service *entity.Service, podNames []string, podI
 				return err
 			}
 
-			kp.ServiceManager.AddPodChain(svcChainName, podChainName)
+			kp.ServiceManager.AddPodChain(svcChainName, podChainName, podNames[i])
 
 		}
 
@@ -113,6 +113,99 @@ func (kp *KubeProxy) RemoveService(serviceName string) error {
 	}
 
 	kp.ServiceManager.RemoveServiceChain(serviceName)
+
+	return nil
+}
+
+// targetPort 就是service yaml 文件中的targetPort
+func (kp *KubeProxy) AddPod2Service(svcName string, podName string, podIp string, targetPort uint32) error  {
+	log.Print("begin add pod 2 service")
+
+	// [iptable] 在KUBE-SVC-XXX链中添加规则
+	if !kp.ServiceManager.ExistServiceChain(svcName) {
+		log.PrintE("no such service chain")
+	}
+
+	svcChains := kp.ServiceManager.GetServiceChains(svcName)
+	// 把原来的记录都删掉
+	for _, svcChain := range svcChains {
+		podChainNames := kp.ServiceManager.GetPodChains(svcChain.ChainName)
+		for _,podChainName := range podChainNames {
+			err := kp.IptableClient.RemovePodRules(svcChain.ChainName, podChainName.ChainName, len(podChainNames))
+			if err != nil {
+				log.PrintE(err)
+				return err
+			}
+		}
+		log.Print("original pod len: ", len(podChainNames))
+	}
+	// 创建KUBE-SEP-XXX链
+	podChainName := kp.IptableClient.CreatePodChain()
+
+	// [内存] 在servicechainname2podchain 中添加一条记录
+	for _, svcChain := range svcChains {
+		
+		// 在iptable中写回原来的记录和新的记录
+		kp.ServiceManager.AddPodChain(svcChain.ChainName, podChainName, podName)
+
+		err := kp.IptableClient.AddPodRules(podChainName, podIp, targetPort)
+		if err != nil {
+			log.PrintE(err)
+			return err
+		}
+
+		podChains := kp.ServiceManager.GetPodChains(svcChain.ChainName)
+		podLen := len(podChains)
+		for _, podChain := range podChains {
+			kp.IptableClient.ApplyPodRules(svcChain.ChainName, podChain.ChainName, podLen)
+		}
+		log.Print("cur pod len: ", podLen)
+	}
+
+
+	return nil
+}
+
+func (kp *KubeProxy) RemovePodFromService(svcName string, podName string) error {
+	// 从 KUBE-SVC-XXX 链中删除引用
+
+	// 删除 KUBE-SEP-xxx 链
+
+	// [memory] 从servicechainname2podchain中删除一条记录
+
+	// log.Print("begin remove pod from service")
+
+	// // [iptable] 在KUBE-SVC-XXX链中添加规则
+	// if !kp.ServiceManager.ExistServiceChain(svcName) {
+	// 	log.PrintE("no such service chain")
+	// }
+
+	// svcChains := kp.ServiceManager.GetServiceChains(svcName)
+	// // 把原来的记录都删掉
+	// for _, svcChain := range svcChains {
+	// 	podChainNames := kp.ServiceManager.GetPodChains(svcChain.ChainName)
+	// 	for _,podChainName := range podChainNames {
+	// 		err := kp.IptableClient.RemovePodRules(svcChain.ChainName, podChainName.ChainName, len(podChainNames))
+	// 		if err != nil {
+	// 			log.PrintE(err)
+	// 		}
+	// 	}
+	// 	log.Print("original pod len: %d", len(podChainNames))
+	// }
+
+	// // [内存] 在servicechainname2podchain 中添加一条记录
+	// for _, svcChain := range svcChains {
+		
+	// 	// 在iptable中写回原来的记录和新的记录
+	// 	kp.ServiceManager.RemovePodChain(svcChain.ChainName, podChainName)
+
+	// 	podChains := kp.ServiceManager.GetPodChains(svcChain.ChainName)
+	// 	podLen := len(podChains)
+	// 	for _, podChain := range podChains {
+	// 		kp.IptableClient.ApplyPodRules(svcChain.ChainName, podChain.ChainName, podLen)
+	// 	}
+	// 	log.Print("cur pod len: %d", podLen)
+	// }
 
 	return nil
 }

@@ -101,6 +101,28 @@ func (s *server) DeleteService(ctx context.Context, in *pb.DeleteServiceRequest2
 	return &pb.StatusResponse{Status: 0}, nil
 }
 
+func (s *server) AddPod2Service (ctx context.Context, in *pb.AddPod2ServiceRequest) (*pb.StatusResponse, error) {
+	err := kubelet.KubeProxyObject().AddPod2Service(in.ServiceName, in.PodIp, in.PodName, uint32(in.TargetPort))
+	if err != nil {
+		log.PrintE(err)
+		log.PrintE("kubelet add pod 2 service failed")
+		return &pb.StatusResponse{Status: -1}, nil
+	}
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (s *server) RemovePodFromService (ctx context.Context, in *pb.RemovePodFromServiceRequest) (*pb.StatusResponse, error) {
+	err := kubelet.KubeProxyObject().RemovePodFromService(in.ServiceName, in.PodName)
+	if err != nil {
+		log.PrintE(err)
+		log.PrintE("kubelet remove pod from service failed")
+		return &pb.StatusResponse{Status: -1}, nil
+	}
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
 func (s *server) CreateDns(ctx context.Context, in *pb.ApplyDnsRequest) (*pb.StatusResponse, error) {
 	dns := &entity.Dns{}
 	err := json.Unmarshal(in.Data, dns)
@@ -169,5 +191,4 @@ func Run() {
 		log.PrintE(err)
 		return
 	}
-
 }

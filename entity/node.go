@@ -1,13 +1,15 @@
 package entity
 
 const (
-	NodeLive = "Living"
+	NodePending = "Pending"
+	NodeLive = "Running"
 	NodeDead = "Dead"
 )
 
 type Node struct {
-	Name string  `json:"Name"`
-	Ip string    `json:"Ip"`
-	KubeletUrl string  `json:"KubeletUrl"`
-    Status string  `json:"Status"`
+	Name string  `json:"Name,omitempty" yaml:"Name,omitempty"`
+	Labels map[string]string `json:"Labels,omitempty" yaml:"Labels,omitempty"`
+	Ip string    `json:"Ip,omitempty"  yaml:"Ip,omitempty"`
+	KubeletUrl string  `json:"KubeletUrl,omitempty" yaml:"KubeletUrl,omitempty"`
+    Status string  `json:"Status,omitempty" yaml:"Status,omitempty"`
 }
