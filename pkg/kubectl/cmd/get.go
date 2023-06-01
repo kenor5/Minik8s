@@ -84,7 +84,12 @@ func getPod(name string) {
 		// 计算age,精确到秒
 
 		age := time.Now().Sub(pod.Status.StartTime).Round(time.Second)
-		data = append(data, []string{pod.Metadata.Name, pod.Status.Phase, pod.Status.PodIp, age.String(), pod.Spec.NodeName})
+		podIp := pod.Status.PodIp
+		if pod.Status.Phase != "Running" {
+			data = append(data, []string{pod.Metadata.Name, pod.Status.Phase, "", "", ""})
+		}else {
+			data = append(data, []string{pod.Metadata.Name, pod.Status.Phase, podIp, age.String(), pod.Spec.NodeName})
+		}
 	}
 
 	prettyprint.PrettyPrint(title, data)

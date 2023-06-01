@@ -2,11 +2,11 @@ nginx_deployment:
   yaml:
 kind: Deployment
 metadata:
-  name: autoscale-deployment
+  name: deployment-test
   labels:
     app: autoscale
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: autoscale

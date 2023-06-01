@@ -18,8 +18,6 @@ import (
 
 	"minik8s/pkg/apiserver"
 
-	//clientv3 "go.etcd.io/etcd/client/v3"
-
 	"minik8s/pkg/apiserver/ControllerManager"
 
 	"google.golang.org/grpc"
