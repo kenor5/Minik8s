@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"minik8s/configs"
 	"minik8s/pkg/kubelet/container/containerfunc"
 	"minik8s/tools/log"
 )
@@ -16,8 +17,8 @@ const (
 	prometheusName          = "prom/prometheus:latest"
 	prometheusPort          = 9090
 	prometheusConfig        = "prometheus.yml"
-	ConfigPath              = "/root/go/src/minik8s/configs/"
-	PrometheusConfigPath    = "/etc/prometheus/"
+
+	PrometheusConfigPath = "/etc/prometheus/"
 )
 
 // 部署启动一个prometheus服务
@@ -45,7 +46,7 @@ func StartPrometheusServer() error {
 		return err
 	}
 	vBinds := make([]string, 0)
-	vBinds = append(vBinds, fmt.Sprintf("%v:%v", ConfigPath, PrometheusConfigPath))
+	vBinds = append(vBinds, fmt.Sprintf("%v:%v", configs.PromtheusConfigPath, PrometheusConfigPath))
 	//fmt.Println("Pulling Prometheus image...")
 	exposedPort := nat.Port(fmt.Sprintf("%d/tcp", prometheusPort))
 	resp, err := cli.ContainerCreate(ctx, &container.Config{

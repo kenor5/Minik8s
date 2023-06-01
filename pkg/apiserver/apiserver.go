@@ -104,7 +104,7 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 		conn = master.NodeManager.GetNodeConnByIP(pod.Status.HostIp)
 	}
 	if conn == nil {
-		panic("UnKnown NodeName!\n")
+		log.PrintW("UnKnown NodeName!\n")
 	}
 	//通知删除后更新本地Pod信息
 	pod.Status.HostIp = ""

@@ -361,17 +361,20 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 		out, err := etcdctl.Get(cli, "Deployment/"+deploymentName)
 		if err != nil {
 			log.Print("deployment %s not exist", deploymentName)
-			return nil, err
 		}
-		deployment := &entity.Deployment{}
-		err = json.Unmarshal(out.Kvs[0].Value, deployment)
-		if podNew.Status.Phase == entity.Running {
-			deployment.Status.Replicas += 1
-		} else if podNew.Status.Phase == entity.Succeed {
-			deployment.Status.Replicas -= 1
+		if len(out.Kvs) > 0 {
+			//Deployment没有被删除
+			deployment := &entity.Deployment{}
+			err = json.Unmarshal(out.Kvs[0].Value, deployment)
+			if podNew.Status.Phase == entity.Running {
+				deployment.Status.Replicas += 1
+			} else if podNew.Status.Phase == entity.Succeed {
+				deployment.Status.Replicas -= 1
+			}
+			deploymentByte, _ := json.Marshal(deployment)
+			etcdctl.Put(cli, "Deployment/"+deploymentName, string(deploymentByte))
 		}
-		deploymentByte, err := json.Marshal(deployment)
-		etcdctl.Put(cli, "Deployment/"+deploymentName, string(deploymentByte))
+
 	}
 
 	return &pb.StatusResponse{Status: 0}, err

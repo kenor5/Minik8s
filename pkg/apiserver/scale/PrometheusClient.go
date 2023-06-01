@@ -7,6 +7,7 @@ import (
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"gopkg.in/yaml.v3"
+	"minik8s/configs"
 	"minik8s/entity"
 	"minik8s/pkg/kubelet/container/containerfunc"
 	"minik8s/tools/log"
@@ -207,7 +208,7 @@ type ScrapeConf struct {
 // GeneratePrometheusTargets 使用Node的HostIP和port(9090)注册job到Prometheus配置文件中
 func GeneratePrometheusTargets(nodes []*entity.Node) error {
 	// 打开配置文件，读取内容
-	configFile := ConfigPath + prometheusConfig
+	configFile := configs.PromtheusConfigPath + prometheusConfig
 	content, err := os.ReadFile(configFile)
 	config := &Config{}
 	err = yaml.Unmarshal(content, config)
