@@ -97,11 +97,6 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 	if in.Data == nil || pod.Status.Phase == entity.Succeed {
 		return &pb.StatusResponse{Status: 0}, err
 	}
-	//通知删除后更新本地Pod信息
-	pod.Status.HostIp = ""
-	pod.Status.Phase = entity.Succeed
-	podNewData, _ := json.Marshal(pod)
-	etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(podNewData))
 
 	// 根据Pod所在的节点的NodeName获得对应的grpc Conn
 	conn := master.NodeManager.GetNodeConnByName(pod.Spec.NodeName)
@@ -111,6 +106,11 @@ func (master *ApiServer) DeletePod(in *pb.DeletePodRequest) (*pb.StatusResponse,
 	if conn == nil {
 		panic("UnKnown NodeName!\n")
 	}
+	//通知删除后更新本地Pod信息
+	pod.Status.HostIp = ""
+	pod.Status.Phase = entity.Succeed
+	podNewData, _ := json.Marshal(pod)
+	etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(podNewData))
 	// 发送消息给Kubelet
 	err = client.KubeletDeletePod(conn, in)
 	if err != nil {
