@@ -71,7 +71,7 @@ func (kp *KubeProxy) NewService(service *entity.Service, podNames []string, podI
 				return err
 			}
 
-			kp.ServiceManager.AddPodChain(svcChainName, podChainName)
+			kp.ServiceManager.AddPodChain(svcChainName, podChainName, podNames[i])
 
 		}
 
@@ -118,7 +118,7 @@ func (kp *KubeProxy) RemoveService(serviceName string) error {
 }
 
 // targetPort 就是service yaml 文件中的targetPort
-func (kp *KubeProxy) AddPod2Service(svcName string, podIp string, targetPort uint32) error  {
+func (kp *KubeProxy) AddPod2Service(svcName string, podName string, podIp string, targetPort uint32) error  {
 	log.Print("begin add pod 2 service")
 
 	// [iptable] 在KUBE-SVC-XXX链中添加规则
@@ -146,7 +146,7 @@ func (kp *KubeProxy) AddPod2Service(svcName string, podIp string, targetPort uin
 	for _, svcChain := range svcChains {
 		
 		// 在iptable中写回原来的记录和新的记录
-		kp.ServiceManager.AddPodChain(svcChain.ChainName, podChainName)
+		kp.ServiceManager.AddPodChain(svcChain.ChainName, podChainName, podName)
 
 		err := kp.IptableClient.AddPodRules(podChainName, podIp, targetPort)
 		if err != nil {

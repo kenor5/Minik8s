@@ -11,6 +11,8 @@ type ServiceChain struct {
 
 type PodChain struct {
 	ChainName string
+	// uses for deleting pod from service
+	podName string
 }
 
 type ServiceManager struct {
@@ -57,12 +59,12 @@ func (sm *ServiceManager) AddServiceChain(svcName string, svcChainName string, p
 
 }
 
-func (sm *ServiceManager) AddPodChain(svcChainName string, podChainName string) {
+func (sm *ServiceManager) AddPodChain(svcChainName string, podChainName string, podName string) {
 	if !sm.ExistPodChain(svcChainName) {
 		sm.ServiceChainName2PodChain[svcChainName] = []*PodChain{}
 	}
 	sm.ServiceChainName2PodChain[svcChainName] = append(sm.ServiceChainName2PodChain[svcChainName],
-		&PodChain{ChainName: podChainName},
+		&PodChain{ChainName: podChainName, podName: podName},
 	)
 
 }
