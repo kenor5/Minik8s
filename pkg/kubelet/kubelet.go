@@ -8,10 +8,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"minik8s/tools/log"
+	"minik8s/tools/yamlParser"
+
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	dockerclient "github.com/docker/docker/client"
-	"minik8s/tools/log"
 
 	"minik8s/configs"
 	"minik8s/entity"
@@ -25,6 +27,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
 	// "net"
 
 	"minik8s/pkg/kubelet/client"
@@ -169,6 +172,9 @@ func (kl *Kubelet) RegisterNode() error {
 	// 	NodeName:   kl.hostName,
 	// 	KubeletUrl: kl.hostIp + configs.KubeletGrpcPort,
 	// }
+	newNode := &entity.Node{}
+	yamlParser.ParseYaml(newNode, configs.NodeConfig)
+	kl.hostName = newNode.Name
 	Podsbyte, err := client.RegisterNode(kl.connToApiServer, kl.hostName, kl.hostIp)
 	//注册返回Pod信息并初始化本地信息,用APIServer中接口，初始化时获得HostIP 为自己的pod列表
 	for _, podByte := range Podsbyte {
@@ -216,15 +222,15 @@ func (kl *Kubelet) getContainersByPodname(pod entity.Pod) error {
 
 	// 该map返回Pod中的ContainerID
 	ContainerIDMap := []string{}
-	
+
 	// 遍历容器列表输出 ID
 	for _, container := range containers {
 		kl.podManger.AddContainerToPod(container.ID, pod)
 		ContainerIDMap = append(ContainerIDMap, container.ID)
 	}
 
-    kl.containerManager.SetContainerIDsByPodName(&pod, ContainerIDMap)
-	
+	kl.containerManager.SetContainerIDsByPodName(&pod, ContainerIDMap)
+
 	return err
 
 }
