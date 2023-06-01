@@ -84,6 +84,10 @@ func (nodeController *NodeController) RoundRobin(nodeSelector map[string]string)
 	}    
 
 	selectedNodesNum := len(selectedNodes)
+    if selectedNodesNum == 0 {
+        log.PrintE("No such Node!")
+		panic("No such Node!")
+	}
 
 	selectedNode := selectedNodes[nodeController.FetchAndAdd()%selectedNodesNum]
 	return nodeController.NodeNameToConn[selectedNode.Name], selectedNode.Ip
