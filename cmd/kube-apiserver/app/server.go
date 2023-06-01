@@ -337,6 +337,7 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 	podOld.Status.Phase = podNew.Status.Phase
 	podOld.Status.PodIp = podNew.Status.PodIp
 	podOld.Status.StartTime = podNew.Status.StartTime
+	podOld.Spec = podNew.Spec //增加HostName更新
 	if podNew.Status.Phase == entity.Succeed {
 		podOld.Status.HostIp = ""
 	}
@@ -485,7 +486,7 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 		pod := it.Value.(*entity.Pod)
 		podNames = append(podNames, pod.Metadata.Name)
 		podIps = append(podIps, pod.Status.PodIp)
-        servicePodNames = append(servicePodNames, pod.Metadata.Name)
+		servicePodNames = append(servicePodNames, pod.Metadata.Name)
 	}
 
 	if in.Data == nil || podNames == nil || podIps == nil {
@@ -498,7 +499,7 @@ func (s *server) ApplyService(ctx context.Context, in *pb.ApplyServiceRequest) (
 	// 更新etcd
 	service.Status.ServicePods = servicePodNames
 	servicecontroller.SetService(service)
-	
+
 	return apiserver.ApiServerObject().CreateService(&pb.ApplyServiceRequest2{
 		Data:     in.Data,
 		PodNames: podNames,
