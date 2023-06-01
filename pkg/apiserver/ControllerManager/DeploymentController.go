@@ -34,6 +34,7 @@ func ApplyDeployment(deployment *entity.Deployment) ([]*entity.Pod, error) {
 		pod.Metadata = deployment.Spec.Template.Metadata
 		uid := UUID.UUID()
 		pod.Metadata.Uid = uid
+		pod.Metadata.Labels = deployment.Metadata.Labels
 		//组合产生Deployment pod的名字
 		pod.Metadata.Name = deployment.Metadata.Name + "-" + templateHash + "-" + uid[:5]
 
