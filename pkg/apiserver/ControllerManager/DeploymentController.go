@@ -124,16 +124,9 @@ func DeleteDeployment(DeploymentName string) error {
 		return err
 	}
 	//通知Node删除和deployment相关的pod，更新etcd
-	Pods := make(map[string]entity.Pod)
 	for _, value := range PodsData.Kvs {
 		pod := entity.Pod{}
 		err = json.Unmarshal(value.Value, &pod)
-		Pods[pod.Metadata.Name] = pod
-	}
-
-	log.Print("Node删除成功后删除etcd信息")
-	//Node删除成功后删除etcd信息,借助Pod更新机制
-	for _, pod := range Pods {
 		podpath := "Pod/" + pod.Metadata.Name
 		pod.Status.Phase = entity.Succeed
 		podData, _ := json.Marshal(pod)
@@ -143,6 +136,9 @@ func DeleteDeployment(DeploymentName string) error {
 			return err
 		}
 	}
+
+	log.Print("Node删除成功后删除etcd信息")
+	//Node删除成功后删除etcd信息,借助Pod更新机制
 	//for _, pod := range Pods {
 	//	podpath := "Pod/" + pod.Metadata.Name
 	//	err := etcdctl.Delete(cli, podpath)
@@ -276,7 +272,6 @@ func CheckDeploymentPod(deployment entity.Deployment) error {
 						lastpod = pod
 					}
 				}
-
 			}
 			log.Printf("[MonitorDeployment]%s need sub %d replica", deployment.Metadata.Name, fewerNum)
 			lastpod.Status.Phase = entity.Succeed
@@ -287,8 +282,7 @@ func CheckDeploymentPod(deployment entity.Deployment) error {
 				return err
 			}
 			fewerNum--
-		} else {
-			//如果Pod状态为Failed且fewerNum=0则记录
+		} else if fewerNum == 0 {
 			break
 		}
 	}
@@ -297,7 +291,7 @@ func CheckDeploymentPod(deployment entity.Deployment) error {
 	//TODO 新增etcd的pod信息后，如何通知Node的kubelet更新？借助Pod更新机制
 	if moreNum > 0 {
 		log.Printf("[MonitorDeployment]%s need add %d replica", deployment.Metadata.Name, moreNum)
-		for i := 0; i <= moreNum; i++ {
+		for i := 0; i < moreNum; i++ {
 			//创建replicas份Pod
 			pod := &entity.Pod{}
 			pod.Metadata = deployment.Spec.Template.Metadata

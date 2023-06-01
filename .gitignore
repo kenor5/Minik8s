@@ -43,3 +43,4 @@ cmd/kube-proxy
 /bin/*
 
 .VSCode*
+/configs/const.go
