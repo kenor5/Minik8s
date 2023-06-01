@@ -1,0 +1,4 @@
+Name: worker2
+Labels:
+  hostName: worker2
+  os: linux

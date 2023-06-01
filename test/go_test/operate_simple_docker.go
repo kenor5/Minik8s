@@ -35,7 +35,7 @@ import (
 	"strings"
 )
 
-func main() {
+func main_6() {
 	data := `{"finalGrade": 93.0}`
 	variable := "finalGrade"
 	// 查找 "finalGrade" 的起始索引位置

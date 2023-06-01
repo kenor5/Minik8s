@@ -62,11 +62,14 @@ func ApiServerObject() *ApiServer {
 }
 
 func (master *ApiServer) ApplyPod(in *pb.ApplyPodRequest) (*pb.StatusResponse, error) {
-	// 调度(获取conn)
-	conn, hostip := master.NodeManager.RoundRobin()
+
 	//更新hostip信息
 	pod := &entity.Pod{}
 	err := json.Unmarshal(in.Data, pod)
+
+	// 调度(获取conn)
+	conn, hostip := master.NodeManager.RoundRobin(pod.Spec.NodeSelector)
+	
 	pod.Status.HostIp = hostip
 
 	// 发送消息给Kubelet
@@ -273,7 +276,7 @@ func (master *ApiServer) CheckEtcdAndUpdate() {
 			log.Print("[CheckEtcdAndUpdate]处理Pod:Pending")
 
 			// 调度(获取conn)
-			conn, hostip := master.NodeManager.RoundRobin()
+			conn, hostip := master.NodeManager.RoundRobin(pod.Spec.NodeSelector)
 			if conn == nil {
 				KubeletUrl := "127.0.0.1:5679"
 				conn, err := NodeController.ConnectToKubelet("127.0.0.1:5679")
@@ -408,7 +411,7 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 	}
 
 	// 调度(获取conn)
-	conn, hostip := master.NodeManager.RoundRobin()
+	conn, hostip := master.NodeManager.RoundRobin(pod.Spec.NodeSelector)
 	//更新hostip信息
 	pod.Status.HostIp = hostip
 	// 组装消息
@@ -652,4 +655,19 @@ func (master *ApiServer) UpdateFunction(functionName string) (*pb.StatusResponse
     functioncontroller.SetFunction(function)
 
 	return &pb.StatusResponse{Status: 0}, nil
+}
+
+// 当重启ApieceSever时，获取异常关闭之前的Node信息并建立新的连接
+func (master *ApiServer) RestartApiserver() (error) {
+	// 重新获取和所有Node的连接
+   	err := master.NodeManager.RestartNodeConn()	
+    if (err != nil) {
+		log.PrintE("Fail to Restart Node conn")
+		return err
+	}
+    return nil
+}
+
+func (master *ApiServer) MonitorNode() {
+	master.NodeManager.MonitorNode()
 }

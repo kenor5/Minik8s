@@ -455,3 +455,35 @@ func (cli *IpTable) ApplyPodRules(
 
 	return nil
 }
+
+func (cli *IpTable) RemovePodRules(
+	serviceChainName string,
+	podChainName string,
+	nth int,
+) error {
+	// -A KUBE-SVC-ELCM5PCEQWBTUJ2I -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-SMDVMBZNJPO5AA7R
+	// -A KUBE-SVC-ELCM5PCEQWBTUJ2I -j KUBE-SEP-FNO4E6JYD7EGUHTP
+
+	// 这里设置每n个包匹配一个
+	err := cli.iptables.DeleteIfExists(
+		"nat",
+		serviceChainName,
+		"-m",
+		"statistic",
+		"--mode",
+		"nth",
+		"--every",
+		fmt.Sprint(nth),
+		"--packet",
+		
+		"0",
+		"-j",
+		podChainName,
+	)
+	if err != nil {
+		return err
+		// return nil
+	}
+
+	return nil
+}

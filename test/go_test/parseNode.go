@@ -3,19 +3,17 @@ package main
 import (
 	"fmt"
 	"minik8s/entity"
-	// "minik8s/pkg/kubelet/pod/podfunc"
 	"minik8s/tools/yamlParser"
-	// "time"
 )
 
-var yamlPath = "/root/go/src/minik8s/test/yamls/schedule/schedule_pod1.yaml"
+var NodeyamlPath = "/root/go/src/minik8s/configs/node/node1.yaml"
 
-func main() {
+func main_2() {
 	// parse yaml
-	newPod := &entity.Pod{}
-	yamlParser.ParseYaml(newPod, yamlPath)
+	newNode := &entity.Node{}
+	yamlParser.ParseYaml(newNode, NodeyamlPath)
 	fmt.Println("****ParseYaml Pod*****")
-	fmt.Println(newPod)
+	fmt.Println(newNode)
 	// fmt.Println(newPod.Spec.Containers[0].Resources.Limit["cpu"])
 	// fmt.Println(newPod.Spec.Containers[0].Resources.Limit["Cpu"])
 	// ContainerIDs, err := podfunc.CreatePod(newPod)
