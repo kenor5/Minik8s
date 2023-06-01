@@ -5,16 +5,16 @@ spec:
   scaleTargetRef:
     kind: Deployment
     name: autoscale-deployment
-  scaleInterval: 30 #监控更新的时间间隔
+  scaleInterval: 15 #监控更新的时间间隔
   minReplicas: 1
-  maxReplicas: 3 #控制的 Pod 存在 1 到 10 个副本
+  maxReplicas: 4 #控制的 Pod 存在 1 到 10 个副本
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization  #使用指标为百分比
-          averageUtilization: 2 #保持所有 Pod 的平均 CPU 利用率为 50%
+          averageUtilization: 3 #保持所有 Pod 的平均 CPU 利用率为 50%
 #    - type: Resource
 #      resource:
 #        name: memory

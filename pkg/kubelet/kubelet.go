@@ -77,7 +77,6 @@ func newKubelet() *Kubelet {
 func KubeletObject() *Kubelet {
 	if kubelet == nil {
 		kubelet = newKubelet()
-		//TODO: 调用APIServer中接口，初始化时获得HostIP 为自己的pod列表
 	}
 	return kubelet
 }
@@ -171,7 +170,7 @@ func (kl *Kubelet) RegisterNode() error {
 	// 	KubeletUrl: kl.hostIp + configs.KubeletGrpcPort,
 	// }
 	Podsbyte, err := client.RegisterNode(kl.connToApiServer, kl.hostName, kl.hostIp)
-	//注册返回Pod信息并初始化本地信息
+	//注册返回Pod信息并初始化本地信息,用APIServer中接口，初始化时获得HostIP 为自己的pod列表
 	for _, podByte := range Podsbyte {
 		pod := entity.Pod{}
 		err := json.Unmarshal(podByte, &pod)
@@ -254,7 +253,7 @@ func (kl *Kubelet) monitorPods() {
 		dockerclient.WithAPIVersionNegotiation(),
 	)
 	defer cli.Close()
-	//TODO 通知API server更新Pod状态
+	//通知API server更新Pod状态
 	//遍历当前Node的pod
 	Pods := kl.podManger.GetPods()
 	for _, pod := range Pods {

@@ -219,7 +219,16 @@ func GeneratePrometheusTargets(nodes []*entity.Node) error {
 		if conf.JobName == "cadvisor" {
 			for _, node := range nodes {
 				newTarget := fmt.Sprintf("%s:%s", node.Ip, strconv.Itoa(8080))
-				conf.StaticConfigs = append(conf.StaticConfigs, StaticConfig{Targets: []string{newTarget}})
+				flag := true
+				for _, target := range conf.StaticConfigs[0].Targets {
+					if target == newTarget {
+						flag = false
+					}
+				}
+				if flag {
+					conf.StaticConfigs[0].Targets = append(conf.StaticConfigs[0].Targets, newTarget)
+				}
+
 				config.ScrapeConfig[i] = conf
 			}
 			break

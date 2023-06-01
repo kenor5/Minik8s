@@ -45,7 +45,6 @@ func CreatePod(pod *entity.Pod) ([]string, error) {
 		log.Printf("create common container: %s\n", con.Name)
 		docker.EnsureImage(con.Image)
 
-		//TODO：待明确Pod中将哪一个目录供Container挂载使用 emptydir?
 		//增加卷volume绑定
 		//映射示例  Binds: []string{"/path/on/host:/path/in/container:rw"},
 		vBinds := make([]string, 0, len(con.VolumeMounts))
