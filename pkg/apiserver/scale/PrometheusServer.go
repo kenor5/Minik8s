@@ -16,7 +16,7 @@ const (
 	prometheusName          = "prom/prometheus"
 	prometheusPort          = 9090
 	prometheusConfig        = "prometheus.yml"
-	ConfigPath              = "/root/go/src/minik8s/configs"
+	ConfigPath              = "/root/go/src/minik8s/configs/"
 	PrometheusConfigPath    = "/etc/prometheus/"
 )
 

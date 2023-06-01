@@ -21,5 +21,5 @@ type ServicePort struct {
 }
 
 type ServiceStatus struct {
-
+    ServicePods []string `json:"servicePods,omitempty" yaml:"servicePods,omitempty"`
 }

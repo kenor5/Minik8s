@@ -81,3 +81,25 @@ func KubeLetDeleteDns(c pb.KubeletApiServerServiceClient, in *pb.DeleteDnsReques
 
 	return err
 }	
+
+func KubeletUpdateSvc(c pb.KubeletApiServerServiceClient, in *pb.AddPod2ServiceRequest) error {
+	ctx := context.Background()
+
+	_, err := c.AddPod2Service(ctx, in)
+	if err != nil {
+		log.PrintE(err)
+	}
+
+	return err
+}
+
+func KubeletUpdateSvc2(c pb.KubeletApiServerServiceClient, in *pb.RemovePodFromServiceRequest) error {
+	ctx := context.Background()
+
+	_, err := c.RemovePodFromService(ctx, in)
+	if err != nil {
+		log.PrintE(err)
+	}
+
+	return err
+}

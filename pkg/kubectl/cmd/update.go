@@ -28,6 +28,10 @@ func doUpdate(cmd *cobra.Command, args []string) {
 	switch args[0] {
 		case "function":
 			updateFunction(name)
+		case "svc":
+			updateSvc(name, args[2])
+		case "svc2":
+			updateSvc2(name, args[2])
 		default:
 			log.PrintE("get err, no such object")
 	}    
@@ -56,4 +60,45 @@ func updateFunction(name string) {
 		log.PrintS("Updated function ", name)
 	}
 
+}
+
+// add pod to service
+func updateSvc(svcName string, podName string) {
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	log.Print("begin update svc", svcName)
+
+	_, err := cli.UpdateSvc(ctx, &pb.UpdateSvcRequest{
+		SvcName: svcName,
+		PodName: podName,
+	})
+
+	if err != nil {
+		log.PrintE(err)
+	}
+
+}
+
+// del pod from service
+func updateSvc2(svcName string, podName string) {
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	log.Print("begin update svc", svcName)
+
+	_, err := cli.UpdateSvc2(ctx, &pb.UpdateSvcRequest{
+		SvcName: svcName,
+		PodName: podName,
+	})
+
+	if err != nil {
+		log.PrintE(err)
+	}
 }

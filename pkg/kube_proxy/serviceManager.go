@@ -13,6 +13,8 @@ type PodChain struct {
 	ChainName string
 	// uses for deleting pod from service
 	podName string
+	// for probability
+	probability float64
 }
 
 type ServiceManager struct {
@@ -41,12 +43,33 @@ func (sm *ServiceManager) GetClusterIp(svcName string) string {
 	return sm.ServiceName2ClusterIp[svcName]
 }
 
-func (sm *ServiceManager) RemoveServiceChain(svcName string) {
+func (sm *ServiceManager) RemoveService(svcName string) {
 	delete(sm.ServiceName2ServiceChain, svcName)
 }
 
-func (sm *ServiceManager) RemovePodChain(svcChainName string) {
+func (sm *ServiceManager) RemoveServiceChain(svcChainName string) {
 	delete(sm.ServiceChainName2PodChain, svcChainName)
+}
+
+func (sm *ServiceManager) RemovePodChain(svcChainName string, podChainName string) {
+	podChains := sm.GetPodChains(svcChainName)
+	res := []*PodChain{}
+	for _, v := range podChains {
+		if v.ChainName != podChainName {
+			res = append(res, &PodChain{ChainName: v.ChainName})
+		}
+	}
+	sm.ServiceChainName2PodChain[svcChainName] = res
+}
+
+func (sm *ServiceManager) GetPodChainNameByPodName(svcChainName string, podName string) string {
+	podChains := sm.GetPodChains(svcChainName)
+	for _, v := range podChains {
+		if v.podName == podName {
+			return v.ChainName
+		}
+	}
+	return ""
 }
 
 func (sm *ServiceManager) AddServiceChain(svcName string, svcChainName string, port *entity.ServicePort) {
@@ -59,12 +82,12 @@ func (sm *ServiceManager) AddServiceChain(svcName string, svcChainName string, p
 
 }
 
-func (sm *ServiceManager) AddPodChain(svcChainName string, podChainName string, podName string) {
+func (sm *ServiceManager) AddPodChain(svcChainName string, podChainName string, podName string, probablity float64) {
 	if !sm.ExistPodChain(svcChainName) {
 		sm.ServiceChainName2PodChain[svcChainName] = []*PodChain{}
 	}
 	sm.ServiceChainName2PodChain[svcChainName] = append(sm.ServiceChainName2PodChain[svcChainName],
-		&PodChain{ChainName: podChainName, podName: podName},
+		&PodChain{ChainName: podChainName, podName: podName, probability: probablity},
 	)
 
 }

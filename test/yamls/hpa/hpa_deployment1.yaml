@@ -1,0 +1,33 @@
+nginx_deployment:
+  yaml:
+kind: Deployment
+metadata:
+  name: autoscale-deployment
+  labels:
+    app: autoscale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: autoscale
+  template:
+    metadata:
+      labels:
+        app: autoscale
+    spec:
+      containers:
+        - name: autoscaleContainer
+          image: luoshicai/my-http-server4:latest
+          resources:
+            limits:
+              memory: 200Mi
+              cpu: 100m
+            requests:
+              memory: 100Mi
+              cpu: 100m
+          volumeMounts:
+            - name: volume
+              mountPath: /usr/share/python_script
+      volumes: 
+        - name: volume 
+          hostPath: /root/go/src/minik8s/test/yamls/hpa/script #挂载设备类型为hostPath，路径为宿主机下的/opt,这里设备类型支持很多种
