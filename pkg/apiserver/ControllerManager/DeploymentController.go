@@ -238,6 +238,7 @@ func CheckDeploymentPod(deployment entity.Deployment) error {
 		if pod.Status.Phase == entity.Running || pod.Status.Phase == entity.Pending {
 			nowReplica++
 		}
+
 	}
 	log.Printf("[MonitorDeployment]now replica:%d need replica:%d", nowReplica, deployment.Spec.Replicas)
 	deployment.Status.Replicas = int32(nowReplica)
@@ -253,18 +254,34 @@ func CheckDeploymentPod(deployment entity.Deployment) error {
 		moreNum = int(deployment.Spec.Replicas - deployment.Status.Replicas)
 		log.Printf("[MonitorDeployment]moreNum=%d", moreNum)
 	}
-	for _, value := range PodsData.Kvs {
-		pod := entity.Pod{}
-		err = json.Unmarshal(value.Value, &pod)
-		if pod.Status.Phase == entity.Succeed {
-			continue
-		}
+	for true {
 		if fewerNum > 0 {
-			//TODO：删除failed pod，改为succeed，借助Pod更新机制
+			lastpod := entity.Pod{}
+			first := true
+			for _, value := range PodsData.Kvs {
+				pod := entity.Pod{}
+				err = json.Unmarshal(value.Value, &pod)
+				if pod.Status.Phase == entity.Succeed {
+					continue
+				}
+				if deployment.Spec.Update == "older" {
+					//选择最后启动的Pod进行删除
+					if first || pod.Status.StartTime.After(lastpod.Status.StartTime) {
+						first = false
+						lastpod = pod
+					}
+				} else {
+					if first || pod.Status.StartTime.Before(lastpod.Status.StartTime) {
+						first = false
+						lastpod = pod
+					}
+				}
+
+			}
 			log.Printf("[MonitorDeployment]%s need sub %d replica", deployment.Metadata.Name, fewerNum)
-			pod.Status.Phase = entity.Succeed
-			PodsData, _ := json.Marshal(pod)
-			err := etcdctl.EtcdPut("Pod/"+pod.Metadata.Name, string(PodsData))
+			lastpod.Status.Phase = entity.Succeed
+			PodsData, _ := json.Marshal(lastpod)
+			err := etcdctl.EtcdPut("Pod/"+lastpod.Metadata.Name, string(PodsData))
 			if err != nil {
 				fmt.Println("[MonitorDeployment]delete failed pod fail!")
 				return err
@@ -275,6 +292,7 @@ func CheckDeploymentPod(deployment entity.Deployment) error {
 			break
 		}
 	}
+
 	//deployment.replica有更新，需要增加moreNum个 pod
 	//TODO 新增etcd的pod信息后，如何通知Node的kubelet更新？借助Pod更新机制
 	if moreNum > 0 {
@@ -284,6 +302,7 @@ func CheckDeploymentPod(deployment entity.Deployment) error {
 			pod := &entity.Pod{}
 			pod.Metadata = deployment.Spec.Template.Metadata
 			pod.Metadata.Uid = UUID.UUID()
+			pod.Metadata.Labels = deployment.Spec.Template.Metadata.Labels
 			//根据template获得template hash
 			//templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name + strconv.Itoa(int(deployment.Spec.Replicas))))))
 			templateHash := strconv.Itoa(int(HASH.HASH([]byte(deployment.Metadata.Name))))

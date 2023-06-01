@@ -17,6 +17,8 @@ type DeploymentSpec struct {
 	Template PodTemplateSpec `json:"template" yaml:"template"`
 	// 预期 Pod 的数量。这是一个指针，用于辨别显式零和未指定的值。默认为 1。
 	Replicas int32 `json:"replicas,omitempty" yaml:"replicas,omitempty"`
+
+	Update string `json:"update,omitempty" yaml:"update,omitempty"`
 }
 
 type DeploymentStatus struct {
