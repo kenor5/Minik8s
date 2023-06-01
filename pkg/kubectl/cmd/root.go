@@ -31,6 +31,7 @@ func init() {
 	rootCmd.AddCommand(describeCmd)
 	rootCmd.AddCommand(getCmd)
 	rootCmd.AddCommand(updateCmd)
+	rootCmd.AddCommand(addCmd)
 }
 
 func Execute() {

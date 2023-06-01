@@ -1,0 +1,4 @@
+Name: worker1
+Labels:
+  hostName: worker1
+  os: windows

@@ -61,11 +61,31 @@ func (nodeController *NodeController) RegiseterNode(node *entity.Node) error {
 }
 
 // RoundRobin调度策略
-func (nodeController *NodeController) RoundRobin() (pb.KubeletApiServerServiceClient, string) {
+func (nodeController *NodeController) RoundRobin(nodeSelector map[string]string) (pb.KubeletApiServerServiceClient, string) {
 	LivingNodes := nodeController.GetAllLivingNodes()
-	LivingNodesNum := len(LivingNodes)
 
-	selectedNode := LivingNodes[nodeController.FetchAndAdd()%LivingNodesNum]
+	// 选取Label
+	var selectedNodes []*entity.Node
+	for _, node := range LivingNodes {
+		nodeLabels := node.Labels
+		match := true
+
+		// 检查Node的Label字段是否包含Pod的NodeSelector字段
+		for key, value := range nodeSelector {
+			if nodeLabels[key] != value {
+				match = false
+				break
+			}
+		}
+
+		if match {
+			selectedNodes = append(selectedNodes, node)
+		}
+	}    
+
+	selectedNodesNum := len(selectedNodes)
+
+	selectedNode := selectedNodes[nodeController.FetchAndAdd()%selectedNodesNum]
 	return nodeController.NodeNameToConn[selectedNode.Name], selectedNode.Ip
 }
 

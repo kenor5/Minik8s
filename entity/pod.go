@@ -20,8 +20,10 @@ type Pod struct {
 type PodSpec struct {
 	// 可以由属于 Pod 的容器挂载的卷列表。
 	Volumes []Volume `json:"volumes" yaml:"volumes"`
-	// NodeName 是将此 Pod 调度到特定节点的请求。如果为空，则交给scheduler调度
+	// NodeName 是 Pod属于哪个Node
 	NodeName string `json:"nodeName,omitempty" yaml:"nodeName,omitempty"`
+	// NodeSelector
+	NodeSelector map[string]string 	`json:"nodeSelector,omitempty" yaml:"nodeSelector,omitempty"`
 	// 属于 Pod 的容器列表。
 	Containers []Container `json:"containers" yaml:"containers"`
 }

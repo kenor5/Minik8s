@@ -34,9 +34,7 @@ message StatusResponse {
 }
 
 message RegisterNodeRequest{
-    string NodeName = 1;
-    string NodeIp = 2;
-    string kubelet_url = 3;
+    bytes NodeData = 1;
 }
 
 message RegisterNodeResponse{
@@ -115,12 +113,20 @@ message DeleteServiceRequest2{
 }
 
 // Node
+message AddNodeRequest{
+    string NodeName = 1;
+}
+
 message GetNodeRequest{
     string NodeName = 1;
 }
 
 message GetNodeResponse{
     repeated bytes NodeData = 1;
+}
+
+message DeleteNodeRequest{
+    string NodeName = 1;
 }
 
 //Dns

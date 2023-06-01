@@ -133,6 +133,62 @@ func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNod
 	}
 }
 
+func (s *server)AddNode(ctx context.Context, in *pb.AddNodeRequest) (*pb.StatusResponse, error) {
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("connect to etcd error")
+	}
+
+	defer cli.Close()
+	out, _ := etcdctl.Get(cli, "Node/"+string(in.NodeName))
+	if in.NodeName == "" {
+		out, _ = etcdctl.GetWithPrefix(cli, "Node/")
+	}
+
+	for _, v := range out.Kvs {
+		node := &entity.Node{}
+		err := json.Unmarshal(v.Value, node)
+		if err != nil {
+			log.PrintE("podNew unmarshel err")
+			return &pb.StatusResponse{Status: -1}, err
+		}
+
+		node.Status = entity.NodeLive
+        
+		nodeByte, _ := json.Marshal(node)
+		etcdctl.Put(cli, "Node/"+node.Name, string(nodeByte))
+
+	}  
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
+func (s *server) DeleteNode(ctx context.Context, in *pb.DeleteNodeRequest) (*pb.StatusResponse, error) {
+
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("connect to etcd error")
+	}
+	defer cli.Close()
+	out, err := etcdctl.Get(cli, "Node/"+string(in.NodeName))
+
+	for _, v := range out.Kvs {
+		node := &entity.Node{}
+		err := json.Unmarshal(v.Value, node)
+		if err != nil {
+			log.PrintE("podNew unmarshel err")
+			return &pb.StatusResponse{Status: -1}, err
+		}
+
+		node.Status = entity.NodePending
+        
+		nodeByte, _ := json.Marshal(node)
+		etcdctl.Put(cli, "Node/"+node.Name, string(nodeByte))
+	}  
+
+	return &pb.StatusResponse{Status: 0}, nil
+}
+
 func (s *server) ApplyJob(ctx context.Context, in *pb.ApplyJobRequest) (*pb.StatusResponse, error) {
 	// 解析Job
 	job := &entity.Job{}
@@ -220,10 +276,14 @@ func (s *server)DeleteFunction(ctx context.Context, in *pb.DeleteFunctionRequest
 // 客户端为Kubelet
 func (s *server) RegisterNode(ctx context.Context, in *pb.RegisterNodeRequest) (*pb.RegisterNodeResponse, error) {
 	newNode := &entity.Node{}
-	newNode.Ip = in.NodeIp
-	newNode.Name = in.NodeName
-	newNode.KubeletUrl = in.KubeletUrl
-	newNode.Status = entity.NodeLive
+	err := json.Unmarshal(in.NodeData, newNode)
+	if err != nil {
+		log.PrintE("workflow unmarshel err")
+	}
+	// newNode.Ip = in.NodeIp
+	// newNode.Name = in.NodeName
+	// newNode.KubeletUrl = in.KubeletUrl
+	newNode.Status = entity.NodePending
 	apiserver.ApiServerObject().NodeManager.RegiseterNode(newNode)
 	podsByte := getPodbyHostIP(newNode.Ip)
 	return &pb.RegisterNodeResponse{PodData: podsByte}, nil
@@ -610,6 +670,9 @@ func Run() {
 	//启动deployment监控
 	go ControllerManager.BeginMonitorDeployment()
 	log.PrintS("Apiserver For DeploymentMonitor Server starts running...")
+
+	// 启动Node监控
+	go apiserver.ApiServerObject().MonitorNode()
 
 	/**
 	*  Serverless: 创建Http Trigger

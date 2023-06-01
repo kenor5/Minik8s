@@ -1,0 +1,4 @@
+Name: master
+Labels:
+  hostName: master
+  os: linux
