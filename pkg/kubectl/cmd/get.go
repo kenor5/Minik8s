@@ -48,6 +48,8 @@ func doGet(cmd *cobra.Command, args []string) {
 		getJob(name)
 	case "jobResult":
 		getJobResult(name)
+	case "hpa":
+		getHpa(name)
 	default:
 		log.PrintE("get err, no such object")
 	}
@@ -312,4 +314,33 @@ func getJobResult(jobId string) {
 	prettyprint.PrettyPrint(title, data)
 
 	fmt.Print(job.JobStatus.Result)
+}
+
+func getHpa(name string) {
+	cli := NewClient()
+	if cli == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	res, err := cli.GetHpa(ctx, &pb.GetHpaRequest{
+		HpaName: name,
+	})
+	if err != nil {
+		log.PrintE(err)
+	}
+
+	title := []string{"Name", "MinReplicas", "MaxReplicas", "currentReplicas","desiredReplicas"}
+	data := [][]string{}
+	for _, oneHpa := range res.Date {
+		hpa := &entity.HorizontalPodAutoscaler{}
+		err = json.Unmarshal(oneHpa, hpa)
+		if err != nil {
+			log.PrintE(err)
+		}
+		data = append(data, []string{hpa.Metadata.Name, fmt.Sprintf("%d", hpa.Spec.MinReplicas), fmt.Sprintf("%d", hpa.Spec.MaxReplicas), fmt.Sprintf("%d", hpa.Status.CurrentReplicas), fmt.Sprintf("%d", hpa.Status.DesiredReplicas)})
+	}
+	prettyprint.PrettyPrint(title, data)
+
 }

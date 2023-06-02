@@ -261,6 +261,7 @@ func (kl *Kubelet) monitorPods() {
 	defer cli.Close()
 	//通知API server更新Pod状态
 	//遍历当前Node的pod
+	log.Print("1")
 	Pods := kl.podManger.GetPods()
 	for _, pod := range Pods {
 		if pod.Status.Phase == entity.Failed {
@@ -279,7 +280,11 @@ func (kl *Kubelet) monitorPods() {
 		isFinished := false
 		//通过ContainerID检查Running Pod的container运行状态
 		containers := kl.podManger.GetContainersByPod(pod)
+
+		log.Print("len(containers): ", len(containers))
+
 		if len(containers) > 0 {
+			log.Print("2")
 			for _, containerId := range containers {
 				if isFinished || isFailed {
 					//当有Container 退出或者终止，则记录pod为Failed
@@ -295,6 +300,9 @@ func (kl *Kubelet) monitorPods() {
 					fmt.Printf("fail to query container %v's status: %v", containerId, err)
 					continue
 				}
+
+				log.Print("3")
+
 				container := containers[0]
 				switch container.State {
 				case "exited":
@@ -320,6 +328,8 @@ func (kl *Kubelet) monitorPods() {
 
 	}
 
+    log.Print("4")
+	
 	//删除Succeed Pod的pod和container
 	for _, pod := range SucceedPods {
 		conatainers := kl.podManger.GetContainersByPod(*pod)

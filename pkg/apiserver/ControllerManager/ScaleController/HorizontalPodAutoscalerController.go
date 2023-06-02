@@ -66,6 +66,9 @@ func (AM *AutoscalerManager) StartAutoscalerMonitor(autoscaler *entity.Horizonta
 	monitorInterval := time.Second * time.Duration(autoscaler.Spec.ScaleInterval)
 	ticker := time.NewTicker(monitorInterval) //每30s使用
 	for range ticker.C {
+		// for debug
+		log.PrintE("[AutoscalerMonitor]Begin Monitor " + autoscaler.Metadata.Name)
+
 		deploymentdata, _ := etcdctl.EtcdGet("Deployment/" + deploymentName)
 		if len(deploymentdata.Kvs) == 0 {
 			// Deployment 已经被删除
@@ -93,6 +96,8 @@ func (AM *AutoscalerManager) StartAutoscalerMonitor(autoscaler *entity.Horizonta
 			log.PrintE("Etcd Put Deployment error")
 			return
 		}
+		HPAData, _ := json.Marshal(autoscaler)
+		etcdctl.EtcdPut("HPA/"+autoscaler.Metadata.Name, string(HPAData))
 	}
 }
 
@@ -105,6 +110,10 @@ func (AM *AutoscalerManager) StartAutoscalerMonitor(autoscaler *entity.Horizonta
 func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.HorizontalPodAutoscaler, deployment *entity.Deployment) {
 	//获取当前deployment的所有Pod
 	//var pods []entity.Pod
+
+	// for debug
+	log.PrintE("begin monitorAndScaleDeployment")
+
 	pods := ControllerManager.GetPodsBydeployment(deployment.Metadata.Name)
 	if pods == nil || pods[0].Metadata.Name == "" {
 		panic("[monitorAndScaleDeployment]read Pods error")
@@ -118,6 +127,9 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 	autoscaler.Status.DesiredReplicas = deployment.Spec.Replicas - deployment.Status.Replicas
 	//已经超过最大运行的MaxReplicas，直接返回
 	if autoscaler.Status.CurrentReplicas+autoscaler.Status.DesiredReplicas >= autoscaler.Spec.MaxReplicas {
+		// for debug
+		log.PrintE("Have reached MaxReplicas")
+
 		log.Print("[AutoscalerManager] Have reached MaxReplicas")
 		return
 	}
@@ -132,7 +144,14 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 	//查询Pod的资源使用情况，计算deployment总资源使用情况
 	autoscaler.Status.ObservedGeneration++
 	newReplica := deployment.Spec.Replicas
+
+	// for debug
+	log.PrintE("在遍历autoscaler.Spec.Metrics循环之前")
+
 	for _, metric := range autoscaler.Spec.Metrics {
+		// for debug
+		log.PrintE(metric.Resource.Name)
+
 		switch metric.Resource.Name {
 		case "cpu":
 			for _, pod := range pods {
@@ -141,11 +160,20 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 					log.PrintW("[monitorAndScaleDeployment]Get cpuUsage fail ", pod.Metadata.Name)
 				}
 				deploymentCPUUsage += cpuUsagePerPod * 100 //百分比*100
+
+				// for debug
+				log.PrintE("cpuUsagePerPod: ", cpuUsageAvgPod, " deploymentCPUUsage: ", deploymentCPUUsage)
 			}
 			cpuUsageAvgPod = deploymentCPUUsage / float64(newReplica)
 			autoscaler.Status.CurrentMetrics[0].ResourceStatus.Current.AverageUtilization = fmt.Sprintf("%f", cpuUsageAvgPod)
 			//当平均CPU使用率大于averageUtilization,则增加replica数量
+
+
 			TargetCPUAvg, _ := strconv.ParseFloat(metric.Resource.Target.AverageUtilization, 64)
+
+			// for debug
+			log.PrintE("TargetCPUAvg: ", TargetCPUAvg, " cpuUsageAvgPod: ", cpuUsageAvgPod)
+
 			//newReplica := autoscaler.Status.CurrentReplicas + autoscaler.Status.DesiredReplicas
 			//newReplica := deployment.Spec.Replicas
 			if cpuUsageAvgPod > TargetCPUAvg*1.05 && newReplica < autoscaler.Spec.MaxReplicas {
@@ -157,8 +185,12 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 				} else {
 					deployment.Spec.Replicas = newReplica + 1
 				}
-				log.Print(deployment.Metadata.Name + " add replica to " + string(deployment.Spec.Replicas))
+				log.PrintS(deployment.Metadata.Name + " add replica to " + string(deployment.Spec.Replicas))
 			} else if newReplica >= autoscaler.Spec.MaxReplicas && cpuUsageAvgPod > TargetCPUAvg {
+
+			// for debug
+			log.PrintE("reach max replica")
+
 				//已经超过最大运行的MaxReplicas，直接返回
 				deployment.Spec.Replicas = autoscaler.Spec.MaxReplicas
 				log.Printf("AUTOSCALER [%s]:Have reached MaxReplicas %d",
@@ -170,6 +202,10 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 
 			//当平均CPU使用率小于averageUtilization,则减少replica数量，不低于MinReplica
 			if cpuUsageAvgPod < TargetCPUAvg*0.95 && newReplica > autoscaler.Spec.MinReplicas {
+
+				// for debug
+				log.PrintE("decrease replica, before:", deployment.Spec.Replicas)
+				
 				//autoscaler.Status.DesiredReplicas--
 				muti := int32(TargetCPUAvg / cpuUsageAvgPod)
 				if muti > 1 {
@@ -179,6 +215,7 @@ func (AM *AutoscalerManager) monitorAndScaleDeployment(autoscaler *entity.Horizo
 					log.Print(deployment.Metadata.Name + " sub replica ")
 					deployment.Spec.Replicas = newReplica - 1
 				}
+				log.PrintE("decrease replica, after:", deployment.Spec.Replicas)
 			} else if newReplica <= autoscaler.Spec.MaxReplicas && cpuUsageAvgPod < TargetCPUAvg {
 				//已经低于最小运行的MInReplicas，直接返回
 				log.Printf("AUTOSCALER [%s]:Have reached MinReplicas %d",

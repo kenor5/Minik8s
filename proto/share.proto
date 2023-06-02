@@ -201,3 +201,12 @@ message UpdateSvcRequest {
     string SvcName = 1;
     string PodName = 2;
 }
+
+// hpa
+message GetHpaRequest {
+    string HpaName = 1;
+}
+
+message GetHpaResponse {
+   repeated bytes Date = 1;
+}

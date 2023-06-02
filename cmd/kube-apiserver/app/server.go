@@ -108,6 +108,29 @@ func (s *server) GetPod(ctx context.Context, in *pb.GetPodRequest) (*pb.GetPodRe
 	}
 }
 
+// get hpa
+func (s *server) GetHpa(ctx context.Context, in *pb.GetHpaRequest) (*pb.GetHpaResponse, error) {
+	cli, err := etcdctl.NewClient()
+	if err != nil {
+		log.PrintE("etcd client connetc error")
+	}
+	defer cli.Close()
+	out, _ := etcdctl.Get(cli, "HPA/"+string(in.HpaName))
+	if in.HpaName == "" {
+		out, _ = etcdctl.GetWithPrefix(cli, "HPA/")
+	}
+	var data [][]byte
+	for _, v := range out.Kvs {
+		data = append(data, v.Value)
+	}
+
+	if len(out.Kvs) == 0 {
+		return &pb.GetHpaResponse{Date: nil}, nil
+	} else {
+		return &pb.GetHpaResponse{Date: data}, nil
+	}
+}
+
 func (s *server) GetNode(ctx context.Context, in *pb.GetNodeRequest) (*pb.GetNodeResponse, error) {
 	cli, err := etcdctl.NewClient()
 	if err != nil {
@@ -336,6 +359,8 @@ func (s *server) UpdatePodStatus(ctx context.Context, in *pb.UpdatePodStatusRequ
 	podOld.Status.PodIp = podNew.Status.PodIp
 	podOld.Status.StartTime = podNew.Status.StartTime
 	podOld.Spec = podNew.Spec //增加HostName更新
+
+	log.PrintS("1")
 	if podNew.Status.Phase == entity.Succeed {
 		podOld.Status.HostIp = ""
 	}
@@ -761,5 +786,5 @@ func Run() {
 		log.PrintE(err)
 		return
 	}
-
 }
+

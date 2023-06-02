@@ -12,7 +12,7 @@ import (
 	pb "minik8s/pkg/proto"
 	"minik8s/tools/log"
 	"net/http"
-
+	UUID "minik8s/tools/uuid"
 	"strconv"
 	"time"
 )
@@ -36,8 +36,9 @@ func (master *ApiServer) AddRouter(functionName string) error {
 			log.PrintS("podNum=0, crate pod")
 			// 创建Pod
 			pod := function.FunctionStatus.PodTemplate
+			pod.Metadata.Uid = UUID.UUID()
 			Numstr := strconv.Itoa(podNum)
-			pod.Metadata.Name = pod.Metadata.Name + "-" + Numstr
+			pod.Metadata.Name = pod.Metadata.Name + "-" + pod.Metadata.Uid[:5] + "-" + Numstr 
 
 			log.PrintS("1")
 			// 组装消息

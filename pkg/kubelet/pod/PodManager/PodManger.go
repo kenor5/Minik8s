@@ -147,6 +147,7 @@ func (pm *BasicManager) AddContainerToPod(containerId string, pod entity.Pod) {
 func (pm *BasicManager) GetContainersByPod(pod entity.Pod) []string {
 	pm.lock.RLock()
 	defer pm.lock.RUnlock()
+	log.PrintS("c")
 	fullname := pod.Metadata.Namespace + pod.Metadata.Name
 	return pm.ContainersByPod[fullname]
 }

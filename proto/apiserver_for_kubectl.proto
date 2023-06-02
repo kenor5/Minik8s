@@ -47,4 +47,6 @@ service ApiServerKubectlService {
 
     rpc UpdateSvc(share.UpdateSvcRequest) returns (share.StatusResponse);
     rpc UpdateSvc2(share.UpdateSvcRequest) returns (share.StatusResponse);
+
+    rpc GetHpa(share.GetHpaRequest) returns (share.GetHpaResponse);
 }

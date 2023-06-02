@@ -369,7 +369,6 @@ func (master *ApiServer) delDiferPod(pod entity.Pod) error {
 		if err != nil {
 			log.PrintfE("[CheckEtcdAndUpdate]Delete Pod %s error", pod.Metadata.Name)
 		}
-
 	}
 	return nil
 }
@@ -563,6 +562,16 @@ func (master *ApiServer) ApplyJob(job *entity.Job) (*pb.StatusResponse, error) {
 	in := &pb.ApplyPodRequest{
 		Data: podByte,
 	}
+
+	// 放入ETCD
+	cli, err := etcdctl.NewClient()
+	defer cli.Close()
+	if err != nil {
+		log.PrintE("etcd client connetc error")
+	}
+	log.Print("put etcd")
+	etcdctl.Put(cli, "Pod/"+pod.Metadata.Name, string(in.Data))
+
 	// 发送消息给Kubelet
 	err = client.KubeletCreatePod(conn, in)
 	if err != nil {
