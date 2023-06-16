@@ -27,6 +27,7 @@ Minik8s主要包括如下组件：
   - FunctionController
   - JobController
   - ScaleController
+
 **KubeProxy**
 
 运行在每个Node节点上，接受Apiserver创建/删除/更新Service的请求，修改节点上的iptable
