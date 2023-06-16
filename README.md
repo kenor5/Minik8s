@@ -5,20 +5,25 @@
 ![image](https://github.com/kenor5/Minik8s/assets/75160010/ad757052-6d8a-4425-a9e9-f234d0fe0e2e)
 
 Minik8s主要包括如下组件：
+
 **Etcd:**
+
 运行在master节点上，记录集群中的所有持久化数据，记录集群中的各种状态 (States)。
 
 **Kubectl：**
+
 运行在master节点，主要负责接受并解析用户指令，发送给Apiserver；获得Apiserver响应后输出到控制台；主要支持apply、delete、get、describe指令，此外还支持add、update指令。
 
 **Apiserver：**
-运行在Master节点，是minik8s的中心组件，只有Apiserver可以读写Etcd，集群中的所有
-通信都依赖于Apiserver暴露的API。
+
+运行在Master节点，是minik8s的中心组件，只有Apiserver可以读写Etcd，集群中的所有通信都依赖于Apiserver暴露的API。
 
 **Scheduler(NodeController):**
+
 运行在Master节点，管理所有的Node，监控Node的状态，完成调度功能。
 
 **ControllerManager：**
+
   运行在master节点，负责管理对应的Api对象，监控对应的Api对象的状态并且确保其与期望状态一致。包含的Controller如下所示：
   - PodController
   - ServiceController
@@ -28,9 +33,11 @@ Minik8s主要包括如下组件：
   - ScaleController
   - 
 **KubeProxy**
+
 运行在每个Node节点上，接受Apiserver创建/删除/更新Service的请求，修改节点上的iptable
 
 **Kubelet**
+
 运行在Node节点，接受Apiserver的请求，管理和创建Pod；监控本地Pod内部运行状态，在Pod状态更新时通知Apiserver更新etcd中Pod状态信息。
 
 ## 二、项目开发管理
@@ -318,8 +325,10 @@ curl dns-example:80/path1
 会返回hello world。具体流程为
 
 -> 通过/etc/hosts文件解析dns-example 为127.0.0.1
+
 -> 再通过nginx后台将127.0.0.1:80/a 转发到10.20.0.2:8080 
      这里的10.20.0.2是service 的clusterIP
+
 -> 然后经过iptable 的nat 表的转换，就访问到pod Ip
 
 因此如果在dns的yaml文件中修改了 dns 的server_name， 需要到/etc/hosts文件中 添加一条解析 127.0.0.1 server_name
