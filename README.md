@@ -7,19 +7,15 @@
 Minik8s主要包括如下组件：
 
 **Etcd:**
-
 运行在master节点上，记录集群中的所有持久化数据，记录集群中的各种状态 (States)。
 
 **Kubectl：**
-
 运行在master节点，主要负责接受并解析用户指令，发送给Apiserver；获得Apiserver响应后输出到控制台；主要支持apply、delete、get、describe指令，此外还支持add、update指令。
 
 **Apiserver：**
-
 运行在Master节点，是minik8s的中心组件，只有Apiserver可以读写Etcd，集群中的所有通信都依赖于Apiserver暴露的API。
 
 **Scheduler(NodeController):**
-
 运行在Master节点，管理所有的Node，监控Node的状态，完成调度功能。
 
 **ControllerManager：**
@@ -88,7 +84,6 @@ Minik8s主要包括如下组件：
   "sync"
   "regexp"
   "testing"
-  
 ## 四、各功能实现原理
 
 ### Node注册、管理和调度策略
