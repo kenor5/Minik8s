@@ -1,7 +1,7 @@
 # minik8s
 
 ## 一、项目总体架构
-https://uploader.shimo.im/f/QN3MAQKLVXSpWwUH.png!thumbnail?accessToken=eyJhbGciOiJIUzI1NiIsImtpZCI6ImRlZmF1bHQiLCJ0eXAiOiJKV1QifQ.eyJleHAiOjE2ODY5MTE5MjksImZpbGVHVUlEIjoiTjJBMWc1ZWJRbFU4T3ZxRCIsImlhdCI6MTY4NjkxMTYyOSwiaXNzIjoidXBsb2FkZXJfYWNjZXNzX3Jlc291cmNlIiwidXNlcklkIjo1NTc4Nzg0MH0.17KEfLNyAdGBgWNxPEPsQlEvBYVsIggM5knTlLEKjyE![image](https://github.com/kenor5/Minik8s/assets/75160010/ad757052-6d8a-4425-a9e9-f234d0fe0e2e)
+![image](https://github.com/kenor5/Minik8s/assets/75160010/ad757052-6d8a-4425-a9e9-f234d0fe0e2e)
 
 Minik8s主要包括如下组件：
 **Etcd:**
